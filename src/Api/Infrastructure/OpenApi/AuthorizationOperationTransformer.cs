@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
-namespace Modulith.Api.Infrastructure.OpenApi;
+namespace Hemma.Api.Infrastructure.OpenApi;
 
 /// <summary>
 /// Adds the Bearer security requirement to every operation that has

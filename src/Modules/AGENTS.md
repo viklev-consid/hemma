@@ -12,7 +12,7 @@ Every module is two projects:
 
 ```
 <Module>/
-+-- Modulith.Modules.<Module>/                # Internal project
++-- Hemma.Modules.<Module>/                # Internal project
 |   +-- Domain/                               # Aggregates, value objects, internal events
 |   +-- Features/                             # Vertical slices
 |   |   +-- <FeatureName>/
@@ -29,7 +29,7 @@ Every module is two projects:
 |   |   +-- Migrations/
 |   +-- Seeding/                              # IModuleSeeder implementations
 |   +-- <Module>Module.cs                     # Registration extensions
-+-- Modulith.Modules.<Module>.Contracts/      # Public project
++-- Hemma.Modules.<Module>.Contracts/      # Public project
     +-- Commands/                             # If other modules can command this one
     +-- Queries/                              # If other modules can query this one
     +-- Events/                               # Integration events published by this module
@@ -70,13 +70,13 @@ Platform override for global admins is explicit per endpoint/policy call. Never 
 Prefer the scaffold:
 
 ```bash
-dotnet new modulith-module --name Inventory
+dotnet new hemma-module --name Inventory
 ```
 
 This produces:
 
-- `src/Modules/Inventory/Modulith.Modules.Inventory/` (internal project)
-- `src/Modules/Inventory/Modulith.Modules.Inventory.Contracts/` with an `Events/` folder
+- `src/Modules/Inventory/Hemma.Modules.Inventory/` (internal project)
+- `src/Modules/Inventory/Hemma.Modules.Inventory.Contracts/` with an `Events/` folder
 - Correct project references, csproj metadata, and namespace conventions
 - `InventoryModule.cs` with permissions, DbContext, health checks, telemetry, GDPR stubs, dev seeding, `AddInventoryHandlers` (Wolverine), and `MapInventoryEndpoints` extensions
 - `InventoryModuleInstaller.cs` implementing `IModuleInstaller` for API autodiscovery
@@ -89,7 +89,7 @@ Test projects, `AGENTS.md`, `InventoryOptions.cs`, and domain/feature subfolders
 
 After scaffolding:
 
-1. Confirm `InventoryModuleInstaller` was created. The API auto-discovers module installers from referenced `Modulith.Modules.*` assemblies.
+1. Confirm `InventoryModuleInstaller` was created. The API auto-discovers module installers from referenced `Hemma.Modules.*` assemblies.
 2. Add `InventoryOptions` and bind from `Modules:Inventory` if the module has configuration.
 
 If you add the module manually (without the template), confirm all of the above are present before committing. The architectural tests will catch missing pieces, but not all of them.
@@ -101,15 +101,15 @@ If you add the module manually (without the template), confirm all of the above 
 Prefer the scaffold:
 
 ```bash
-dotnet new modulith-slice --module Orders --name CancelOrder
+dotnet new hemma-slice --module Orders --name CancelOrder
 ```
 
-This produces the six files (`Request`, `Response`, `Command`, `Handler`, `Validator`, `Endpoint`) with correct namespaces, permission-protected endpoint metadata, and stub content. `dotnet new modulith-command-slice` is the explicit equivalent for command/write slices.
+This produces the six files (`Request`, `Response`, `Command`, `Handler`, `Validator`, `Endpoint`) with correct namespaces, permission-protected endpoint metadata, and stub content. `dotnet new hemma-command-slice` is the explicit equivalent for command/write slices.
 
 For read/query slices:
 
 ```bash
-dotnet new modulith-query-slice --module Orders --name GetOrder
+dotnet new hemma-query-slice --module Orders --name GetOrder
 ```
 
 This produces `Response`, `Query`, `Handler`, and an authenticated `Endpoint` protected by the module's read permission. The integration test must be written manually.
@@ -117,7 +117,7 @@ This produces `Response`, `Query`, `Handler`, and an authenticated `Endpoint` pr
 For an integration event/subscriber pair owned by a module:
 
 ```bash
-dotnet new modulith-integration-pair --module Orders --name OrderPlaced
+dotnet new hemma-integration-pair --module Orders --name OrderPlaced
 ```
 
 This produces `Orders.Contracts.Events.OrderPlacedV1` and `Integration/Subscribers/OnOrderPlacedHandler`. Register the handler in `AddOrdersHandlers`; if the subscriber consumes another module's event, move the subscriber to the consuming module and reference only the publisher's `.Contracts` project.

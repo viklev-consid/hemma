@@ -50,7 +50,7 @@ Transports know nothing about templates, preferences, or business events. They t
 
 ### Layer 2: Orchestration (Notifications module)
 
-A dedicated module (`Modulith.Modules.Notifications`) that owns:
+A dedicated module (`Hemma.Modules.Notifications`) that owns:
 
 - **Templates** — metadata in DB (which template for which event, active version, locale), content as Razor (`.cshtml`) embedded resources. Metadata + resources is the sweet spot: templates are diffable and PR-reviewable; metadata configures which template is used where.
 - **User notification preferences** — a matrix of `(UserId, Category, Channel, Enabled)`. Categories: `Transactional`, `Security`, `Marketing`. Transactional and Security are non-opt-out by convention. Marketing is opt-in.

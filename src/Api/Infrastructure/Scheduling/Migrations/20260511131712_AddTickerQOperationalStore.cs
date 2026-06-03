@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Modulith.Api.Infrastructure.Scheduling.Migrations;
+namespace Hemma.Api.Infrastructure.Scheduling.Migrations;
 
 /// <inheritdoc />
 public partial class AddTickerQOperationalStore : Migration

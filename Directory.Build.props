@@ -12,7 +12,7 @@
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <AnalysisMode>AllEnabledByDefault</AnalysisMode>
     <SolutionDir Condition="'$(SolutionDir)' == ''">$(MSBuildThisFileDirectory)</SolutionDir>
-    <SolutionName Condition="'$(SolutionName)' == ''">Modulith</SolutionName>
+    <SolutionName Condition="'$(SolutionName)' == ''">Hemma</SolutionName>
   </PropertyGroup>
 
   <ItemGroup>

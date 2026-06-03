@@ -1,12 +1,12 @@
 # Testing Strategy
 
-Modulith uses four test layers. Each has a distinct purpose, scope, and speed profile. The boundaries between them are strict — a test in the wrong layer is almost always a sign the test is wrong.
+Hemma uses four test layers. Each has a distinct purpose, scope, and speed profile. The boundaries between them are strict — a test in the wrong layer is almost always a sign the test is wrong.
 
 ---
 
 ## The four layers
 
-### 1. Unit tests — `tests/Modules/<Module>/Modulith.Modules.<Module>.UnitTests`
+### 1. Unit tests — `tests/Modules/<Module>/Hemma.Modules.<Module>.UnitTests`
 
 **Scope:** Domain only. Aggregates, value objects, domain services.
 
@@ -28,7 +28,7 @@ Modulith uses four test layers. Each has a distinct purpose, scope, and speed pr
 
 ---
 
-### 2. Architectural tests — `tests/Modulith.Architecture.Tests`
+### 2. Architectural tests — `tests/Hemma.Architecture.Tests`
 
 **Scope:** Structural rules across the entire solution.
 
@@ -50,7 +50,7 @@ See [`adr/0015-architectural-tests.md`](../docs/adr/0015-architectural-tests.md)
 
 ---
 
-### 3. Integration tests — `tests/Modules/<Module>/Modulith.Modules.<Module>.IntegrationTests`
+### 3. Integration tests — `tests/Modules/<Module>/Hemma.Modules.<Module>.IntegrationTests`
 
 **Scope:** One module's slice end-to-end. HTTP → handler → DB → outbox.
 
@@ -81,7 +81,7 @@ See [`adr/0015-architectural-tests.md`](../docs/adr/0015-architectural-tests.md)
 
 ---
 
-### 4. Smoke tests — `tests/Modulith.SmokeTests`
+### 4. Smoke tests — `tests/Hemma.SmokeTests`
 
 **Scope:** The full API pipeline through `WebApplicationFactory`, backed by real Postgres and Mailpit containers.
 
@@ -104,7 +104,7 @@ Small number — 3 to 5 tests total. Runs on release branches, not every PR.
 
 ---
 
-## Shared test infrastructure — `tests/Modulith.TestSupport`
+## Shared test infrastructure — `tests/Hemma.TestSupport`
 
 A shared project referenced by all test projects. Current contents:
 
@@ -155,14 +155,14 @@ dotnet test
 dotnet test --filter "Category!=Integration&Category!=Smoke"
 
 # One module's tests
-dotnet test tests/Modules/Users/Modulith.Modules.Users.UnitTests
-dotnet test tests/Modules/Users/Modulith.Modules.Users.IntegrationTests
+dotnet test tests/Modules/Users/Hemma.Modules.Users.UnitTests
+dotnet test tests/Modules/Users/Hemma.Modules.Users.IntegrationTests
 
 # Architectural tests only
-dotnet test tests/Modulith.Architecture.Tests
+dotnet test tests/Hemma.Architecture.Tests
 
 # Smoke tests only (slow)
-dotnet test tests/Modulith.SmokeTests
+dotnet test tests/Hemma.SmokeTests
 ```
 
 Tests are categorized via xUnit `[Trait("Category", "Integration")]` so they can be filtered in CI.

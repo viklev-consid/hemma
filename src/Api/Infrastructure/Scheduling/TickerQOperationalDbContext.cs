@@ -3,7 +3,7 @@ using TickerQ.EntityFrameworkCore.Configurations;
 using TickerQ.EntityFrameworkCore.DbContextFactory;
 using TickerQ.Utilities.Entities;
 
-namespace Modulith.Api.Infrastructure.Scheduling;
+namespace Hemma.Api.Infrastructure.Scheduling;
 
 public sealed class TickerQOperationalDbContext(
     DbContextOptions<TickerQOperationalDbContext> options)

@@ -88,10 +88,10 @@ if [[ "$rel" =~ ^src/Modules/([^/]+)/ ]]; then
   fi
 
   if [[ -n "$content" ]]; then
-    # Look for `using Modulith.Modules.<Other>.` not ending in .Contracts
+    # Look for `using Hemma.Modules.<Other>.` not ending in .Contracts
     other=$(printf '%s' "$content" \
-      | grep -Eo 'using Modulith\.Modules\.[A-Za-z0-9_]+\.[A-Za-z0-9_.]+' \
-      | grep -v "Modulith\.Modules\.${this_module}\." \
+      | grep -Eo 'using Hemma\.Modules\.[A-Za-z0-9_]+\.[A-Za-z0-9_.]+' \
+      | grep -v "Hemma\.Modules\.${this_module}\." \
       | grep -v '\.Contracts' \
       | head -n 1 || true)
     if [[ -n "$other" ]]; then

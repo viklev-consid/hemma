@@ -1,6 +1,6 @@
 # Architecture
 
-Modulith is a modular monolith: a single deployable unit composed of independent modules with strictly enforced boundaries. Each module is a vertical slice of business capability — it owns its domain, its persistence, its endpoints, and its public contracts.
+Hemma is a modular monolith: a single deployable unit composed of independent modules with strictly enforced boundaries. Each module is a vertical slice of business capability — it owns its domain, its persistence, its endpoints, and its public contracts.
 
 The architecture is designed to be easy to split into separate services later, but equally designed to make that splitting unnecessary for a long time.
 
@@ -16,7 +16,7 @@ The architecture is designed to be easy to split into separate services later, b
                                   │
                                   ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                              Modulith.Api                            │
+│                              Hemma.Api                            │
 │  ┌────────────────────────────────────────────────────────────────┐  │
 │  │  ASP.NET Core minimal APIs + versioning + rate limiting        │  │
 │  │  JWT bearer auth + global exception handler + ProblemDetails   │  │
@@ -49,42 +49,42 @@ The architecture is designed to be easy to split into separate services later, b
 ## Solution layout
 
 ```
-Modulith.sln
+Hemma.sln
 ├── src/
 │   ├── AppHost/
-│   │   └── Modulith.AppHost.csproj                    # Aspire orchestration
+│   │   └── Hemma.AppHost.csproj                    # Aspire orchestration
 │   ├── ServiceDefaults/
-│   │   └── Modulith.ServiceDefaults.csproj            # Shared Aspire defaults
+│   │   └── Hemma.ServiceDefaults.csproj            # Shared Aspire defaults
 │   ├── Api/
-│   │   └── Modulith.Api.csproj                        # Host + composition root
+│   │   └── Hemma.Api.csproj                        # Host + composition root
 │   ├── Shared/
-│   │   ├── Modulith.Shared.Kernel/                    # DomainEvent, typed IDs, GDPR/shared primitives
-│   │   ├── Modulith.Shared.Contracts/                 # Cross-module primitives
-│   │   └── Modulith.Shared.Infrastructure/            # IBlobStore, IEmailSender, etc.
+│   │   ├── Hemma.Shared.Kernel/                    # DomainEvent, typed IDs, GDPR/shared primitives
+│   │   ├── Hemma.Shared.Contracts/                 # Cross-module primitives
+│   │   └── Hemma.Shared.Infrastructure/            # IBlobStore, IEmailSender, etc.
 │   └── Modules/
 │       ├── Users/
-│       │   ├── Modulith.Modules.Users/                # Internal
-│       │   └── Modulith.Modules.Users.Contracts/      # Public messages
+│       │   ├── Hemma.Modules.Users/                # Internal
+│       │   └── Hemma.Modules.Users.Contracts/      # Public messages
 │       ├── Organizations/
-│       │   ├── Modulith.Modules.Organizations/        # Internal
-│       │   └── Modulith.Modules.Organizations.Contracts/
+│       │   ├── Hemma.Modules.Organizations/        # Internal
+│       │   └── Hemma.Modules.Organizations.Contracts/
 │       ├── Catalog/
-│       │   ├── Modulith.Modules.Catalog/
-│       │   └── Modulith.Modules.Catalog.Contracts/
+│       │   ├── Hemma.Modules.Catalog/
+│       │   └── Hemma.Modules.Catalog.Contracts/
 │       ├── Notifications/
-│       │   ├── Modulith.Modules.Notifications/
-│       │   └── Modulith.Modules.Notifications.Contracts/
+│       │   ├── Hemma.Modules.Notifications/
+│       │   └── Hemma.Modules.Notifications.Contracts/
 │       └── Audit/
-│           ├── Modulith.Modules.Audit/
-│           └── Modulith.Modules.Audit.Contracts/
+│           ├── Hemma.Modules.Audit/
+│           └── Hemma.Modules.Audit.Contracts/
 └── tests/
-    ├── Modulith.Architecture.Tests/
-    ├── Modulith.SmokeTests/
-    ├── Modulith.TestSupport/
+    ├── Hemma.Architecture.Tests/
+    ├── Hemma.SmokeTests/
+    ├── Hemma.TestSupport/
     └── Modules/
         ├── Users/
-        │   ├── Modulith.Modules.Users.UnitTests/
-        │   └── Modulith.Modules.Users.IntegrationTests/
+        │   ├── Hemma.Modules.Users.UnitTests/
+        │   └── Hemma.Modules.Users.IntegrationTests/
         └── ...
 ```
 
@@ -103,7 +103,7 @@ Architectural tests enforce this. See [`adr/0015-architectural-tests.md`](adr/00
 ## Inside a module
 
 ```
-Modulith.Modules.Orders/
+Hemma.Modules.Orders/
 ├── Domain/
 │   ├── Order.cs                       # Aggregate root
 │   ├── OrderLine.cs                   # Entity
@@ -135,7 +135,7 @@ Modulith.Modules.Orders/
 └── OrdersModuleInstaller.cs           # Auto-discovered module entry point
 ```
 
-And in `Modulith.Modules.Orders.Contracts/`:
+And in `Hemma.Modules.Orders.Contracts/`:
 
 ```
 ├── Events/

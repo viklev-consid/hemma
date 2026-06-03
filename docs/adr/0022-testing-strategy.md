@@ -21,7 +21,7 @@ Four test layers with strict scope boundaries. See `docs/testing-strategy.md` fo
 
 - **Scope**: Domain only — aggregates, value objects, domain services.
 - **Dependencies**: BCL + xUnit assertions. No mocks, no database, no ASP.NET.
-- **Location**: `tests/Modules/<Module>/Modulith.Modules.<Module>.UnitTests`.
+- **Location**: `tests/Modules/<Module>/Hemma.Modules.<Module>.UnitTests`.
 - **Speed**: Milliseconds total for the layer.
 
 No mocks because rich domain objects have no dependencies to mock. If a mock is needed, the test or the domain is wrong.
@@ -30,7 +30,7 @@ No mocks because rich domain objects have no dependencies to mock. If a mock is 
 
 - **Scope**: Solution-wide structural rules.
 - **Dependencies**: NetArchTest.
-- **Location**: `tests/Modulith.Architecture.Tests`.
+- **Location**: `tests/Hemma.Architecture.Tests`.
 - **Speed**: Hundreds of milliseconds.
 
 Enforces ADR-0005, 0009, 0015, 0021, 0019. Failure messages are custom-written to be actionable (ADR-0027).
@@ -39,7 +39,7 @@ Enforces ADR-0005, 0009, 0015, 0021, 0019. Failure messages are custom-written t
 
 - **Scope**: One module's slices end-to-end — HTTP → handler → DB → outbox.
 - **Dependencies**: `WebApplicationFactory<Program>`, Testcontainers (real Postgres), xUnit assertions, Respawn.
-- **Location**: `tests/Modules/<Module>/Modulith.Modules.<Module>.IntegrationTests`.
+- **Location**: `tests/Modules/<Module>/Hemma.Modules.<Module>.IntegrationTests`.
 - **Speed**: Seconds per test, amortized across fixtures. Whole-suite target: under 5 minutes.
 
 **Real Postgres via Testcontainers.** No in-memory EF, no SQLite substitute. In-memory EF has different semantics (no real SQL, no constraints, no real transactions) and teaches wrong things.
@@ -50,14 +50,14 @@ Database-per-test-class, Respawn between tests within the class. Class-level par
 
 - **Scope**: Full API pipeline via `WebApplicationFactory`, real Postgres, and real Mailpit container.
 - **Dependencies**: `WebApplicationFactory<Program>`, Testcontainers, `HttpClient`.
-- **Location**: `tests/Modulith.SmokeTests`.
+- **Location**: `tests/Hemma.SmokeTests`.
 - **Speed**: Tens of seconds. 3-5 tests total.
 
 Only runs in release CI, not on every PR.
 
 ### Shared infrastructure: TestSupport
 
-A single `tests/Modulith.TestSupport` project with:
+A single `tests/Hemma.TestSupport` project with:
 
 - `ApiTestFixture` base (WebApplicationFactory + Testcontainers)
 - anonymous and authenticated `HttpClient` helpers

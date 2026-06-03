@@ -3,8 +3,8 @@ services:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-modulith}
-      POSTGRES_USER: ${POSTGRES_USER:-modulith}
+      POSTGRES_DB: ${POSTGRES_DB:-hemma}
+      POSTGRES_USER: ${POSTGRES_USER:-hemma}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in Coolify}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
@@ -35,7 +35,7 @@ services:
     restart: "no"
     environment:
       DOTNET_ENVIRONMENT: Production
-      ConnectionStrings__db: Host=db;Port=5432;Database=${POSTGRES_DB:-modulith};Username=${POSTGRES_USER:-modulith};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in Coolify}
+      ConnectionStrings__db: Host=db;Port=5432;Database=${POSTGRES_DB:-hemma};Username=${POSTGRES_USER:-hemma};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in Coolify}
     depends_on:
       db:
         condition: service_healthy
@@ -45,10 +45,10 @@ services:
     exclude_from_hc: true
     image: alpine:3.22
     restart: "no"
-    command: ["sh", "-c", "chown -R 1654:1654 /var/lib/modulith"]
+    command: ["sh", "-c", "chown -R 1654:1654 /var/lib/hemma"]
     volumes:
-      - blob-data:/var/lib/modulith/blobs
-      - dataprotection-keys:/var/lib/modulith/dataprotection
+      - blob-data:/var/lib/hemma/blobs
+      - dataprotection-keys:/var/lib/hemma/dataprotection
 
   api:
     build:
@@ -60,17 +60,17 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_HTTP_PORTS: "8080"
-      ConnectionStrings__db: Host=db;Port=5432;Database=${POSTGRES_DB:-modulith};Username=${POSTGRES_USER:-modulith};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in Coolify}
+      ConnectionStrings__db: Host=db;Port=5432;Database=${POSTGRES_DB:-hemma};Username=${POSTGRES_USER:-hemma};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in Coolify}
       ConnectionStrings__cache: cache:6379
-      Jwt__Issuer: ${JWT_ISSUER:-https://modulith-api.intraktiv.com}
-      Jwt__Audience: ${JWT_AUDIENCE:-modulith-api}
+      Jwt__Issuer: ${JWT_ISSUER:-https://hemma-api.intraktiv.com}
+      Jwt__Audience: ${JWT_AUDIENCE:-hemma-api}
       Jwt__SigningKey: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in Coolify}
-      Frontend__BaseUrl: ${FRONTEND_BASE_URL:-https://modulith.intraktiv.com}
-      Cors__AllowedOrigins__0: ${FRONTEND_BASE_URL:-https://modulith.intraktiv.com}
-      Blob__RootPath: /var/lib/modulith/blobs
+      Frontend__BaseUrl: ${FRONTEND_BASE_URL:-https://hemma.intraktiv.com}
+      Cors__AllowedOrigins__0: ${FRONTEND_BASE_URL:-https://hemma.intraktiv.com}
+      Blob__RootPath: /var/lib/hemma/blobs
       Blob__SigningKey: ${BLOB_SIGNING_KEY:?Set BLOB_SIGNING_KEY in Coolify}
-      Modules__Users__DataProtectionKeyRingPath: /var/lib/modulith/dataprotection
-      Modules__Users__TotpIssuer: ${TOTP_ISSUER:-Intraktiv Modulith}
+      Modules__Users__DataProtectionKeyRingPath: /var/lib/hemma/dataprotection
+      Modules__Users__TotpIssuer: ${TOTP_ISSUER:-Intraktiv Hemma}
       Modules__Users__AdminBootstrap__Enabled: ${ADMIN_BOOTSTRAP_ENABLED:-false}
       Modules__Notifications__Smtp__Host: ${SMTP_HOST:?Set SMTP_HOST in Coolify}
       Modules__Notifications__Smtp__Port: ${SMTP_PORT:-587}
@@ -95,8 +95,8 @@ services:
       retries: 10
       start_period: 20s
     volumes:
-      - blob-data:/var/lib/modulith/blobs
-      - dataprotection-keys:/var/lib/modulith/dataprotection
+      - blob-data:/var/lib/hemma/blobs
+      - dataprotection-keys:/var/lib/hemma/dataprotection
 
 volumes:
   postgres-data:

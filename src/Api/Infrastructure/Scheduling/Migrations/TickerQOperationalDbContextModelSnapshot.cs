@@ -3,12 +3,12 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Modulith.Api.Infrastructure.Scheduling;
+using Hemma.Api.Infrastructure.Scheduling;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Modulith.Api.Infrastructure.Scheduling.Migrations;
+namespace Hemma.Api.Infrastructure.Scheduling.Migrations;
 
     [DbContext(typeof(TickerQOperationalDbContext))]
     partial class TickerQOperationalDbContextModelSnapshot : ModelSnapshot

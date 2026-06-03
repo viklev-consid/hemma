@@ -12,11 +12,11 @@ var redis = builder.AddRedis("cache");
 var mailpit = builder.AddMailPit("mailpit", httpPort: 8025, smtpPort: 1025)
     .WithImageTag("v1.30.0");
 
-var migrations = builder.AddProject<Projects.Modulith_MigrationService>("migrations")
+var migrations = builder.AddProject<Projects.Hemma_MigrationService>("migrations")
     .WithReference(postgres)
     .WaitFor(postgres);
 
-_ = builder.AddProject<Projects.Modulith_Api>("api")
+_ = builder.AddProject<Projects.Hemma_Api>("api")
     .WithReference(postgres)
     .WithReference(redis)
     .WithReference(mailpit)

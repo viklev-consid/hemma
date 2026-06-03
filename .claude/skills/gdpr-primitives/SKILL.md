@@ -1,6 +1,6 @@
 ---
 name: gdpr-primitives
-description: Technical workflow for adding personal-data handling in Modulith. Covers data classification, export and erasure hooks, consent integration, retention, and testing.
+description: Technical workflow for adding personal-data handling in Hemma. Covers data classification, export and erasure hooks, consent integration, retention, and testing.
 ---
 
 # GDPR Primitives
@@ -28,8 +28,8 @@ Before changing personal-data handling, read:
 2. `docs/how-to/gdpr-features.md`
 3. `docs/adr/0012-gdpr-primitives.md`
 4. one existing module `Gdpr/` implementation
-5. the shared interfaces in `src/Shared/Modulith.Shared.Kernel/Interfaces/`
-6. `src/Modules/Users/Modulith.Modules.Users.Contracts/ConsentKeys.cs` when consent is involved
+5. the shared interfaces in `src/Shared/Hemma.Shared.Kernel/Interfaces/`
+6. `src/Modules/Users/Hemma.Modules.Users.Contracts/ConsentKeys.cs` when consent is involved
 
 ## This is technical guidance, not legal advice
 
@@ -138,7 +138,7 @@ Rules:
 - the Users module owns consent state; other modules read and react to it, they do not own parallel consent stores by default
 - use the shared `IConsentRegistry` rather than inventing a new consent lookup
 - the live `IConsentRegistry` contract is `HasConsentedAsync(Guid userId, string consentKey, ...)`, plus `GrantAsync(...)` and `RevokeAsync(...)`
-- use stable consent-key constants from `Modulith.Modules.Users.Contracts.ConsentKeys`, not ad-hoc strings scattered through modules
+- use stable consent-key constants from `Hemma.Modules.Users.Contracts.ConsentKeys`, not ad-hoc strings scattered through modules
 - keep legal consent distinct from user preference toggles
 - treat consent as an append-only history of grant and revoke records, not as a mutable flag in each consuming module
 - when a feature depends on consent, consult the registry at the point where the processing decision is made
@@ -230,10 +230,10 @@ Use these as the source of truth:
 - `COMPLIANCE.md`
 - `docs/how-to/gdpr-features.md`
 - `docs/adr/0012-gdpr-primitives.md`
-- `src/Shared/Modulith.Shared.Kernel/Interfaces/IPersonalDataExporter.cs`
-- `src/Shared/Modulith.Shared.Kernel/Interfaces/IPersonalDataEraser.cs`
-- `src/Shared/Modulith.Shared.Kernel/Interfaces/IConsentRegistry.cs`
-- `src/Shared/Modulith.Shared.Kernel/Gdpr/PersonalDataExport.cs`
-- `src/Shared/Modulith.Shared.Kernel/Gdpr/ErasureResult.cs`
-- `src/Modules/Users/Modulith.Modules.Users.Contracts/ConsentKeys.cs`
-- `src/Modules/Users/Modulith.Modules.Users/ConsentManagement/UsersConsentRegistry.cs`
+- `src/Shared/Hemma.Shared.Kernel/Interfaces/IPersonalDataExporter.cs`
+- `src/Shared/Hemma.Shared.Kernel/Interfaces/IPersonalDataEraser.cs`
+- `src/Shared/Hemma.Shared.Kernel/Interfaces/IConsentRegistry.cs`
+- `src/Shared/Hemma.Shared.Kernel/Gdpr/PersonalDataExport.cs`
+- `src/Shared/Hemma.Shared.Kernel/Gdpr/ErasureResult.cs`
+- `src/Modules/Users/Hemma.Modules.Users.Contracts/ConsentKeys.cs`
+- `src/Modules/Users/Hemma.Modules.Users/ConsentManagement/UsersConsentRegistry.cs`

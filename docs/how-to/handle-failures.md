@@ -1,6 +1,6 @@
 # How-to: Handle Failures
 
-Modulith uses the Result pattern for expected failures and exceptions for truly exceptional cases. This guide walks through the distinction and the practical conventions.
+Hemma uses the Result pattern for expected failures and exceptions for truly exceptional cases. This guide walks through the distinction and the practical conventions.
 
 For the reasoning, see [`../adr/0004-result-pattern.md`](../adr/0004-result-pattern.md) and [`../adr/0025-problem-details-for-errors.md`](../adr/0025-problem-details-for-errors.md).
 
@@ -50,14 +50,14 @@ if (order.Status == OrderStatus.Shipped)
 Each module keeps all its errors in a single `{Module}Errors.cs` file under an `Errors/` folder:
 
 ```
-src/Modules/Orders/Modulith.Modules.Orders/Errors/OrdersErrors.cs
+src/Modules/Orders/Hemma.Modules.Orders/Errors/OrdersErrors.cs
 ```
 
 ```csharp
 // Errors/OrdersErrors.cs
 using ErrorOr;
 
-namespace Modulith.Modules.Orders.Errors;
+namespace Hemma.Modules.Orders.Errors;
 
 internal static class OrdersErrors
 {
@@ -76,7 +76,7 @@ internal static class OrdersErrors
 Rules:
 - **One file per module** — `{Module}Errors.cs` in `Errors/`. No inline strings anywhere else.
 - **Error codes are `{Module}.{PascalCaseName}`** — e.g. `Orders.CannotCancelShipped`. Treat them as a public API: once a client depends on a code, changing it is a breaking change.
-- **Domain types reference the errors class**, not inline strings. Add `using Modulith.Modules.Orders.Errors;` to domain files as needed — referencing module-internal code from the domain is permitted.
+- **Domain types reference the errors class**, not inline strings. Add `using Hemma.Modules.Orders.Errors;` to domain files as needed — referencing module-internal code from the domain is permitted.
 - Use `static readonly Error` for fixed errors. Use a static method returning `Error` when the message needs runtime data (e.g. an ID).
 
 Usage in handlers and aggregates:
@@ -153,7 +153,7 @@ Anything that escapes a handler is caught by `IExceptionHandler`. It:
 
 ```json
 {
-  "type": "https://docs.modulith.dev/errors/internal_error",
+  "type": "https://docs.hemma.dev/errors/internal_error",
   "title": "An error occurred processing your request.",
   "status": 500,
   "detail": "An unexpected error occurred. Reference: <traceId>",

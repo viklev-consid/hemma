@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace Modulith.MigrationService;
+namespace Hemma.MigrationService;
 
 internal static partial class MigrationLog
 {

@@ -56,7 +56,7 @@ Every error carries a stable `errorCode` string (`users.email_already_in_use`, `
 
 ### The `type` URI
 
-RFC 7807's `type` is a URI identifying the problem kind. The template uses `https://docs.modulith.dev/errors/{errorCode}` (or whatever the team's docs site is). The URI does not need to resolve immediately — it's an identifier — but pointing it at docs enables learn-by-URL.
+RFC 7807's `type` is a URI identifying the problem kind. The template uses `https://docs.hemma.dev/errors/{errorCode}` (or whatever the team's docs site is). The URI does not need to resolve immediately — it's an identifier — but pointing it at docs enables learn-by-URL.
 
 ### Correlation
 

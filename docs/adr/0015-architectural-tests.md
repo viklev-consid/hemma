@@ -19,7 +19,7 @@ The combination of project references + architectural tests catches essentially 
 
 ## Decision
 
-A dedicated test project `Modulith.Architecture.Tests` runs a comprehensive set of boundary and convention rules as part of the fast CI tier. Uses **NetArchTest** for its readable API.
+A dedicated test project `Hemma.Architecture.Tests` runs a comprehensive set of boundary and convention rules as part of the fast CI tier. Uses **NetArchTest** for its readable API.
 
 ### Enforced rules
 
@@ -68,11 +68,11 @@ A dedicated test project `Modulith.Architecture.Tests` runs a comprehensive set 
 
 **Shared kernel rules:**
 
-- `Modulith.Shared.Kernel` must depend only on the BCL — no other project references, no third-party packages except ErrorOr.
+- `Hemma.Shared.Kernel` must depend only on the BCL — no other project references, no third-party packages except ErrorOr.
 
 **Notification rules:**
 
-- Types must not inject `IEmailSender` or `ISmsSender` except inside `Modulith.Modules.Notifications` and `Modulith.Shared.Infrastructure`.
+- Types must not inject `IEmailSender` or `ISmsSender` except inside `Hemma.Modules.Notifications` and `Hemma.Shared.Infrastructure`.
 
 **Blob storage rules:**
 
@@ -82,7 +82,7 @@ A dedicated test project `Modulith.Architecture.Tests` runs a comprehensive set 
 
 Every rule has a custom failure message that names the rule, the offending type(s), and the suggested fix. Example:
 
-> FAIL: Modulith.Modules.Orders.Persistence.OrdersDbContext depends on Modulith.Modules.Users.Persistence.UsersDbContext. Modules must not share DbContexts. Use Users' public Contracts (via IMessageBus) to request data. See ADR-0005 and ADR-0023.
+> FAIL: Hemma.Modules.Orders.Persistence.OrdersDbContext depends on Hemma.Modules.Users.Persistence.UsersDbContext. Modules must not share DbContexts. Use Users' public Contracts (via IMessageBus) to request data. See ADR-0005 and ADR-0023.
 
 This matters most for agents: a failing test that says "rule X violated" wastes cycles; a failing test that says "move type Y to folder Z" saves them.
 

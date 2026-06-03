@@ -1,4 +1,4 @@
-# How to use RBAC in Modulith
+# How to use RBAC in Hemma
 
 This guide explains how the RBAC system works and how to gate endpoints on permissions.
 
@@ -24,8 +24,8 @@ The `PermissionCatalog` singleton discovers all `*Permissions` types in `*.Contr
 Add a static class in your module's `.Contracts` project under `Authorization/`:
 
 ```csharp
-// src/Modules/Orders/Modulith.Modules.Orders.Contracts/Authorization/OrdersPermissions.cs
-namespace Modulith.Modules.Orders.Contracts.Authorization;
+// src/Modules/Orders/Hemma.Modules.Orders.Contracts/Authorization/OrdersPermissions.cs
+namespace Hemma.Modules.Orders.Contracts.Authorization;
 
 public static class OrdersPermissions
 {

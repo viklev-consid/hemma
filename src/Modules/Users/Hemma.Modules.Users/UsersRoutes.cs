@@ -1,0 +1,43 @@
+namespace Hemma.Modules.Users;
+
+internal static class UsersRoutes
+{
+    public const string GroupTag = "Users";
+    public const string Prefix = "/v1/users";
+    public const string Register = $"{Prefix}/register";
+    public const string Login = $"{Prefix}/login";
+    public const string Me = $"{Prefix}/me";
+    public const string Profile = $"{Me}/profile";
+    public const string CompleteOnboarding = $"{Me}/onboarding";
+    public const string OnboardingLegalRequirements = $"{Me}/onboarding/legal-requirements";
+    public const string LegalCompliance = $"{Me}/legal-compliance";
+    public const string LegalAcceptances = $"{Me}/legal-acceptances";
+    public const string LegalDocuments = $"{Prefix}/legal-documents";
+    public const string LegalDocumentByTypeAndVersion = $"{LegalDocuments}/{{type:length(1,50)}}/{{version:length(1,50)}}";
+    public const string MyAvatar = $"{Me}/avatar";
+    public const string UserAvatar = $"{Prefix}/{{userId:guid}}/avatar";
+    public const string PersonalData = $"{Me}/personal-data";
+    public const string List = Prefix;
+    public const string ById = $"{Prefix}/{{userId:guid}}";
+    public const string ChangeRole = $"{Prefix}/{{userId:guid}}/role";
+    public const string Invitations = $"{Prefix}/invitations";
+    public const string InvitationById = $"{Invitations}/{{invitationId:guid}}";
+
+    // Auth flows — Phase 9.5
+    public const string ForgotPassword = $"{Prefix}/password/forgot";
+    public const string ResetPassword = $"{Prefix}/password/reset";
+    public const string ChangePassword = $"{Me}/password";
+    public const string RequestEmailChange = $"{Me}/email/request";
+    public const string ConfirmEmailChange = $"{Me}/email/confirm";
+    public const string ConfirmEmail = $"{Prefix}/email/confirm";
+    public const string ResendEmailConfirmation = $"{Prefix}/email/confirmation/resend";
+    public const string RefreshToken = $"{Prefix}/token/refresh";
+    public const string Logout = $"{Prefix}/logout";
+    public const string LogoutAll = $"{Prefix}/logout/all";
+    public const string LoginTwoFactor = $"{Login}/2fa";
+    public const string TwoFactor = $"{Me}/2fa";
+    public const string SetupTotp = $"{TwoFactor}/totp/setup";
+    public const string ConfirmTotp = $"{TwoFactor}/totp/confirm";
+    public const string RegenerateRecoveryCodes = $"{TwoFactor}/recovery-codes/regenerate";
+
+}

@@ -1,6 +1,6 @@
 # AGENTS.md - Architecture Decision Records
 
-This directory contains ADRs - Architecture Decision Records - one per significant design decision in Modulith.
+This directory contains ADRs - Architecture Decision Records - one per significant design decision in Hemma.
 
 ## Format
 

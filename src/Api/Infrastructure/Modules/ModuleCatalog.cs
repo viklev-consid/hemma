@@ -1,11 +1,11 @@
 using System.Reflection;
-using Modulith.Shared.Infrastructure.Modules;
+using Hemma.Shared.Infrastructure.Modules;
 
-namespace Modulith.Api.Infrastructure.Modules;
+namespace Hemma.Api.Infrastructure.Modules;
 
 internal static class ModuleCatalog
 {
-    private const string moduleAssemblyPrefix = "Modulith.Modules.";
+    private const string moduleAssemblyPrefix = "Hemma.Modules.";
     private const string contractsAssemblySuffix = ".Contracts";
 
     public static IReadOnlyList<IModuleInstaller> DiscoverInstallers()

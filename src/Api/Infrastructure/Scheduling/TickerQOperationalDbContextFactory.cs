@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
-namespace Modulith.Api.Infrastructure.Scheduling;
+namespace Hemma.Api.Infrastructure.Scheduling;
 
 /// <summary>
 /// Used only by EF Core tooling (dotnet ef migrations). Not used at runtime.
@@ -13,7 +13,7 @@ public sealed class TickerQOperationalDbContextFactory
     {
         var optionsBuilder = new DbContextOptionsBuilder<TickerQOperationalDbContext>();
         optionsBuilder.UseNpgsql(
-            "Host=localhost;Database=modulith;Username=postgres;Password=postgres",
+            "Host=localhost;Database=hemma;Username=postgres;Password=postgres",
             b => b.MigrationsHistoryTable("__ef_migrations_history", TickerQOperationalDbContext.Schema));
 
         return new TickerQOperationalDbContext(optionsBuilder.Options);

@@ -47,11 +47,11 @@ Not every internal event becomes a public event. Some stay private. That's norma
 
 ```
 // Internal — may change freely
-namespace Modulith.Modules.Users.Domain.Events;
+namespace Hemma.Modules.Users.Domain.Events;
 public sealed record UserEmailChanged(UserId UserId, string OldEmail, string NewEmail);
 
 // Public — part of the contract
-namespace Modulith.Modules.Users.Contracts.Events;
+namespace Hemma.Modules.Users.Contracts.Events;
 public sealed record UserEmailChangedV1(Guid UserId, string NewEmail, DateTimeOffset OccurredAt);
 
 // Internal handler that maps one to the other

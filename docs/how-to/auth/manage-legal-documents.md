@@ -24,8 +24,8 @@ User acceptances are stored as immutable `terms_acceptances` rows keyed by user 
 
 Current legal content is backend-first Markdown in:
 
-- `src/Modules/Users/Modulith.Modules.Users/LegalDocuments/terms-of-service.v{version}.md`
-- `src/Modules/Users/Modulith.Modules.Users/LegalDocuments/privacy-policy.v{version}.md`
+- `src/Modules/Users/Hemma.Modules.Users/LegalDocuments/terms-of-service.v{version}.md`
+- `src/Modules/Users/Hemma.Modules.Users/LegalDocuments/privacy-policy.v{version}.md`
 
 The current versions are configured with:
 

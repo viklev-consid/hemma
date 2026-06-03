@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);CA1707;CA1711</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\Modules\Users\Hemma.Modules.Users\Hemma.Modules.Users.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Modules\Catalog\Hemma.Modules.Catalog\Hemma.Modules.Catalog.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Modules\Audit\Hemma.Modules.Audit\Hemma.Modules.Audit.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Modules\Notifications\Hemma.Modules.Notifications\Hemma.Modules.Notifications.csproj" />
+    <ProjectReference Include="..\..\..\Hemma.TestSupport\Hemma.TestSupport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

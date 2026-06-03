@@ -727,7 +727,7 @@
           "WolverineFx": "5.32.1"
         }
       },
-      "modulith.api": {
+      "hemma.api": {
         "type": "Project",
         "dependencies": {
           "Asp.Versioning.Http": "[10.0.0, )",
@@ -736,13 +736,13 @@
           "Microsoft.AspNetCore.OpenApi": "[10.0.8, )",
           "Microsoft.Extensions.Caching.Hybrid": "[10.5.0, )",
           "Microsoft.FeatureManagement.AspNetCore": "[4.5.0, )",
-          "Modulith.Modules.Audit": "[1.0.0, )",
-          "Modulith.Modules.Catalog": "[1.0.0, )",
-          "Modulith.Modules.Notifications": "[1.0.0, )",
-          "Modulith.Modules.Organizations": "[1.0.0, )",
-          "Modulith.Modules.Users": "[1.0.0, )",
-          "Modulith.ServiceDefaults": "[1.0.0, )",
-          "Modulith.Shared.Infrastructure": "[1.0.0, )",
+          "Hemma.Modules.Audit": "[1.0.0, )",
+          "Hemma.Modules.Catalog": "[1.0.0, )",
+          "Hemma.Modules.Notifications": "[1.0.0, )",
+          "Hemma.Modules.Organizations": "[1.0.0, )",
+          "Hemma.Modules.Users": "[1.0.0, )",
+          "Hemma.ServiceDefaults": "[1.0.0, )",
+          "Hemma.Shared.Infrastructure": "[1.0.0, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.1, )",
           "Scalar.AspNetCore": "[2.14.5, )",
           "TickerQ": "[10.1.1, )",
@@ -752,32 +752,32 @@
           "WolverineFx.Postgresql": "[5.32.1, )"
         }
       },
-      "modulith.modules.audit": {
+      "hemma.modules.audit": {
         "type": "Project",
         "dependencies": {
           "EFCore.NamingConventions": "[10.0.1, )",
           "ErrorOr": "[2.1.0, )",
           "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "[10.0.8, )",
-          "Modulith.Modules.Audit.Contracts": "[1.0.0, )",
-          "Modulith.Modules.Organizations.Contracts": "[1.0.0, )",
-          "Modulith.Modules.Users.Contracts": "[1.0.0, )",
-          "Modulith.Shared.Infrastructure": "[1.0.0, )",
-          "Modulith.Shared.Kernel": "[1.0.0, )",
+          "Hemma.Modules.Audit.Contracts": "[1.0.0, )",
+          "Hemma.Modules.Organizations.Contracts": "[1.0.0, )",
+          "Hemma.Modules.Users.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Infrastructure": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.1, )",
           "OpenTelemetry.Extensions.Hosting": "[1.15.3, )",
           "WolverineFx": "[5.32.1, )",
           "WolverineFx.EntityFrameworkCore": "[5.32.1, )"
         }
       },
-      "modulith.modules.audit.contracts": {
+      "hemma.modules.audit.contracts": {
         "type": "Project",
         "dependencies": {
           "ErrorOr": "[2.1.0, )",
-          "Modulith.Shared.Contracts": "[1.0.0, )",
-          "Modulith.Shared.Kernel": "[1.0.0, )"
+          "Hemma.Shared.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )"
         }
       },
-      "modulith.modules.catalog": {
+      "hemma.modules.catalog": {
         "type": "Project",
         "dependencies": {
           "EFCore.NamingConventions": "[10.0.1, )",
@@ -785,35 +785,35 @@
           "FluentValidation": "[12.1.1, )",
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
           "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "[10.0.8, )",
-          "Modulith.Modules.Catalog.Contracts": "[1.0.0, )",
-          "Modulith.Modules.Users.Contracts": "[1.0.0, )",
-          "Modulith.Shared.Infrastructure": "[1.0.0, )",
-          "Modulith.Shared.Kernel": "[1.0.0, )",
+          "Hemma.Modules.Catalog.Contracts": "[1.0.0, )",
+          "Hemma.Modules.Users.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Infrastructure": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.1, )",
           "OpenTelemetry.Extensions.Hosting": "[1.15.3, )",
           "WolverineFx": "[5.32.1, )",
           "WolverineFx.EntityFrameworkCore": "[5.32.1, )"
         }
       },
-      "modulith.modules.catalog.contracts": {
+      "hemma.modules.catalog.contracts": {
         "type": "Project",
         "dependencies": {
           "ErrorOr": "[2.1.0, )",
-          "Modulith.Shared.Contracts": "[1.0.0, )",
-          "Modulith.Shared.Kernel": "[1.0.0, )"
+          "Hemma.Shared.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )"
         }
       },
-      "modulith.modules.notifications": {
+      "hemma.modules.notifications": {
         "type": "Project",
         "dependencies": {
           "EFCore.NamingConventions": "[10.0.1, )",
           "ErrorOr": "[2.1.0, )",
           "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "[10.0.8, )",
-          "Modulith.Modules.Notifications.Contracts": "[1.0.0, )",
-          "Modulith.Modules.Organizations.Contracts": "[1.0.0, )",
-          "Modulith.Modules.Users.Contracts": "[1.0.0, )",
-          "Modulith.Shared.Infrastructure": "[1.0.0, )",
-          "Modulith.Shared.Kernel": "[1.0.0, )",
+          "Hemma.Modules.Notifications.Contracts": "[1.0.0, )",
+          "Hemma.Modules.Organizations.Contracts": "[1.0.0, )",
+          "Hemma.Modules.Users.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Infrastructure": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.1, )",
           "OpenTelemetry.Extensions.Hosting": "[1.15.3, )",
           "TickerQ": "[10.1.1, )",
@@ -821,15 +821,15 @@
           "WolverineFx.EntityFrameworkCore": "[5.32.1, )"
         }
       },
-      "modulith.modules.notifications.contracts": {
+      "hemma.modules.notifications.contracts": {
         "type": "Project",
         "dependencies": {
           "ErrorOr": "[2.1.0, )",
-          "Modulith.Shared.Contracts": "[1.0.0, )",
-          "Modulith.Shared.Kernel": "[1.0.0, )"
+          "Hemma.Shared.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )"
         }
       },
-      "modulith.modules.organizations": {
+      "hemma.modules.organizations": {
         "type": "Project",
         "dependencies": {
           "EFCore.NamingConventions": "[10.0.1, )",
@@ -837,26 +837,26 @@
           "FluentValidation": "[12.1.1, )",
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
           "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "[10.0.8, )",
-          "Modulith.Modules.Audit.Contracts": "[1.0.0, )",
-          "Modulith.Modules.Organizations.Contracts": "[1.0.0, )",
-          "Modulith.Modules.Users.Contracts": "[1.0.0, )",
-          "Modulith.Shared.Infrastructure": "[1.0.0, )",
-          "Modulith.Shared.Kernel": "[1.0.0, )",
+          "Hemma.Modules.Audit.Contracts": "[1.0.0, )",
+          "Hemma.Modules.Organizations.Contracts": "[1.0.0, )",
+          "Hemma.Modules.Users.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Infrastructure": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.1, )",
           "OpenTelemetry.Extensions.Hosting": "[1.15.3, )",
           "WolverineFx": "[5.32.1, )",
           "WolverineFx.EntityFrameworkCore": "[5.32.1, )"
         }
       },
-      "modulith.modules.organizations.contracts": {
+      "hemma.modules.organizations.contracts": {
         "type": "Project",
         "dependencies": {
           "ErrorOr": "[2.1.0, )",
-          "Modulith.Shared.Contracts": "[1.0.0, )",
-          "Modulith.Shared.Kernel": "[1.0.0, )"
+          "Hemma.Shared.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )"
         }
       },
-      "modulith.modules.users": {
+      "hemma.modules.users": {
         "type": "Project",
         "dependencies": {
           "BCrypt.Net-Next": "[4.1.0, )",
@@ -866,10 +866,10 @@
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
           "Magick.NET-Q8-AnyCPU": "[14.13.1, )",
           "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "[10.0.8, )",
-          "Modulith.Modules.Organizations.Contracts": "[1.0.0, )",
-          "Modulith.Modules.Users.Contracts": "[1.0.0, )",
-          "Modulith.Shared.Infrastructure": "[1.0.0, )",
-          "Modulith.Shared.Kernel": "[1.0.0, )",
+          "Hemma.Modules.Organizations.Contracts": "[1.0.0, )",
+          "Hemma.Modules.Users.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Infrastructure": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.1, )",
           "OpenTelemetry.Extensions.Hosting": "[1.15.3, )",
           "System.IdentityModel.Tokens.Jwt": "[8.17.0, )",
@@ -878,15 +878,15 @@
           "WolverineFx.EntityFrameworkCore": "[5.32.1, )"
         }
       },
-      "modulith.modules.users.contracts": {
+      "hemma.modules.users.contracts": {
         "type": "Project",
         "dependencies": {
           "ErrorOr": "[2.1.0, )",
-          "Modulith.Shared.Contracts": "[1.0.0, )",
-          "Modulith.Shared.Kernel": "[1.0.0, )"
+          "Hemma.Shared.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )"
         }
       },
-      "modulith.servicedefaults": {
+      "hemma.servicedefaults": {
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.Http.Resilience": "[10.5.0, )",
@@ -898,17 +898,17 @@
           "OpenTelemetry.Instrumentation.Runtime": "[1.15.1, )"
         }
       },
-      "modulith.shared.contracts": {
+      "hemma.shared.contracts": {
         "type": "Project"
       },
-      "modulith.shared.infrastructure": {
+      "hemma.shared.infrastructure": {
         "type": "Project",
         "dependencies": {
           "EFCore.NamingConventions": "[10.0.1, )",
           "FluentValidation": "[12.1.1, )",
           "MailKit": "[4.16.0, )",
           "Microsoft.Extensions.Caching.Hybrid": "[10.5.0, )",
-          "Modulith.Shared.Kernel": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.1, )",
           "Serilog": "[4.3.1, )",
           "Serilog.Enrichers.Environment": "[3.0.1, )",
@@ -921,7 +921,7 @@
           "WolverineFx": "[5.32.1, )"
         }
       },
-      "modulith.shared.kernel": {
+      "hemma.shared.kernel": {
         "type": "Project",
         "dependencies": {
           "ErrorOr": "[2.1.0, )"

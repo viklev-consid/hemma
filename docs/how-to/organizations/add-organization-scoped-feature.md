@@ -60,7 +60,7 @@ ScopedAuthorizationOptions.WithPlatformOverride
 
 ## Cross-module rules
 
-- Reference `Modulith.Modules.Organizations.Contracts`, not the Organizations internal project.
+- Reference `Hemma.Modules.Organizations.Contracts`, not the Organizations internal project.
 - Store organization IDs as values in your module's schema. Do not add cross-schema foreign keys.
 - Do not query Organizations tables from another module.
 - Use public contracts or integration events if another module needs organization data.

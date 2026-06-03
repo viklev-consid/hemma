@@ -20,8 +20,8 @@ These are **separate types**. An internal handler in the publishing module maps 
 ### 1. Define the internal domain event
 
 ```csharp
-// src/Modules/Users/Modulith.Modules.Users/Domain/Events/UserEmailChanged.cs
-namespace Modulith.Modules.Users.Domain.Events;
+// src/Modules/Users/Hemma.Modules.Users/Domain/Events/UserEmailChanged.cs
+namespace Hemma.Modules.Users.Domain.Events;
 
 internal sealed record UserEmailChanged(UserId UserId, Email OldEmail, Email NewEmail) : DomainEvent;
 ```
@@ -48,8 +48,8 @@ Domain events are collected by the aggregate and flushed post-save by Wolverine 
 ### 3. Define the public integration event
 
 ```csharp
-// src/Modules/Users/Modulith.Modules.Users.Contracts/Events/UserEmailChangedV1.cs
-namespace Modulith.Modules.Users.Contracts.Events;
+// src/Modules/Users/Hemma.Modules.Users.Contracts/Events/UserEmailChangedV1.cs
+namespace Hemma.Modules.Users.Contracts.Events;
 
 public sealed record UserEmailChangedV1(
     Guid UserId,
@@ -69,8 +69,8 @@ Public events:
 Write an internal handler in the publishing module:
 
 ```csharp
-// src/Modules/Users/Modulith.Modules.Users/Integration/Publishers/PublishUserEmailChangedHandler.cs
-namespace Modulith.Modules.Users.Integration.Publishers;
+// src/Modules/Users/Hemma.Modules.Users/Integration/Publishers/PublishUserEmailChangedHandler.cs
+namespace Hemma.Modules.Users.Integration.Publishers;
 
 internal sealed class PublishUserEmailChangedHandler
 {
@@ -90,19 +90,19 @@ Wolverine picks this up automatically. The `PublishAsync` call enlists the messa
 
 ### 1. Reference the publisher's Contracts project
 
-In `Modulith.Modules.Notifications.csproj`:
+In `Hemma.Modules.Notifications.csproj`:
 
 ```xml
-<ProjectReference Include="..\..\Users\Modulith.Modules.Users.Contracts\Modulith.Modules.Users.Contracts.csproj" />
+<ProjectReference Include="..\..\Users\Hemma.Modules.Users.Contracts\Hemma.Modules.Users.Contracts.csproj" />
 ```
 
 ### 2. Write the subscriber handler
 
 ```csharp
-// src/Modules/Notifications/Modulith.Modules.Notifications/Integration/Subscribers/OnUserEmailChangedHandler.cs
-using Modulith.Modules.Users.Contracts.Events;
+// src/Modules/Notifications/Hemma.Modules.Notifications/Integration/Subscribers/OnUserEmailChangedHandler.cs
+using Hemma.Modules.Users.Contracts.Events;
 
-namespace Modulith.Modules.Notifications.Integration.Subscribers;
+namespace Hemma.Modules.Notifications.Integration.Subscribers;
 
 public sealed class OnUserEmailChangedHandler  // Must be public — Wolverine rejects internal handler types.
 {

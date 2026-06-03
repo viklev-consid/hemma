@@ -1,6 +1,6 @@
 ---
 name: ef-migration
-description: Workflow for adding and reviewing EF Core migrations in Modulith. Covers per-module schemas, migration commands, destructive-change patterns, and what not to edit.
+description: Workflow for adding and reviewing EF Core migrations in Hemma. Covers per-module schemas, migration commands, destructive-change patterns, and what not to edit.
 ---
 
 # EF Migration
@@ -67,7 +67,7 @@ Generate migrations with the module project and explicit DbContext.
 
 ```bash
 dotnet ef migrations add <Name> \
-  --project src/Modules/<Module>/Modulith.Modules.<Module> \
+  --project src/Modules/<Module>/Hemma.Modules.<Module> \
   --context <Module>DbContext \
   --output-dir Persistence/Migrations
 ```

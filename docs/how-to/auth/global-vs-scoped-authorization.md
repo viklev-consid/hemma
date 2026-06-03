@@ -1,6 +1,6 @@
 # Global vs Scoped Authorization
 
-Modulith has two authorization layers.
+Hemma has two authorization layers.
 
 ## Global RBAC
 

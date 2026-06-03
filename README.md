@@ -1,8 +1,8 @@
-# Modulith
+# Hemma
 
 A production-grade modular monolith template for building RESTful APIs in .NET 10 / C# 14, orchestrated with .NET Aspire 13.x.
 
-Modulith is opinionated. It encodes a set of decisions that have been made deliberately, with trade-offs documented. It is designed to be equally ergonomic for humans and for AI coding agents.
+Hemma is opinionated. It encodes a set of decisions that have been made deliberately, with trade-offs documented. It is designed to be equally ergonomic for humans and for AI coding agents.
 
 ## Why a modular monolith
 
@@ -159,7 +159,7 @@ Useful faster checks while developing:
 
 ```bash
 dotnet test --filter "Category!=Integration&Category!=Smoke"
-dotnet test tests/Modules/Users/Modulith.Modules.Users.IntegrationTests
+dotnet test tests/Modules/Users/Hemma.Modules.Users.IntegrationTests
 ```
 
 ## Common configuration
@@ -187,11 +187,11 @@ Supported `Modules:Users:Registration:Mode` values:
 
 The Notifications module separates account/security email from product-facing bell notifications. Password reset, password changed, email change, welcome, and external-login notifications stay email-first. Bell notifications are for in-app product activity such as replies, mentions, assignments, approvals, and workflow updates. The bell API is scoped to the current user under `/v1/me/notifications`, with unread counts, read/archive actions, SSE live updates, preferences under `/v1/me/notification-preferences`, and scheduled retention cleanup.
 
-The Users module owns legal document content and acceptance state. Terms of Service and Privacy Policy copy lives as backend Markdown under `src/Modules/Users/Modulith.Modules.Users/LegalDocuments/`, is seeded into the Users database from `Modules:Users:TermsOfServiceVersion` and `Modules:Users:PrivacyPolicyVersion`, and is served to clients for onboarding and re-acceptance flows. Clients must echo document ID, version, and content hash when accepting; the backend records immutable acceptances and can return HTTP 428 `ProblemDetails` when a blocking current document is missing. See [Manage legal documents](docs/how-to/auth/manage-legal-documents.md).
+The Users module owns legal document content and acceptance state. Terms of Service and Privacy Policy copy lives as backend Markdown under `src/Modules/Users/Hemma.Modules.Users/LegalDocuments/`, is seeded into the Users database from `Modules:Users:TermsOfServiceVersion` and `Modules:Users:PrivacyPolicyVersion`, and is served to clients for onboarding and re-acceptance flows. Clients must echo document ID, version, and content hash when accepting; the backend records immutable acceptances and can return HTTP 428 `ProblemDetails` when a blocking current document is missing. See [Manage legal documents](docs/how-to/auth/manage-legal-documents.md).
 
 ## Working with AI agents
 
-Modulith treats AI coding agents as first-class collaborators alongside human developers. The structural choices that make the codebase navigable for humans — vertical slices, explicit module boundaries, ADRs, exhaustive architectural tests — are the same choices that make it safe for agents to operate in autonomously. Neither audience is an afterthought.
+Hemma treats AI coding agents as first-class collaborators alongside human developers. The structural choices that make the codebase navigable for humans — vertical slices, explicit module boundaries, ADRs, exhaustive architectural tests — are the same choices that make it safe for agents to operate in autonomously. Neither audience is an afterthought.
 
 ### Layered guidance
 
@@ -221,7 +221,7 @@ The `.claude/` directory ships an active harness for Claude Code, plus repo-loca
 **Slash commands** provide scoped, tool-constrained workflows:
 
 - `/check` — format, build, arch tests, and unit tests on projects changed in this session
-- `/new-slice <Module> <Feature>` — scaffolds a vertical slice via `dotnet new modulith-slice`
+- `/new-slice <Module> <Feature>` — scaffolds a vertical slice via `dotnet new hemma-slice`
 - `/new-module <Name>` — scaffolds a new module with an explicit confirmation step
 - `/new-adr <title>` — drafts an ADR in chat; never writes the file
 

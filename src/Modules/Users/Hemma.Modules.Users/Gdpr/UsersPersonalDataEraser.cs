@@ -1,0 +1,74 @@
+using Microsoft.EntityFrameworkCore;
+using Hemma.Modules.Users.Avatars;
+using Hemma.Modules.Users.Domain;
+using Hemma.Modules.Users.Persistence;
+using Hemma.Shared.Kernel.Gdpr;
+using Hemma.Shared.Kernel.Interfaces;
+
+namespace Hemma.Modules.Users.Gdpr;
+
+public sealed class UsersPersonalDataEraser(UsersDbContext db, IUserAvatarStorage avatarStorage) : IPersonalDataEraser
+{
+    public async Task<ErasureResult> EraseAsync(UserRef user, ErasureStrategy strategy, CancellationToken ct)
+    {
+        var affected = 0;
+
+        var userId = new UserId(user.UserId);
+
+        affected += await db.RefreshTokens
+            .Where(t => t.UserId == userId)
+            .ExecuteDeleteAsync(ct);
+
+        affected += await db.SingleUseTokens
+            .Where(t => t.UserId == userId)
+            .ExecuteDeleteAsync(ct);
+
+        affected += await db.PendingEmailChanges
+            .Where(p => p.UserId == userId)
+            .ExecuteDeleteAsync(ct);
+
+        affected += await db.TwoFactorCredentials
+            .Where(c => c.UserId == userId)
+            .ExecuteDeleteAsync(ct);
+
+        affected += await db.RecoveryCodes
+            .Where(c => c.UserId == userId)
+            .ExecuteDeleteAsync(ct);
+
+        affected += await db.PendingTwoFactorChallenges
+            .Where(c => c.UserId == userId)
+            .ExecuteDeleteAsync(ct);
+
+        var dbUserForEmail = await db.Users.FindAsync([userId], ct);
+        var avatarToDelete = (Container: dbUserForEmail?.AvatarContainer, Key: dbUserForEmail?.AvatarKey);
+
+        affected += await db.UserInvitations
+            .Where(i => i.InvitedByUserId == userId ||
+                        i.AcceptedUserId == userId ||
+                        (dbUserForEmail != null && i.Email == dbUserForEmail.Email.Value))
+            .ExecuteDeleteAsync(ct);
+
+        affected += await db.TermsAcceptances
+            .Where(t => t.UserId == userId)
+            .ExecuteDeleteAsync(ct);
+
+        var dbUser = await db.Users.FindAsync([userId], ct);
+        if (dbUser is not null)
+        {
+            db.Users.Remove(dbUser);
+            affected++;
+        }
+
+        var consents = await db.Consents
+            .Where(c => c.UserId == user.UserId)
+            .ToListAsync(ct);
+
+        db.Consents.RemoveRange(consents);
+        affected += consents.Count;
+
+        await db.SaveChangesAsync(ct);
+        await avatarStorage.DeleteAsync(avatarToDelete.Container, avatarToDelete.Key, ct);
+
+        return new ErasureResult(user.UserId, ErasureStrategy.HardDelete, affected);
+    }
+}

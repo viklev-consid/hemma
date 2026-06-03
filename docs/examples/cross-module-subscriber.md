@@ -2,7 +2,7 @@
 
 **Pattern:** Subscribe to a public event from another module, send an email, log it idempotently.
 
-**Source:** `src/Modules/Notifications/Modulith.Modules.Notifications/Integration/Subscribers/OnUserRegisteredHandler.cs`
+**Source:** `src/Modules/Notifications/Hemma.Modules.Notifications/Integration/Subscribers/OnUserRegisteredHandler.cs`
 
 ---
 
@@ -10,15 +10,15 @@
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
-using Modulith.Modules.Notifications.Domain;
-using Modulith.Modules.Notifications.Persistence;
-using Modulith.Modules.Notifications.Templates;
-using Modulith.Modules.Users.Contracts;
-using Modulith.Modules.Users.Contracts.Events;
-using Modulith.Shared.Infrastructure.Notifications;
-using Modulith.Shared.Kernel.Interfaces;
+using Hemma.Modules.Notifications.Domain;
+using Hemma.Modules.Notifications.Persistence;
+using Hemma.Modules.Notifications.Templates;
+using Hemma.Modules.Users.Contracts;
+using Hemma.Modules.Users.Contracts.Events;
+using Hemma.Shared.Infrastructure.Notifications;
+using Hemma.Shared.Kernel.Interfaces;
 
-namespace Modulith.Modules.Notifications.Integration.Subscribers;
+namespace Hemma.Modules.Notifications.Integration.Subscribers;
 
 public sealed class OnUserRegisteredHandler(   // Must be public — Wolverine rejects internal handler types
     NotificationsDbContext db,
@@ -88,10 +88,10 @@ Email is sent, then the log is written. If the log write fails, Wolverine retrie
 
 ### Referencing the publisher's Contracts project
 
-The Notifications module's csproj references `Modulith.Modules.Users.Contracts` — not `Modulith.Modules.Users`. The boundary rule: only `.Contracts` projects may be referenced across modules.
+The Notifications module's csproj references `Hemma.Modules.Users.Contracts` — not `Hemma.Modules.Users`. The boundary rule: only `.Contracts` projects may be referenced across modules.
 
 ```xml
-<ProjectReference Include="..\..\Users\Modulith.Modules.Users.Contracts\Modulith.Modules.Users.Contracts.csproj" />
+<ProjectReference Include="..\..\Users\Hemma.Modules.Users.Contracts\Hemma.Modules.Users.Contracts.csproj" />
 ```
 
 ---
@@ -99,7 +99,7 @@ The Notifications module's csproj references `Modulith.Modules.Users.Contracts` 
 ## Template structure
 
 ```
-src/Modules/Notifications/Modulith.Modules.Notifications/
+src/Modules/Notifications/Hemma.Modules.Notifications/
 └── Integration/
     └── Subscribers/
         └── OnUserRegisteredHandler.cs     ← one file per event type

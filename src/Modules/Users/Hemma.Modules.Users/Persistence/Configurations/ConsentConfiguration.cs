@@ -1,0 +1,26 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Hemma.Modules.Users.Domain;
+
+namespace Hemma.Modules.Users.Persistence.Configurations;
+
+internal sealed class ConsentConfiguration : IEntityTypeConfiguration<Consent>
+{
+    public void Configure(EntityTypeBuilder<Consent> builder)
+    {
+        builder.HasKey(c => c.Id);
+
+        builder.Property(c => c.Id)
+            .HasConversion(id => id.Value, v => new ConsentId(v));
+
+        builder.Property(c => c.UserId).IsRequired();
+        builder.Property(c => c.ConsentKey).HasMaxLength(100).IsRequired();
+        builder.Property(c => c.Granted).IsRequired();
+        builder.Property(c => c.RecordedAt).IsRequired();
+        builder.Property(c => c.GrantedFromIp).HasMaxLength(45);
+        builder.Property(c => c.GrantedUserAgent).HasMaxLength(512);
+        builder.Property(c => c.PolicyVersion).HasMaxLength(50);
+
+        builder.HasIndex(c => new { c.UserId, c.ConsentKey });
+    }
+}

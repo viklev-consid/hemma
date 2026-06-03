@@ -1,6 +1,6 @@
 ---
 name: authorization-model
-description: System-level authorization model for Modulith. Covers single-role RBAC, permission declarations in Contracts, permission registration, per-request claim expansion, and role-change behavior.
+description: System-level authorization model for Hemma. Covers single-role RBAC, permission declarations in Contracts, permission registration, per-request claim expansion, and role-change behavior.
 ---
 
 # Authorization Model
@@ -27,8 +27,8 @@ Before changing the authorization model, read:
 
 1. `docs/adr/0030-rbac.md`
 2. `docs/how-to/auth/use-rbac.md`
-3. `src/Modules/Users/Modulith.Modules.Users/Security/Authorization/RbacServiceCollectionExtensions.cs`
-4. `src/Shared/Modulith.Shared.Infrastructure/Authorization/PermissionSourceExtensions.cs`
+3. `src/Modules/Users/Hemma.Modules.Users/Security/Authorization/RbacServiceCollectionExtensions.cs`
+4. `src/Shared/Hemma.Shared.Infrastructure/Authorization/PermissionSourceExtensions.cs`
 5. one existing module's `*Permissions` class and module registration
 
 ## Core model
@@ -205,6 +205,6 @@ Use these as the source of truth:
 
 - `docs/adr/0030-rbac.md`
 - `docs/how-to/auth/use-rbac.md`
-- `src/Modules/Users/Modulith.Modules.Users/Security/Authorization/RbacServiceCollectionExtensions.cs`
-- `src/Shared/Modulith.Shared.Infrastructure/Authorization/PermissionSourceExtensions.cs`
-- `src/Shared/Modulith.Shared.Kernel/Interfaces/ICurrentUser.cs`
+- `src/Modules/Users/Hemma.Modules.Users/Security/Authorization/RbacServiceCollectionExtensions.cs`
+- `src/Shared/Hemma.Shared.Infrastructure/Authorization/PermissionSourceExtensions.cs`
+- `src/Shared/Hemma.Shared.Kernel/Interfaces/ICurrentUser.cs`

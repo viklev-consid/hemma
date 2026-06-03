@@ -1,6 +1,6 @@
 # How-to: GDPR Features
 
-Modulith ships with primitives for GDPR compliance — classification, export, erasure, consent, retention. This guide covers how to use them when adding features.
+Hemma ships with primitives for GDPR compliance — classification, export, erasure, consent, retention. This guide covers how to use them when adding features.
 
 For the decisions, see [`../adr/0012-gdpr-primitives.md`](../adr/0012-gdpr-primitives.md). For high-level compliance posture, see [`../../COMPLIANCE.md`](../../COMPLIANCE.md).
 
@@ -38,7 +38,7 @@ public sealed class User : AggregateRoot<UserId>
 Each module that holds personal data implements the exporter:
 
 ```csharp
-// src/Modules/Orders/Modulith.Modules.Orders/Gdpr/OrdersPersonalDataExporter.cs
+// src/Modules/Orders/Hemma.Modules.Orders/Gdpr/OrdersPersonalDataExporter.cs
 internal sealed class OrdersPersonalDataExporter : IPersonalDataExporter
 {
     private readonly OrdersDbContext _db;
@@ -87,7 +87,7 @@ The aggregator invokes all registered exporters and returns a combined JSON pack
 Each module that holds personal data implements the eraser. Strategy is module-specific:
 
 ```csharp
-// src/Modules/Orders/Modulith.Modules.Orders/Gdpr/OrdersPersonalDataEraser.cs
+// src/Modules/Orders/Hemma.Modules.Orders/Gdpr/OrdersPersonalDataEraser.cs
 internal sealed class OrdersPersonalDataEraser : IPersonalDataEraser
 {
     private readonly OrdersDbContext _db;

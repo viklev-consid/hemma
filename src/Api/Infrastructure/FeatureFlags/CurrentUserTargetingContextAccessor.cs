@@ -2,7 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.FeatureManagement.FeatureFilters;
 
-namespace Modulith.Api.Infrastructure.FeatureFlags;
+namespace Hemma.Api.Infrastructure.FeatureFlags;
 
 internal sealed class CurrentUserTargetingContextAccessor(IHttpContextAccessor httpContextAccessor) : ITargetingContextAccessor
 {

@@ -2,7 +2,7 @@
 
 **Pattern:** Write slice — validates input, creates an aggregate, publishes a public integration event.
 
-**Source:** `src/Modules/Catalog/Modulith.Modules.Catalog/Features/CreateProduct/`
+**Source:** `src/Modules/Catalog/Hemma.Modules.Catalog/Features/CreateProduct/`
 
 ---
 
@@ -11,7 +11,7 @@
 ### `CreateProduct.Request.cs`
 
 ```csharp
-namespace Modulith.Modules.Catalog.Features.CreateProduct;
+namespace Hemma.Modules.Catalog.Features.CreateProduct;
 
 public sealed record CreateProductRequest(string Sku, string Name, decimal Price, string Currency);
 ```
@@ -21,7 +21,7 @@ Plain primitives. Domain types (`Sku`, `Money`) are internal — the wire bounda
 ### `CreateProduct.Response.cs`
 
 ```csharp
-namespace Modulith.Modules.Catalog.Features.CreateProduct;
+namespace Hemma.Modules.Catalog.Features.CreateProduct;
 
 public sealed record CreateProductResponse(Guid ProductId, string Sku, string Name, decimal Price, string Currency);
 ```
@@ -29,7 +29,7 @@ public sealed record CreateProductResponse(Guid ProductId, string Sku, string Na
 ### `CreateProduct.Command.cs`
 
 ```csharp
-namespace Modulith.Modules.Catalog.Features.CreateProduct;
+namespace Hemma.Modules.Catalog.Features.CreateProduct;
 
 public sealed record CreateProductCommand(string Sku, string Name, decimal Price, string Currency);
 ```
@@ -41,7 +41,7 @@ In this slice the command mirrors the request exactly. Typed IDs aren't needed h
 ```csharp
 using FluentValidation;
 
-namespace Modulith.Modules.Catalog.Features.CreateProduct;
+namespace Hemma.Modules.Catalog.Features.CreateProduct;
 
 internal sealed class CreateProductValidator : AbstractValidator<CreateProductRequest>
 {
@@ -72,13 +72,13 @@ Validates the `Request`, not the `Command`. Format and presence only — busines
 ```csharp
 using ErrorOr;
 using Microsoft.EntityFrameworkCore;
-using Modulith.Modules.Catalog.Contracts.Events;
-using Modulith.Modules.Catalog.Domain;
-using Modulith.Modules.Catalog.Errors;
-using Modulith.Modules.Catalog.Persistence;
+using Hemma.Modules.Catalog.Contracts.Events;
+using Hemma.Modules.Catalog.Domain;
+using Hemma.Modules.Catalog.Errors;
+using Hemma.Modules.Catalog.Persistence;
 using Wolverine;
 
-namespace Modulith.Modules.Catalog.Features.CreateProduct;
+namespace Hemma.Modules.Catalog.Features.CreateProduct;
 
 public sealed class CreateProductHandler(CatalogDbContext db, IMessageBus bus)
 {
@@ -135,10 +135,10 @@ using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Modulith.Shared.Infrastructure.Http;
+using Hemma.Shared.Infrastructure.Http;
 using Wolverine;
 
-namespace Modulith.Modules.Catalog.Features.CreateProduct;
+namespace Hemma.Modules.Catalog.Features.CreateProduct;
 
 internal static class CreateProductEndpoint
 {

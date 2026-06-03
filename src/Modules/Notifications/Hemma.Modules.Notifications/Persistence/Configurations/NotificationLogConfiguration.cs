@@ -1,0 +1,53 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Hemma.Modules.Notifications.Domain;
+
+namespace Hemma.Modules.Notifications.Persistence.Configurations;
+
+internal sealed class NotificationLogConfiguration : IEntityTypeConfiguration<NotificationLog>
+{
+    public void Configure(EntityTypeBuilder<NotificationLog> builder)
+    {
+        builder.HasKey(n => n.Id);
+
+        builder.Property(n => n.Id)
+            .HasConversion(id => id.Value, v => new NotificationLogId(v));
+
+        builder.Property(n => n.UserId)
+            .IsRequired();
+
+        builder.Property(n => n.RecipientEmail)
+            .HasMaxLength(320)
+            .IsRequired();
+
+        builder.Property(n => n.NotificationType)
+            .IsRequired();
+
+        builder.Property(n => n.Subject)
+            .HasMaxLength(500)
+            .IsRequired();
+
+        builder.Property(n => n.CreatedAt)
+            .IsRequired();
+
+        builder.Property(n => n.SentAt)
+            .IsRequired(false);
+
+        builder.Property(n => n.IdempotencyKey)
+            .IsRequired();
+
+        builder.Property(n => n.DeliveryStatus)
+            .IsRequired()
+            .HasDefaultValue(NotificationDeliveryStatus.Pending);
+
+        builder.Property(n => n.SendingClaimedAt)
+            .IsRequired(false);
+
+        builder.Property(n => n.SendingLeaseToken)
+            .IsRequired(false);
+
+        builder.HasIndex(n => n.UserId);
+        builder.HasIndex(n => n.IdempotencyKey)
+            .IsUnique();
+    }
+}

@@ -1,6 +1,6 @@
-# AGENTS.md — Modulith Agent Operating Manual
+# AGENTS.md — Hemma Agent Operating Manual
 
-This file is the primary operating manual for AI coding agents working in the Modulith codebase. Read it before making changes. It encodes non-obvious constraints and conventions that will otherwise cost cycles to re-derive.
+This file is the primary operating manual for AI coding agents working in the Hemma codebase. Read it before making changes. It encodes non-obvious constraints and conventions that will otherwise cost cycles to re-derive.
 
 Scoped `AGENTS.md` files exist in subdirectories (`src/Modules/`, `tests/`, individual modules). When working in those areas, read those too.
 
@@ -50,7 +50,7 @@ If a slice needs cross-module data, publish a domain event from the owning modul
 Use the `dotnet new` templates:
 
 ```bash
-dotnet new modulith-slice --module Orders --name CancelOrder
+dotnet new hemma-slice --module Orders --name CancelOrder
 ```
 
 ---
@@ -71,19 +71,19 @@ dotnet test
 dotnet test --filter "Category!=Integration&Category!=Smoke"
 
 # Run one module's tests
-dotnet test tests/Modules/Orders/Modulith.Modules.Orders.IntegrationTests
+dotnet test tests/Modules/Orders/Hemma.Modules.Orders.IntegrationTests
 
 # Add a migration for a specific module
 dotnet ef migrations add <Name> \
-  --project src/Modules/Orders/Modulith.Modules.Orders \
+  --project src/Modules/Orders/Hemma.Modules.Orders \
   --context OrdersDbContext \
   --output-dir Persistence/Migrations
 
 # Scaffold a new slice
-dotnet new modulith-slice --module <Module> --name <FeatureName>
+dotnet new hemma-slice --module <Module> --name <FeatureName>
 
 # Scaffold a new module
-dotnet new modulith-module --name <ModuleName>
+dotnet new hemma-module --name <ModuleName>
 ```
 
 ---

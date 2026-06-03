@@ -1,0 +1,3 @@
+namespace Hemma.Modules.Organizations.Features.AcceptOrganizationInvitation;
+
+public sealed record AcceptOrganizationInvitationRequest(string InvitationToken);

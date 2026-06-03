@@ -18,13 +18,13 @@ Use Wolverine delayed messages instead when the scheduled work is a one-off foll
 Create a job folder under the owning module:
 
 ```text
-src/Modules/<Module>/Modulith.Modules.<Module>/Jobs/<Name>.cs
+src/Modules/<Module>/Hemma.Modules.<Module>/Jobs/<Name>.cs
 ```
 
 Example:
 
 ```csharp
-namespace Modulith.Modules.Users.Jobs;
+namespace Hemma.Modules.Users.Jobs;
 
 public sealed record SweepExpiredTokens;
 ```
@@ -75,7 +75,7 @@ The TickerQ job should usually be orchestration only:
 using TickerQ.Utilities.Base;
 using Wolverine;
 
-namespace Modulith.Modules.Users.Jobs;
+namespace Hemma.Modules.Users.Jobs;
 
 public sealed class SweepExpiredTokensJob(IMessageBus bus)
 {

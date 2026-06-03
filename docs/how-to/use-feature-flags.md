@@ -1,6 +1,6 @@
 # How-to: Use Feature Flags
 
-Modulith uses `Microsoft.FeatureManagement` with a deliberate split between startup-bound flags and runtime flags. This guide walks through when to use which.
+Hemma uses `Microsoft.FeatureManagement` with a deliberate split between startup-bound flags and runtime flags. This guide walks through when to use which.
 
 For reasoning, see [`../adr/0019-feature-flags.md`](../adr/0019-feature-flags.md).
 

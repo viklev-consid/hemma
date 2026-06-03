@@ -1,6 +1,6 @@
 # CONFIG.md
 
-Configuration and secret management in Modulith. For the decisions, see [`docs/adr/0021-config-and-secrets.md`](docs/adr/0021-config-and-secrets.md).
+Configuration and secret management in Hemma. For the decisions, see [`docs/adr/0021-config-and-secrets.md`](docs/adr/0021-config-and-secrets.md).
 
 ---
 
@@ -187,7 +187,7 @@ var mailpit = builder.AddContainer("mailpit", "axllent/mailpit")
     .WithEndpoint(targetPort: 1025, name: "smtp")
     .WithEndpoint(targetPort: 8025, name: "ui");
 
-builder.AddProject<Projects.Modulith_Api>("api")
+builder.AddProject<Projects.Hemma_Api>("api")
     .WithReference(db)
     .WithReference(redis)
     .WithEnvironment("Notifications__Smtp__Host", mailpit.GetEndpoint("smtp"));
@@ -204,8 +204,8 @@ In dev, Aspire prompts for parameter values and persists them to user-secrets. I
 Symmetric key supplied through configuration, normally User Secrets in development:
 
 ```
-Jwt:Issuer = modulith-dev
-Jwt:Audience = modulith-dev
+Jwt:Issuer = hemma-dev
+Jwt:Audience = hemma-dev
 Jwt:SigningKey = <at least 32 characters>
 ```
 
@@ -254,7 +254,7 @@ Two-factor authentication settings live under `Modules:Users:`:
       "TwoFactorChallengeLifetime": "00:05:00",
       "RecoveryCodeCount": 10,
       "TotpAllowedTimeStepDrift": 1,
-      "TotpIssuer": "Modulith"
+      "TotpIssuer": "Hemma"
     }
   }
 }
@@ -279,7 +279,7 @@ builder.AddNpgsqlDbContext<...>("db");
 In prod, the connection string comes from secret store:
 
 ```
-ConnectionStrings:db = Host=prod-db;Database=modulith;Username=...;Password=...
+ConnectionStrings:db = Host=prod-db;Database=hemma;Username=...;Password=...
 ```
 
 (`Password=` reads from secret store; the rest from non-secret config.)

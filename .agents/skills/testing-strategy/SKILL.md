@@ -1,6 +1,6 @@
 ---
 name: testing-strategy
-description: Guide for choosing the correct test layer in Modulith and writing unit, architecture, integration, and smoke tests with the repo's shared test infrastructure.
+description: Guide for choosing the correct test layer in Hemma and writing unit, architecture, integration, and smoke tests with the repo's shared test infrastructure.
 ---
 
 # Testing Strategy
@@ -36,7 +36,7 @@ Every test belongs to exactly one of four layers.
 
 Location:
 
-- `tests/Modules/<Module>/Modulith.Modules.<Module>.UnitTests`
+- `tests/Modules/<Module>/Hemma.Modules.<Module>.UnitTests`
 
 Use for:
 
@@ -58,7 +58,7 @@ Rule: no mocks in this layer.
 
 Location:
 
-- `tests/Modulith.Architecture.Tests`
+- `tests/Hemma.Architecture.Tests`
 
 Use for:
 
@@ -73,7 +73,7 @@ When one fails, read the message literally. The failure text is part of the docu
 
 Location:
 
-- `tests/Modules/<Module>/Modulith.Modules.<Module>.IntegrationTests`
+- `tests/Modules/<Module>/Hemma.Modules.<Module>.IntegrationTests`
 
 Use for:
 
@@ -90,7 +90,7 @@ This is the default layer for handlers. Do not write handler unit tests.
 
 Location:
 
-- `tests/Modulith.SmokeTests`
+- `tests/Hemma.SmokeTests`
 
 Use for:
 
@@ -134,7 +134,7 @@ Use the shared test support project instead of inventing local harness code.
 
 ## Shared test infrastructure
 
-Prefer the shared helpers already in `tests/Modulith.TestSupport`:
+Prefer the shared helpers already in `tests/Hemma.TestSupport`:
 
 - `ApiTestFixture`
 - `AuthenticatedClientBuilder`

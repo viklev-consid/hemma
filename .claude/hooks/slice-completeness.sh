@@ -17,7 +17,7 @@ if [[ -z "$file" || "$file" != *.cs ]]; then
   exit 0
 fi
 
-# Match slice feature path — actual structure: src/Modules/<Module>/Modulith.Modules.<Module>/Features/<Feature>/
+# Match slice feature path — actual structure: src/Modules/<Module>/Hemma.Modules.<Module>/Features/<Feature>/
 if [[ ! "$file" =~ src/Modules/[^/]+/[^/]+/Features/[^/]+/[^/]+\.cs$ ]]; then
   exit 0
 fi
