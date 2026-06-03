@@ -3,7 +3,7 @@ import { Paragraph, TemplateShell } from "./template-shell";
 
 function WelcomeEmail() {
   return (
-    <TemplateShell preview="Welcome to Modulith" title={<>Welcome, {"{{displayName}}"}!</>}>
+    <TemplateShell preview="Welcome to Hemma" title={<>Welcome, {"{{displayName}}"}!</>}>
       <Paragraph>Your account has been created. You can now sign in and start using the platform.</Paragraph>
     </TemplateShell>
   );
@@ -11,7 +11,7 @@ function WelcomeEmail() {
 
 export const welcomeEmailTemplate: EmailTemplateDefinition = {
   id: "users.welcome",
-  subject: "Welcome to Modulith!",
+  subject: "Welcome to Hemma!",
   variables: {
     displayName: { type: "string", required: true },
   },

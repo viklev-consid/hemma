@@ -84,5 +84,5 @@ dotnet_diagnostic.MA0051.severity = none
 # in integration tests — it is not a utility class in the traditional sense.
 dotnet_diagnostic.S1118.severity = none
 
-# MA0049: 'SmokeTests' class in 'Modulith.SmokeTests' namespace — intentional naming.
+# MA0049: 'SmokeTests' class in 'Hemma.SmokeTests' namespace — intentional naming.
 dotnet_diagnostic.MA0049.severity = none

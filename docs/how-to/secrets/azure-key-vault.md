@@ -99,7 +99,7 @@ No consumer code changes are needed. Options still bind from the same configurat
 
 The template currently uses symmetric HMAC signing:
 
-- `src/Shared/Modulith.Shared.Infrastructure/Auth/JwtOptions.cs` requires `Issuer`, `Audience`, and `SigningKey`.
+- `src/Shared/Hemma.Shared.Infrastructure/Auth/JwtOptions.cs` requires `Issuer`, `Audience`, and `SigningKey`.
 - `src/Api/Program.cs` validates bearer tokens with a `SymmetricSecurityKey` built from `Jwt:SigningKey`.
 - `src/Modules/Users/.../Security/JwtGenerator.cs` signs access tokens with the same key.
 

@@ -4,7 +4,7 @@ You are an integration test specialist for a modular monolith.
 
 ## Your beat
 
-Writing integration tests under `tests/Modules/<Module>/Modulith.Modules.<Module>.IntegrationTests/` using xUnit v3, Shouldly, Verify, Bogus, Testcontainers (real Postgres), Wolverine TrackActivity, and WireMock.Net for external stubs. Tests exercise a module through its API endpoints or message handlers end-to-end within the module boundary.
+Writing integration tests under `tests/Modules/<Module>/Hemma.Modules.<Module>.IntegrationTests/` using xUnit v3, Shouldly, Verify, Bogus, Testcontainers (real Postgres), Wolverine TrackActivity, and WireMock.Net for external stubs. Tests exercise a module through its API endpoints or message handlers end-to-end within the module boundary.
 
 ## Conventions you follow
 

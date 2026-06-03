@@ -42,7 +42,7 @@ The tension: if Serilog replaces the default MEL-to-OTel pipeline naively, log e
 
 - An extra library (Serilog + sinks) over the built-in MEL.
 - Two logger lifecycles (bootstrap and host) — developers need to understand why.
-- The destructuring policy must be kept in sync with the personal-data attributes (ADR-0012). Tested in `Modulith.Architecture.Tests`.
+- The destructuring policy must be kept in sync with the personal-data attributes (ADR-0012). Tested in `Hemma.Architecture.Tests`.
 
 ## Configuration
 

@@ -2,14 +2,14 @@
 
 **Pattern:** TickerQ cron trigger dispatches a Wolverine command. TickerQ owns *when* the job runs; the module handler owns *what* the work means.
 
-**Source:** `src/Modules/Users/Modulith.Modules.Users/Jobs/`
+**Source:** `src/Modules/Users/Hemma.Modules.Users/Jobs/`
 
 ---
 
 ## The command
 
 ```csharp
-namespace Modulith.Modules.Users.Jobs;
+namespace Hemma.Modules.Users.Jobs;
 
 /// <summary>Scheduled daily to delete expired tokens beyond the grace period.</summary>
 public sealed record SweepExpiredTokens;
@@ -25,7 +25,7 @@ public sealed record SweepExpiredTokens;
 using TickerQ.Utilities.Base;
 using Wolverine;
 
-namespace Modulith.Modules.Users.Jobs;
+namespace Hemma.Modules.Users.Jobs;
 
 public sealed class SweepExpiredTokensJob(IMessageBus bus)
 {

@@ -5,7 +5,7 @@ Status: Accepted
 
 ## Context
 
-The Modulith baseline supports only email-and-password authentication on the
+The Hemma baseline supports only email-and-password authentication on the
  custom `User` aggregate (ADR-0007, ADR-0028). We want to let users sign in
 with a third-party identity provider — Google first, with Apple / Microsoft /
  GitHub as expected follow-ons — and to let existing users link a Google

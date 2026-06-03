@@ -17,12 +17,12 @@ For the architectural reasoning, see [`adr/0002-vertical-slice-architecture.md`]
 ## The scaffold (preferred)
 
 ```bash
-dotnet new modulith-slice --module Orders --name CancelOrder
+dotnet new hemma-slice --module Orders --name CancelOrder
 # or explicitly:
-dotnet new modulith-command-slice --module Orders --name CancelOrder
+dotnet new hemma-command-slice --module Orders --name CancelOrder
 ```
 
-This produces six files under `src/Modules/Orders/Modulith.Modules.Orders/Features/CancelOrder/`:
+This produces six files under `src/Modules/Orders/Hemma.Modules.Orders/Features/CancelOrder/`:
 
 - `CancelOrder.Request.cs`
 - `CancelOrder.Response.cs`
@@ -36,7 +36,7 @@ All with correct namespaces and stub content. Command endpoints require the modu
 For a read/query slice:
 
 ```bash
-dotnet new modulith-query-slice --module Orders --name GetOrder
+dotnet new hemma-query-slice --module Orders --name GetOrder
 ```
 
 This produces `GetOrder.Response.cs`, `GetOrder.Query.cs`, `GetOrder.Handler.cs`, and `GetOrder.Endpoint.cs`. Query endpoints require the module's read permission by default.
@@ -44,7 +44,7 @@ This produces `GetOrder.Response.cs`, `GetOrder.Query.cs`, `GetOrder.Handler.cs`
 For an integration event/subscriber pair owned by a module:
 
 ```bash
-dotnet new modulith-integration-pair --module Orders --name OrderPlaced
+dotnet new hemma-integration-pair --module Orders --name OrderPlaced
 ```
 
 This produces `OrderPlacedV1` in the module's `.Contracts/Events` project and `OnOrderPlacedHandler` under `Integration/Subscribers`. Register the subscriber in `AddOrdersHandlers` after filling in the behavior.
@@ -59,7 +59,7 @@ Create the folder `Features/<FeatureName>/` in the module.
 
 ```csharp
 // CancelOrder.Request.cs
-namespace Modulith.Modules.Orders.Features.CancelOrder;
+namespace Hemma.Modules.Orders.Features.CancelOrder;
 
 public sealed record CancelOrderRequest(string Reason);
 ```
@@ -71,7 +71,7 @@ public sealed record CancelOrderRequest(string Reason);
 
 ```csharp
 // CancelOrder.Response.cs
-namespace Modulith.Modules.Orders.Features.CancelOrder;
+namespace Hemma.Modules.Orders.Features.CancelOrder;
 
 public sealed record CancelOrderResponse(Guid OrderId, string Status, DateTimeOffset CancelledAt);
 ```
@@ -80,9 +80,9 @@ public sealed record CancelOrderResponse(Guid OrderId, string Status, DateTimeOf
 
 ```csharp
 // CancelOrder.Command.cs
-using Modulith.Modules.Orders.Domain;
+using Hemma.Modules.Orders.Domain;
 
-namespace Modulith.Modules.Orders.Features.CancelOrder;
+namespace Hemma.Modules.Orders.Features.CancelOrder;
 
 internal sealed record CancelOrderCommand(OrderId OrderId, string Reason);
 ```
@@ -95,10 +95,10 @@ internal sealed record CancelOrderCommand(OrderId OrderId, string Reason);
 ```csharp
 // CancelOrder.Handler.cs
 using ErrorOr;
-using Modulith.Modules.Orders.Domain;
-using Modulith.Modules.Orders.Persistence;
+using Hemma.Modules.Orders.Domain;
+using Hemma.Modules.Orders.Persistence;
 
-namespace Modulith.Modules.Orders.Features.CancelOrder;
+namespace Hemma.Modules.Orders.Features.CancelOrder;
 
 internal sealed class CancelOrderHandler
 {
@@ -137,7 +137,7 @@ Key points:
 // CancelOrder.Validator.cs
 using FluentValidation;
 
-namespace Modulith.Modules.Orders.Features.CancelOrder;
+namespace Hemma.Modules.Orders.Features.CancelOrder;
 
 internal sealed class CancelOrderValidator : AbstractValidator<CancelOrderRequest>
 {
@@ -161,10 +161,10 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using Modulith.Modules.Orders.Domain;
+using Hemma.Modules.Orders.Domain;
 using Wolverine;
 
-namespace Modulith.Modules.Orders.Features.CancelOrder;
+namespace Hemma.Modules.Orders.Features.CancelOrder;
 
 internal static class CancelOrderEndpoint
 {
@@ -189,7 +189,7 @@ internal static class CancelOrderEndpoint
 ```
 
 - Endpoint depends only on `IMessageBus`. No direct handler dependency.
-- Route strings come from `{Module}Routes` — a module-level constants file at `src/Modules/{Module}/Modulith.Modules.{Module}/{Module}Routes.cs`. Never inline route strings.
+- Route strings come from `{Module}Routes` — a module-level constants file at `src/Modules/{Module}/Hemma.Modules.{Module}/{Module}Routes.cs`. Never inline route strings.
 - `ToProblemDetailsOr(Results.Ok)` is the shared extension that maps `ErrorOr` to HTTP (200 on success, appropriate ProblemDetails on failure).
 - OpenAPI metadata (`Produces`, `ProducesProblem`) is explicit — drives the Scalar docs.
 - Rate limit policy applied by name.
@@ -199,8 +199,8 @@ internal static class CancelOrderEndpoint
 Routes live in a module-level `{Module}Routes.cs`, not inlined in endpoint files. If the file doesn't exist yet, create it:
 
 ```csharp
-// src/Modules/Orders/Modulith.Modules.Orders/OrdersRoutes.cs
-namespace Modulith.Modules.Orders;
+// src/Modules/Orders/Hemma.Modules.Orders/OrdersRoutes.cs
+namespace Hemma.Modules.Orders;
 
 internal static class OrdersRoutes
 {
@@ -230,7 +230,7 @@ public static IEndpointRouteBuilder MapOrdersEndpoints(this IEndpointRouteBuilde
 
 ### 8. Write the integration test
 
-In `tests/Modules/Orders/Modulith.Modules.Orders.IntegrationTests/Features/CancelOrderTests.cs`:
+In `tests/Modules/Orders/Hemma.Modules.Orders.IntegrationTests/Features/CancelOrderTests.cs`:
 
 ```csharp
 [Collection("OrdersModule")]

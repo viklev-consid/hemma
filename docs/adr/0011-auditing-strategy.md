@@ -41,7 +41,7 @@ A `SaveChangesInterceptor` in `Shared.Infrastructure` populates these fields on 
 
 ### Layer 2: Dedicated Audit module
 
-A module (`Modulith.Modules.Audit`) that:
+A module (`Hemma.Modules.Audit`) that:
 
 - Subscribes to integration events from other modules via Wolverine
 - Persists a normalized change log (`AuditEntry` with `EventId`, `OccurredAt`, `Actor`, `EntityType`, `EntityId`, `Action`, `Payload`)

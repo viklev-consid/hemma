@@ -2,7 +2,7 @@
 
 **Pattern:** Read-only slice — no mutation, no validator, public endpoint.
 
-**Source:** `src/Modules/Catalog/Modulith.Modules.Catalog/Features/ListProducts/`
+**Source:** `src/Modules/Catalog/Hemma.Modules.Catalog/Features/ListProducts/`
 
 ---
 
@@ -11,7 +11,7 @@
 ### `ListProducts.Query.cs`
 
 ```csharp
-namespace Modulith.Modules.Catalog.Features.ListProducts;
+namespace Hemma.Modules.Catalog.Features.ListProducts;
 
 public sealed record ListProductsQuery(bool ActiveOnly = true);
 ```
@@ -21,7 +21,7 @@ Query records (not `Command`) — signals no state mutation. Default parameter m
 ### `ListProducts.Response.cs`
 
 ```csharp
-namespace Modulith.Modules.Catalog.Features.ListProducts;
+namespace Hemma.Modules.Catalog.Features.ListProducts;
 
 public sealed record ListProductsResponse(IReadOnlyList<ProductSummary> Products);
 
@@ -41,9 +41,9 @@ Flat DTOs with primitive types — no domain types (`Sku`, `Money`) escape the m
 ```csharp
 using ErrorOr;
 using Microsoft.EntityFrameworkCore;
-using Modulith.Modules.Catalog.Persistence;
+using Hemma.Modules.Catalog.Persistence;
 
-namespace Modulith.Modules.Catalog.Features.ListProducts;
+namespace Hemma.Modules.Catalog.Features.ListProducts;
 
 public sealed class ListProductsHandler(CatalogDbContext db)
 {
@@ -78,10 +78,10 @@ Key choices:
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Modulith.Shared.Infrastructure.Http;
+using Hemma.Shared.Infrastructure.Http;
 using Wolverine;
 
-namespace Modulith.Modules.Catalog.Features.ListProducts;
+namespace Hemma.Modules.Catalog.Features.ListProducts;
 
 internal static class ListProductsEndpoint
 {

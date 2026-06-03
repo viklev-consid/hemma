@@ -28,13 +28,13 @@ If you're unsure, ask.
 ## The scaffold (preferred)
 
 ```bash
-dotnet new modulith-module --name Inventory
+dotnet new hemma-module --name Inventory
 ```
 
 This produces:
 
-- `src/Modules/Inventory/Modulith.Modules.Inventory/` (internal project)
-- `src/Modules/Inventory/Modulith.Modules.Inventory.Contracts/` (public project with `Events/` folder)
+- `src/Modules/Inventory/Hemma.Modules.Inventory/` (internal project)
+- `src/Modules/Inventory/Hemma.Modules.Inventory.Contracts/` (public project with `Events/` folder)
 
 With the following files already populated:
 
@@ -67,8 +67,8 @@ If you must (e.g., you're customising beyond the scaffold), here's the full set:
 
 ```
 src/Modules/<Module>/
-├── Modulith.Modules.<Module>/
-│   ├── Modulith.Modules.<Module>.csproj
+├── Hemma.Modules.<Module>/
+│   ├── Hemma.Modules.<Module>.csproj
 │   ├── <Module>Module.cs
 │   ├── <Module>Options.cs
 │   ├── Domain/
@@ -80,8 +80,8 @@ src/Modules/<Module>/
 │   │   └── Migrations/
 │   ├── Seeding/
 │   └── CLAUDE.md
-└── Modulith.Modules.<Module>.Contracts/
-    ├── Modulith.Modules.<Module>.Contracts.csproj
+└── Hemma.Modules.<Module>.Contracts/
+    ├── Hemma.Modules.<Module>.Contracts.csproj
     ├── Commands/
     ├── Queries/
     ├── Events/
@@ -92,15 +92,15 @@ src/Modules/<Module>/
 
 **Internal project references:**
 
-- `Modulith.Shared.Kernel`
-- `Modulith.Shared.Infrastructure`
-- `Modulith.Modules.<Module>.Contracts` (its own contracts)
+- `Hemma.Shared.Kernel`
+- `Hemma.Shared.Infrastructure`
+- `Hemma.Modules.<Module>.Contracts` (its own contracts)
 - Other modules' `.Contracts` projects only if subscribing to their events
 
 **Contracts project references:**
 
-- `Modulith.Shared.Kernel`
-- `Modulith.Shared.Contracts`
+- `Hemma.Shared.Kernel`
+- `Hemma.Shared.Contracts`
 - Nothing else.
 
 ### 3. Write `<Module>Module.cs`
@@ -110,7 +110,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Modulith.Modules.Inventory;
+namespace Hemma.Modules.Inventory;
 
 public static class InventoryModule
 {
@@ -148,7 +148,7 @@ public static class InventoryModule
 ```csharp
 using System.ComponentModel.DataAnnotations;
 
-namespace Modulith.Modules.Inventory;
+namespace Hemma.Modules.Inventory;
 
 public sealed class InventoryOptions
 {
@@ -164,9 +164,9 @@ public sealed class InventoryOptions
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
-using Modulith.Shared.Infrastructure.Persistence;
+using Hemma.Shared.Infrastructure.Persistence;
 
-namespace Modulith.Modules.Inventory.Persistence;
+namespace Hemma.Modules.Inventory.Persistence;
 
 public sealed class InventoryDbContext : ModuleDbContext
 {
@@ -184,15 +184,15 @@ public sealed class InventoryDbContext : ModuleDbContext
 
 ### 6. Add the module installer
 
-The API host auto-discovers concrete `IModuleInstaller` implementations from `Modulith.Modules.*` assemblies. New modules should expose one installer and delegate to the module's registration methods:
+The API host auto-discovers concrete `IModuleInstaller` implementations from `Hemma.Modules.*` assemblies. New modules should expose one installer and delegate to the module's registration methods:
 
 ```csharp
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
-using Modulith.Shared.Infrastructure.Modules;
+using Hemma.Shared.Infrastructure.Modules;
 using Wolverine;
 
-namespace Modulith.Modules.Inventory;
+namespace Hemma.Modules.Inventory;
 
 public sealed class InventoryModuleInstaller : IModuleInstaller
 {
@@ -225,7 +225,7 @@ Add handlers to the module's `AddInventoryHandlers` method. The installer calls 
 
 ```bash
 dotnet ef migrations add Initial \
-  --project src/Modules/Inventory/Modulith.Modules.Inventory \
+  --project src/Modules/Inventory/Hemma.Modules.Inventory \
   --context InventoryDbContext \
   --output-dir Persistence/Migrations
 ```
@@ -246,8 +246,8 @@ Three to five paragraphs. Append detail as the module grows.
 
 Two projects under `tests/Modules/<Module>/`:
 
-- `Modulith.Modules.<Module>.UnitTests` — references the internal project + xUnit
-- `Modulith.Modules.<Module>.IntegrationTests` — references the internal project + TestSupport + Testcontainers + xUnit
+- `Hemma.Modules.<Module>.UnitTests` — references the internal project + xUnit
+- `Hemma.Modules.<Module>.IntegrationTests` — references the internal project + TestSupport + Testcontainers + xUnit
 
 Add `IntegrationTests` xUnit collection fixture:
 
@@ -268,7 +268,7 @@ public sealed class InventoryApiFixture : ApiTestFixture
 After setup, confirm:
 
 1. `dotnet build` succeeds.
-2. `dotnet test tests/Modulith.Architecture.Tests` passes (no boundary violations).
+2. `dotnet test tests/Hemma.Architecture.Tests` passes (no boundary violations).
 3. `dotnet run --project src/AppHost` boots without errors.
 4. The module appears registered in logs at startup.
 5. An empty OpenAPI section exists for the module (even with no endpoints yet).

@@ -1,6 +1,6 @@
 ---
 name: wolverine-messaging
-description: Repo-specific guidance for using Wolverine in Modulith. Covers IMessageBus dispatch, handler registration, outbox semantics, subscriber design, delayed messages, and testing with TrackActivity.
+description: Repo-specific guidance for using Wolverine in Hemma. Covers IMessageBus dispatch, handler registration, outbox semantics, subscriber design, delayed messages, and testing with TrackActivity.
 ---
 
 # Wolverine Messaging

@@ -10,25 +10,25 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
-using Modulith.Api.Infrastructure.DeadLetters;
-using Modulith.Api.Infrastructure.Exceptions;
-using Modulith.Api.Infrastructure.FeatureFlags;
-using Modulith.Api.Infrastructure.Logging;
-using Modulith.Api.Infrastructure.Modules;
-using Modulith.Api.Infrastructure.OpenApi;
-using Modulith.Api.Infrastructure.Scheduling;
-using Modulith.Modules.Users.Security.Authorization;
-using Modulith.Shared.Infrastructure.Auth;
-using Modulith.Shared.Infrastructure.Blobs;
-using Modulith.Shared.Infrastructure.Frontend;
-using Modulith.Shared.Infrastructure.Http;
-using Modulith.Shared.Infrastructure.Identity;
-using Modulith.Shared.Infrastructure.Logging;
-using Modulith.Shared.Infrastructure.Messaging;
-using Modulith.Shared.Infrastructure.Notifications;
-using Modulith.Shared.Infrastructure.Seeding;
-using Modulith.Shared.Infrastructure.Time;
-using Modulith.Shared.Kernel.Interfaces;
+using Hemma.Api.Infrastructure.DeadLetters;
+using Hemma.Api.Infrastructure.Exceptions;
+using Hemma.Api.Infrastructure.FeatureFlags;
+using Hemma.Api.Infrastructure.Logging;
+using Hemma.Api.Infrastructure.Modules;
+using Hemma.Api.Infrastructure.OpenApi;
+using Hemma.Api.Infrastructure.Scheduling;
+using Hemma.Modules.Users.Security.Authorization;
+using Hemma.Shared.Infrastructure.Auth;
+using Hemma.Shared.Infrastructure.Blobs;
+using Hemma.Shared.Infrastructure.Frontend;
+using Hemma.Shared.Infrastructure.Http;
+using Hemma.Shared.Infrastructure.Identity;
+using Hemma.Shared.Infrastructure.Logging;
+using Hemma.Shared.Infrastructure.Messaging;
+using Hemma.Shared.Infrastructure.Notifications;
+using Hemma.Shared.Infrastructure.Seeding;
+using Hemma.Shared.Infrastructure.Time;
+using Hemma.Shared.Kernel.Interfaces;
 using Scalar.AspNetCore;
 using TickerQ.Dashboard.DependencyInjection;
 using TickerQ.DependencyInjection;
@@ -55,7 +55,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(opts =>
 builder.AddServiceDefaults();
 
 // 2. Serilog via appsettings.json with OTel sink
-builder.Host.UseModulithSerilog();
+builder.Host.UseHemmaSerilog();
 
 // 3. ProblemDetails
 builder.Services.AddProblemDetails();

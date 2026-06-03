@@ -2,7 +2,7 @@
 
 **Pattern:** Public slice that must never reveal whether a user exists — always returns 200 regardless of outcome.
 
-**Source:** `src/Modules/Users/Modulith.Modules.Users/Features/ForgotPassword/`
+**Source:** `src/Modules/Users/Hemma.Modules.Users/Features/ForgotPassword/`
 
 ---
 
@@ -11,7 +11,7 @@
 ### `ForgotPassword.Request.cs`
 
 ```csharp
-namespace Modulith.Modules.Users.Features.ForgotPassword;
+namespace Hemma.Modules.Users.Features.ForgotPassword;
 
 public sealed record ForgotPasswordRequest(string Email);
 ```
@@ -19,7 +19,7 @@ public sealed record ForgotPasswordRequest(string Email);
 ### `ForgotPassword.Response.cs`
 
 ```csharp
-namespace Modulith.Modules.Users.Features.ForgotPassword;
+namespace Hemma.Modules.Users.Features.ForgotPassword;
 
 public sealed record ForgotPasswordResponse;
 ```
@@ -29,7 +29,7 @@ Empty response body. The endpoint always returns 200 with this shape — there i
 ### `ForgotPassword.Command.cs`
 
 ```csharp
-namespace Modulith.Modules.Users.Features.ForgotPassword;
+namespace Hemma.Modules.Users.Features.ForgotPassword;
 
 internal sealed record ForgotPasswordCommand(string Email);
 ```
@@ -39,7 +39,7 @@ internal sealed record ForgotPasswordCommand(string Email);
 ```csharp
 using FluentValidation;
 
-namespace Modulith.Modules.Users.Features.ForgotPassword;
+namespace Hemma.Modules.Users.Features.ForgotPassword;
 
 internal sealed class ForgotPasswordValidator : AbstractValidator<ForgotPasswordRequest>
 {
@@ -56,13 +56,13 @@ internal sealed class ForgotPasswordValidator : AbstractValidator<ForgotPassword
 using ErrorOr;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Modulith.Modules.Users.Contracts.Events;
-using Modulith.Modules.Users.Domain;
-using Modulith.Modules.Users.Persistence;
-using Modulith.Modules.Users.Security;
+using Hemma.Modules.Users.Contracts.Events;
+using Hemma.Modules.Users.Domain;
+using Hemma.Modules.Users.Persistence;
+using Hemma.Modules.Users.Security;
 using Wolverine;
 
-namespace Modulith.Modules.Users.Features.ForgotPassword;
+namespace Hemma.Modules.Users.Features.ForgotPassword;
 
 public sealed class ForgotPasswordHandler(
     UsersDbContext db,
@@ -109,10 +109,10 @@ using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Modulith.Shared.Infrastructure.Http;
+using Hemma.Shared.Infrastructure.Http;
 using Wolverine;
 
-namespace Modulith.Modules.Users.Features.ForgotPassword;
+namespace Hemma.Modules.Users.Features.ForgotPassword;
 
 internal static class ForgotPasswordEndpoint
 {

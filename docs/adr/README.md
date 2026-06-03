@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-This directory contains ADRs documenting every significant design decision in Modulith.
+This directory contains ADRs documenting every significant design decision in Hemma.
 
 ## Index
 

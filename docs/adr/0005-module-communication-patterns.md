@@ -21,8 +21,8 @@ Pure message-based is the most decoupled but hardest to navigate. Pure interface
 
 Each module has two projects:
 
-- `Modulith.Modules.<Name>` — internal. Contains domain, persistence, handlers, endpoints, seeders.
-- `Modulith.Modules.<Name>.Contracts` — public. Contains records for commands, queries, and integration events that other modules may depend on.
+- `Hemma.Modules.<Name>` — internal. Contains domain, persistence, handlers, endpoints, seeders.
+- `Hemma.Modules.<Name>.Contracts` — public. Contains records for commands, queries, and integration events that other modules may depend on.
 
 **Allowed references:**
 

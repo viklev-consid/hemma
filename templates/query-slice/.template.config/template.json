@@ -1,10 +1,10 @@
 {
   "$schema": "http://json.schemastore.org/template",
-  "author": "Modulith",
-  "classifications": ["Modulith", "Slice", "Feature", "Query"],
-  "identity": "Modulith.QuerySlice",
-  "name": "Modulith Query Slice",
-  "shortName": "modulith-query-slice",
+  "author": "Hemma",
+  "classifications": ["Hemma", "Slice", "Feature", "Query"],
+  "identity": "Hemma.QuerySlice",
+  "name": "Hemma Query Slice",
+  "shortName": "hemma-query-slice",
   "description": "Scaffolds a read/query vertical slice inside an existing module.",
   "sourceName": "FeatureName",
   "symbols": {

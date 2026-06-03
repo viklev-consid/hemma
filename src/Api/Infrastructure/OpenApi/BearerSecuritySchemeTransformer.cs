@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
-namespace Modulith.Api.Infrastructure.OpenApi;
+namespace Hemma.Api.Infrastructure.OpenApi;
 
 /// <summary>
 /// Adds the Bearer JWT security scheme to the OpenAPI document.

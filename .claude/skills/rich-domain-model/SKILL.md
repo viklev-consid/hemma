@@ -1,11 +1,11 @@
 ---
 name: rich-domain-model
-description: Patterns for modeling aggregates, value objects, typed IDs, and internal domain events in Modulith Domain folders.
+description: Patterns for modeling aggregates, value objects, typed IDs, and internal domain events in Hemma Domain folders.
 ---
 
 # Rich Domain Model
 
-Use this skill when you are creating or refactoring code under `src/Modules/<Module>/Modulith.Modules.<Module>/Domain/`.
+Use this skill when you are creating or refactoring code under `src/Modules/<Module>/Hemma.Modules.<Module>/Domain/`.
 
 Typical triggers:
 
@@ -255,4 +255,4 @@ Use these as the source of truth:
 - `docs/adr/0004-result-pattern.md`
 - `/CLAUDE.md`
 - `/src/Modules/CLAUDE.md`
-- nearby domain types such as `src/Modules/Catalog/Modulith.Modules.Catalog/Domain/Product.cs`
+- nearby domain types such as `src/Modules/Catalog/Hemma.Modules.Catalog/Domain/Product.cs`

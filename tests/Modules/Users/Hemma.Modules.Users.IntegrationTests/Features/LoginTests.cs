@@ -1,0 +1,80 @@
+using System.Net;
+using System.Net.Http.Json;
+using Hemma.Modules.Users.Features.Login;
+using Hemma.Modules.Users.Features.Register;
+
+namespace Hemma.Modules.Users.IntegrationTests.Features;
+
+[Collection("UsersModule")]
+[Trait("Category", "Integration")]
+public sealed class LoginTests(UsersApiFixture fixture) : IAsyncLifetime
+{
+    private readonly HttpClient client = fixture.CreateAnonymousClient();
+
+    public Task InitializeAsync() => fixture.ResetDatabaseAsync();
+    public Task DisposeAsync() => Task.CompletedTask;
+
+    [Fact]
+    public async Task Login_WithValidCredentials_Returns200AndToken()
+    {
+        await client.PostAsJsonAsync("/v1/users/register",
+            new RegisterRequest("alice@example.com", "Password1!", "Alice"));
+        await fixture.ConfirmEmailAsync("alice@example.com");
+
+        var response = await client.PostAsJsonAsync("/v1/users/login",
+            new LoginRequest("alice@example.com", "Password1!"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<LoginResponse>();
+        Assert.NotNull(body);
+        Assert.NotEmpty(body.AccessToken);
+        Assert.NotEmpty(body.RefreshToken);
+    }
+
+    [Fact]
+    public async Task Login_WhenEmailNotConfirmed_Returns401()
+    {
+        await client.PostAsJsonAsync("/v1/users/register",
+            new RegisterRequest("alice@example.com", "Password1!", "Alice"));
+
+        var response = await client.PostAsJsonAsync("/v1/users/login",
+            new LoginRequest("alice@example.com", "Password1!"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_WithWrongPassword_Returns401()
+    {
+        await client.PostAsJsonAsync("/v1/users/register",
+            new RegisterRequest("alice@example.com", "Password1!", "Alice"));
+        await fixture.ConfirmEmailAsync("alice@example.com");
+
+        var response = await client.PostAsJsonAsync("/v1/users/login",
+            new LoginRequest("alice@example.com", "WrongPassword1!"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_WithUnknownEmail_Returns401()
+    {
+        var response = await client.PostAsJsonAsync("/v1/users/login",
+            new LoginRequest("nobody@example.com", "Password1!"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_EmailIsCaseInsensitive()
+    {
+        await client.PostAsJsonAsync("/v1/users/register",
+            new RegisterRequest("alice@example.com", "Password1!", "Alice"));
+        await fixture.ConfirmEmailAsync("alice@example.com");
+
+        var response = await client.PostAsJsonAsync("/v1/users/login",
+            new LoginRequest("ALICE@EXAMPLE.COM", "Password1!"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+}

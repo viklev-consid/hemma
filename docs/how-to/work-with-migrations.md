@@ -27,7 +27,7 @@ Every module has:
 
 ```bash
 dotnet ef migrations add <n> \
-  --project src/Modules/Orders/Modulith.Modules.Orders \
+  --project src/Modules/Orders/Hemma.Modules.Orders \
   --context OrdersDbContext \
   --output-dir Persistence/Migrations
 ```
@@ -49,7 +49,7 @@ Manual migration (dev or staging):
 
 ```bash
 dotnet ef database update \
-  --project src/Modules/Orders/Modulith.Modules.Orders \
+  --project src/Modules/Orders/Hemma.Modules.Orders \
   --context OrdersDbContext
 ```
 
@@ -57,7 +57,7 @@ Apply to a specific migration:
 
 ```bash
 dotnet ef database update <MigrationName> \
-  --project src/Modules/Orders/Modulith.Modules.Orders \
+  --project src/Modules/Orders/Hemma.Modules.Orders \
   --context OrdersDbContext
 ```
 
@@ -68,12 +68,12 @@ dotnet ef database update <MigrationName> \
 ```bash
 # Roll back the database
 dotnet ef database update <PreviousMigrationName> \
-  --project src/Modules/Orders/Modulith.Modules.Orders \
+  --project src/Modules/Orders/Hemma.Modules.Orders \
   --context OrdersDbContext
 
 # Remove the migration files
 dotnet ef migrations remove \
-  --project src/Modules/Orders/Modulith.Modules.Orders \
+  --project src/Modules/Orders/Hemma.Modules.Orders \
   --context OrdersDbContext
 ```
 
@@ -101,7 +101,7 @@ Without applying:
 
 ```bash
 dotnet ef migrations script <FromMigration> <ToMigration> \
-  --project src/Modules/Orders/Modulith.Modules.Orders \
+  --project src/Modules/Orders/Hemma.Modules.Orders \
   --context OrdersDbContext \
   --output migration.sql
 ```

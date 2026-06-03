@@ -1,10 +1,10 @@
 {
   "$schema": "http://json.schemastore.org/template",
-  "author": "Modulith",
-  "classifications": ["Modulith", "Integration", "Event", "Subscriber"],
-  "identity": "Modulith.IntegrationPair",
-  "name": "Modulith Integration Event and Subscriber Pair",
-  "shortName": "modulith-integration-pair",
+  "author": "Hemma",
+  "classifications": ["Hemma", "Integration", "Event", "Subscriber"],
+  "identity": "Hemma.IntegrationPair",
+  "name": "Hemma Integration Event and Subscriber Pair",
+  "shortName": "hemma-integration-pair",
   "description": "Scaffolds a versioned integration event in a module contracts project and a subscriber handler in the module.",
   "sourceName": "EventName",
   "symbols": {

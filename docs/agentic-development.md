@@ -1,6 +1,6 @@
 # Agentic Development
 
-This document explains how Modulith is structured for agentic development — what mechanisms are in place, why they are designed the way they are, and what a developer adopting this template should understand about the agent experience alongside their own.
+This document explains how Hemma is structured for agentic development — what mechanisms are in place, why they are designed the way they are, and what a developer adopting this template should understand about the agent experience alongside their own.
 
 ---
 
@@ -38,27 +38,27 @@ Agents: when you see a rule in `AGENTS.md` or scoped guidance, the corresponding
 
 ### Architectural tests as executable documentation
 
-The rules in agent guidance files are not on the honor system — they are enforced by `tests/Modulith.Architecture.Tests`. When you violate a rule, the failing test tells you *what* rule and *how* to fix it.
+The rules in agent guidance files are not on the honor system — they are enforced by `tests/Hemma.Architecture.Tests`. When you violate a rule, the failing test tells you *what* rule and *how* to fix it.
 
 The failure messages are written for agents. They are specific: type names, target namespaces, suggested actions. Read them literally.
 
 ### Self-scaffolding via `dotnet new` templates
 
-Several `dotnet new` item templates ship with Modulith:
+Several `dotnet new` item templates ship with Hemma:
 
 ```bash
 # Add a command/write feature slice
-dotnet new modulith-slice --module Orders --name CancelOrder
-dotnet new modulith-command-slice --module Orders --name CancelOrder
+dotnet new hemma-slice --module Orders --name CancelOrder
+dotnet new hemma-command-slice --module Orders --name CancelOrder
 
 # Add a query/read feature slice
-dotnet new modulith-query-slice --module Orders --name GetOrder
+dotnet new hemma-query-slice --module Orders --name GetOrder
 
 # Add a new module
-dotnet new modulith-module --name Inventory
+dotnet new hemma-module --name Inventory
 
 # Add a versioned integration event plus subscriber stub
-dotnet new modulith-integration-pair --module Orders --name OrderPlaced
+dotnet new hemma-integration-pair --module Orders --name OrderPlaced
 ```
 
 These generate the exact file set with correct namespaces, permission-aware endpoint stubs, telemetry hooks, health checks, GDPR stubs, dev seeding, and placeholder registrations where applicable. Agents should prefer these to manual scaffolding — manual scaffolding is how small inconsistencies creep in.
@@ -135,7 +135,7 @@ Blocks the session from ending if architecture tests are failing. This is the ba
 Commands are prompt files under `.claude/commands/` — scoped workflows with explicitly listed tool permissions. Each command only has access to the tools it actually needs, which prevents accidental side effects.
 
 - **`/check`** — runs format verification, build, architecture tests, and unit tests scoped to projects changed in the current session. Use before wrapping up a task.
-- **`/new-slice <Module> <Feature>`** — scaffolds a vertical slice via `dotnet new modulith-slice`, verifies all six files were generated, and reports what the developer needs to fill in. Preferred over manual scaffolding.
+- **`/new-slice <Module> <Feature>`** — scaffolds a vertical slice via `dotnet new hemma-slice`, verifies all six files were generated, and reports what the developer needs to fill in. Preferred over manual scaffolding.
 - **`/new-module <Name>`** — scaffolds a new module with an explicit confirmation step before running anything, then lists the follow-ups that belong to the developer (host registration, per-module `CLAUDE.md`, ADR if warranted).
 - **`/new-adr <title>`** — finds the next ADR number, drafts a complete record in Nygard format in chat, and reminds the developer to commit it. Never writes the file — that decision belongs to a human.
 

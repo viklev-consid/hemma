@@ -1,6 +1,6 @@
 ---
 name: module-boundary
-description: Decision guide for cross-module communication in Modulith. Covers Contracts projects, choosing events vs queries vs commands, eventual consistency, and common boundary violations.
+description: Decision guide for cross-module communication in Hemma. Covers Contracts projects, choosing events vs queries vs commands, eventual consistency, and common boundary violations.
 ---
 
 # Module Boundary
@@ -50,8 +50,8 @@ If your design requires any of those, stop. The design is wrong or needs an expl
 These are the allowed reference patterns:
 
 - `Api` may reference modules' internal projects for composition
-- `Modulith.Modules.<Name>` may reference its own `.Contracts` project
-- `Modulith.Modules.<Name>` may reference other modules' `.Contracts` projects
+- `Hemma.Modules.<Name>` may reference its own `.Contracts` project
+- `Hemma.Modules.<Name>` may reference other modules' `.Contracts` projects
 - `.Contracts` projects may reference only shared contract-level packages and shared kernel abstractions already used by the repo
 
 These are forbidden:

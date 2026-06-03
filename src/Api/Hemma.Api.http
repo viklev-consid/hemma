@@ -1,0 +1,6 @@
+@Hemma.Api_HostAddress = http://localhost:5125
+
+GET {{Hemma.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

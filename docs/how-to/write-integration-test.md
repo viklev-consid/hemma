@@ -30,7 +30,7 @@ Do NOT write integration tests for:
 Each module has its own fixture (inheriting `ApiTestFixture` from `TestSupport`):
 
 ```csharp
-// tests/Modules/Orders/Modulith.Modules.Orders.IntegrationTests/OrdersApiFixture.cs
+// tests/Modules/Orders/Hemma.Modules.Orders.IntegrationTests/OrdersApiFixture.cs
 public sealed class OrdersApiFixture : ApiTestFixture
 {
     // Module-specific overrides if needed.
@@ -277,7 +277,7 @@ Never use `DateTime.UtcNow` in handlers — always inject `IClock`. Makes time-s
 dotnet test --filter "Category=Integration"
 
 # One module's
-dotnet test tests/Modules/Orders/Modulith.Modules.Orders.IntegrationTests
+dotnet test tests/Modules/Orders/Hemma.Modules.Orders.IntegrationTests
 
 # One class
 dotnet test --filter "FullyQualifiedName~PlaceOrderTests"

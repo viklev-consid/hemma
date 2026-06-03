@@ -79,7 +79,7 @@ public sealed class Order : AggregateRoot<OrderId>
 - More code than the anemic style. Accepted.
 - EF Core configuration is slightly more involved — `.UsePropertyAccessMode(PropertyAccessMode.Field)`, field-backed navigation properties. Documented.
 - Serialization of aggregates requires thought. Solved by not serializing aggregates directly — DTOs at the boundary.
-- `AutoFixture` doesn't work cleanly with private setters and factory methods. We use object mothers instead (see `Modulith.TestSupport`).
+- `AutoFixture` doesn't work cleanly with private setters and factory methods. We use object mothers instead (see `Hemma.TestSupport`).
 
 ## Related
 

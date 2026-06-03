@@ -1,5 +1,5 @@
 {
-  "name": "@modulith/email-templates",
+  "name": "@hemma/email-templates",
   "private": true,
   "type": "module",
   "scripts": {

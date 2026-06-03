@@ -1,16 +1,16 @@
 # Deploy to Coolify
 
 This deployment runs the API, migration service, PostgreSQL, and Redis as one Docker
-Compose stack. Coolify terminates TLS and routes `modulith-api.intraktiv.com` to the API.
+Compose stack. Coolify terminates TLS and routes `hemma-api.intraktiv.com` to the API.
 
 ## Coolify setup
 
 1. Create a Docker Compose application from this repository.
 2. Set the Compose file to `compose.coolify.yaml`.
 3. Add the environment variables from `.env.coolify.example`, replacing every placeholder.
-4. Assign `https://modulith-api.intraktiv.com` to the `api` service on port `8080`.
+4. Assign `https://hemma-api.intraktiv.com` to the `api` service on port `8080`.
 5. Configure the API health check path as `/alive`.
-6. Point the `modulith-api.intraktiv.com` DNS record at the Coolify server.
+6. Point the `hemma-api.intraktiv.com` DNS record at the Coolify server.
 
 Do not expose the `db`, `cache`, `migrations`, or `volume-permissions` services publicly.
 Do not add a host `ports:` mapping for `api`. Coolify's proxy should reach its internal

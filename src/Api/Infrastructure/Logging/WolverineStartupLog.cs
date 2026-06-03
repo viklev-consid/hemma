@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace Modulith.Api.Infrastructure.Logging;
+namespace Hemma.Api.Infrastructure.Logging;
 
 internal static partial class WolverineStartupLog
 {

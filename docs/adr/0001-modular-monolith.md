@@ -16,7 +16,7 @@ Most teams that start with microservices regret it. Most teams that start with a
 
 ## Decision
 
-Modulith is a modular monolith. A single deployable host composed of modules. Each module is a vertical slice of business capability with its own domain model, persistence, endpoints, and public contract. Module boundaries are enforced at compile time (project references) and at test time (architectural tests).
+Hemma is a modular monolith. A single deployable host composed of modules. Each module is a vertical slice of business capability with its own domain model, persistence, endpoints, and public contract. Module boundaries are enforced at compile time (project references) and at test time (architectural tests).
 
 Modules may communicate only through each other's public `.Contracts` projects — never by reaching into internal code. This discipline makes future extraction mechanical rather than architectural.
 

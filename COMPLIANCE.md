@@ -1,6 +1,6 @@
 # COMPLIANCE.md
 
-Modulith is designed with GDPR compliance as a first-class concern. This document describes the compliance posture of the template and the responsibilities that remain with teams using it.
+Hemma is designed with GDPR compliance as a first-class concern. This document describes the compliance posture of the template and the responsibilities that remain with teams using it.
 
 **This document is technical guidance, not legal advice.** Regulatory interpretation, policy drafting, and jurisdictional questions require legal counsel.
 

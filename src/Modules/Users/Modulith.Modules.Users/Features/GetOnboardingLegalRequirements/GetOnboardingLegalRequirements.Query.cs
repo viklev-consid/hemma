@@ -1,3 +1,0 @@
-namespace Modulith.Modules.Users.Features.GetOnboardingLegalRequirements;
-
-public sealed record GetOnboardingLegalRequirementsQuery;

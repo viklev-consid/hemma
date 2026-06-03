@@ -1,6 +1,6 @@
 # How-to: Add Idempotency
 
-Modulith deliberately does not ship idempotency infrastructure ([`../adr/0020-no-idempotency-infrastructure.md`](../adr/0020-no-idempotency-infrastructure.md)). When your use case requires it, this guide covers the extension patterns.
+Hemma deliberately does not ship idempotency infrastructure ([`../adr/0020-no-idempotency-infrastructure.md`](../adr/0020-no-idempotency-infrastructure.md)). When your use case requires it, this guide covers the extension patterns.
 
 ---
 
@@ -56,7 +56,7 @@ Migration:
 
 ```bash
 dotnet ef migrations add AddProcessedMessages \
-  --project src/Modules/Orders/Modulith.Modules.Orders \
+  --project src/Modules/Orders/Hemma.Modules.Orders \
   --context OrdersDbContext
 ```
 

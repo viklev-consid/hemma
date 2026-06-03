@@ -1,7 +1,7 @@
 using Wolverine.Persistence.Durability;
 using Wolverine.Persistence.Durability.DeadLetterManagement;
 
-namespace Modulith.Api.Infrastructure.DeadLetters;
+namespace Hemma.Api.Infrastructure.DeadLetters;
 
 /// <summary>
 /// Redacted projection of a Wolverine <see cref="DeadLetterEnvelope"/>.

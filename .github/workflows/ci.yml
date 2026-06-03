@@ -24,7 +24,7 @@ jobs:
       - name: Restore
         run: |
           # Aspire injects RID-specific AppHost SDK packages, so its lock file is not portable.
-          dotnet restore src/AppHost/Modulith.AppHost.csproj
+          dotnet restore src/AppHost/Hemma.AppHost.csproj
           find src tests -name '*.csproj' ! -path 'src/AppHost/*' -exec dotnet restore --locked-mode {} \;
 
       - name: Build

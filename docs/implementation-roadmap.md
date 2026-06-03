@@ -1,6 +1,6 @@
 # Implementation Roadmap
 
-This document is the sequence for building Modulith. It is designed to be read top-to-bottom by Claude Code (or a human with time and patience) to produce a working template.
+This document is the sequence for building Hemma. It is designed to be read top-to-bottom by Claude Code (or a human with time and patience) to produce a working template.
 
 The principle: **build in increments where each increment is independently testable and produces verifiable output**. No building for weeks with nothing to run.
 
@@ -31,8 +31,8 @@ Familiarity with:
 ### 0.1 Create solution and top-level files
 
 ```bash
-mkdir modulith && cd modulith
-dotnet new sln -n Modulith
+mkdir hemma && cd hemma
+dotnet new sln -n Hemma
 ```
 
 Create at the repo root:
@@ -64,24 +64,24 @@ Create at the repo root:
 ### 0.2 Create Aspire AppHost and ServiceDefaults
 
 ```bash
-dotnet new aspire-apphost -n Modulith.AppHost -o src/AppHost
-dotnet new aspire-servicedefaults -n Modulith.ServiceDefaults -o src/ServiceDefaults
+dotnet new aspire-apphost -n Hemma.AppHost -o src/AppHost
+dotnet new aspire-servicedefaults -n Hemma.ServiceDefaults -o src/ServiceDefaults
 dotnet sln add src/AppHost src/ServiceDefaults
 ```
 
 ### 0.3 Create Shared projects
 
 ```bash
-dotnet new classlib -n Modulith.Shared.Kernel -o src/Shared/Modulith.Shared.Kernel
-dotnet new classlib -n Modulith.Shared.Contracts -o src/Shared/Modulith.Shared.Contracts
-dotnet new classlib -n Modulith.Shared.Infrastructure -o src/Shared/Modulith.Shared.Infrastructure
-dotnet sln add src/Shared/Modulith.Shared.Kernel src/Shared/Modulith.Shared.Contracts src/Shared/Modulith.Shared.Infrastructure
+dotnet new classlib -n Hemma.Shared.Kernel -o src/Shared/Hemma.Shared.Kernel
+dotnet new classlib -n Hemma.Shared.Contracts -o src/Shared/Hemma.Shared.Contracts
+dotnet new classlib -n Hemma.Shared.Infrastructure -o src/Shared/Hemma.Shared.Infrastructure
+dotnet sln add src/Shared/Hemma.Shared.Kernel src/Shared/Hemma.Shared.Contracts src/Shared/Hemma.Shared.Infrastructure
 ```
 
 ### 0.4 Create API project
 
 ```bash
-dotnet new webapi -n Modulith.Api -o src/Api --use-minimal-apis
+dotnet new webapi -n Hemma.Api -o src/Api --use-minimal-apis
 dotnet sln add src/Api
 ```
 
@@ -90,9 +90,9 @@ Reference `ServiceDefaults` and the Shared projects.
 ### 0.5 Create test infrastructure projects
 
 ```bash
-dotnet new classlib -n Modulith.TestSupport -o tests/Modulith.TestSupport
-dotnet new xunit -n Modulith.Architecture.Tests -o tests/Modulith.Architecture.Tests
-dotnet new xunit -n Modulith.SmokeTests -o tests/Modulith.SmokeTests
+dotnet new classlib -n Hemma.TestSupport -o tests/Hemma.TestSupport
+dotnet new xunit -n Hemma.Architecture.Tests -o tests/Hemma.Architecture.Tests
+dotnet new xunit -n Hemma.SmokeTests -o tests/Hemma.SmokeTests
 ```
 
 Note: use xUnit v3 when the template supports it (or upgrade the generated projects to v3).
@@ -214,7 +214,7 @@ Provision:
 
 ### 3.1 Core rules
 
-Implement in `Modulith.Architecture.Tests`:
+Implement in `Hemma.Architecture.Tests`:
 
 - Shared.Kernel depends only on BCL + ErrorOr
 - Shared.Kernel types have no EF Core, ASP.NET, Wolverine references
@@ -228,14 +228,14 @@ Only a few rules right now — more added as the codebase grows.
 Each rule should produce an actionable message. Example:
 
 ```
-FAIL: Modulith.Shared.Kernel.SomeType depends on Microsoft.EntityFrameworkCore.
+FAIL: Hemma.Shared.Kernel.SomeType depends on Microsoft.EntityFrameworkCore.
 Shared.Kernel must remain free of infrastructure dependencies.
 Move EF Core-dependent types to Shared.Infrastructure.
 ```
 
 ### 3.3 Verify
 
-`dotnet test tests/Modulith.Architecture.Tests` passes.
+`dotnet test tests/Hemma.Architecture.Tests` passes.
 
 **Commit.** Message: "test: architectural test foundation".
 
@@ -248,9 +248,9 @@ Move EF Core-dependent types to Shared.Infrastructure.
 ### 4.1 Module projects
 
 ```bash
-dotnet new classlib -n Modulith.Modules.Users -o src/Modules/Users/Modulith.Modules.Users
-dotnet new classlib -n Modulith.Modules.Users.Contracts -o src/Modules/Users/Modulith.Modules.Users.Contracts
-dotnet sln add src/Modules/Users/Modulith.Modules.Users src/Modules/Users/Modulith.Modules.Users.Contracts
+dotnet new classlib -n Hemma.Modules.Users -o src/Modules/Users/Hemma.Modules.Users
+dotnet new classlib -n Hemma.Modules.Users.Contracts -o src/Modules/Users/Hemma.Modules.Users.Contracts
+dotnet sln add src/Modules/Users/Hemma.Modules.Users src/Modules/Users/Hemma.Modules.Users.Contracts
 ```
 
 ### 4.2 Domain
@@ -305,7 +305,7 @@ In `Users.Contracts/Events/`:
 
 ### 4.9 Module CLAUDE.md
 
-`src/Modules/Users/Modulith.Modules.Users/CLAUDE.md` — describes domain vocab, invariants, auth concerns.
+`src/Modules/Users/Hemma.Modules.Users/CLAUDE.md` — describes domain vocab, invariants, auth concerns.
 
 ### 4.10 Seeder
 
@@ -313,7 +313,7 @@ In `Users.Contracts/Events/`:
 
 ### 4.11 Integration tests
 
-`Modulith.Modules.Users.IntegrationTests/`:
+`Hemma.Modules.Users.IntegrationTests/`:
 
 - `UsersApiFixture`
 - `RegisterTests` (happy, duplicate email, invalid email, weak password)
@@ -322,7 +322,7 @@ In `Users.Contracts/Events/`:
 
 ### 4.12 Unit tests
 
-`Modulith.Modules.Users.UnitTests/`:
+`Hemma.Modules.Users.UnitTests/`:
 
 - `UserTests` (create, change email, change password, invariants)
 - `EmailTests` (validation)
@@ -483,7 +483,7 @@ Full flows: export, erase, verify data is gone (or anonymized where appropriate)
 
 ## Phase 9: dotnet new templates ✓
 
-**Goal:** `dotnet new modulith-slice`, `dotnet new modulith-command-slice`, `dotnet new modulith-query-slice`, `dotnet new modulith-integration-pair`, and `dotnet new modulith-module` work.
+**Goal:** `dotnet new hemma-slice`, `dotnet new hemma-command-slice`, `dotnet new hemma-query-slice`, `dotnet new hemma-integration-pair`, and `dotnet new hemma-module` work.
 
 ### 9.1 Slice template
 
@@ -510,10 +510,10 @@ dotnet new install ./templates/query-slice
 dotnet new install ./templates/integration-pair
 dotnet new install ./templates/module
 
-dotnet new modulith-module --name TestModule
-dotnet new modulith-slice --module TestModule --name TestFeature
-dotnet new modulith-query-slice --module TestModule --name GetTestFeature
-dotnet new modulith-integration-pair --module TestModule --name TestFeatureCreated
+dotnet new hemma-module --name TestModule
+dotnet new hemma-slice --module TestModule --name TestFeature
+dotnet new hemma-query-slice --module TestModule --name GetTestFeature
+dotnet new hemma-integration-pair --module TestModule --name TestFeatureCreated
 ```
 
 Verify the generated files compile and integrate.
@@ -539,7 +539,7 @@ Reference docs:
 
 ### 9.5.1 Domain additions
 
-Add to `Modulith.Modules.Users/Domain/`:
+Add to `Hemma.Modules.Users/Domain/`:
 
 **`SingleUseToken` value object** (aggregate-internal entity stored in its own table):
 
@@ -591,7 +591,7 @@ Add entity configurations and a migration:
 
 ```bash
 dotnet ef migrations add AddTokensAndRefreshTokens \
-  --project src/Modules/Users/Modulith.Modules.Users \
+  --project src/Modules/Users/Hemma.Modules.Users \
   --context UsersDbContext \
   --output-dir Persistence/Migrations
 ```
@@ -785,7 +785,7 @@ These are extension points documented with suggested shapes for this phase. Two-
 
 ### 10.1 Smoke tests
 
-3-5 tests in `Modulith.SmokeTests`:
+3-5 tests in `Hemma.SmokeTests`:
 
 - Stack boots successfully
 - Register + login + get-me works through real pipeline
@@ -889,7 +889,7 @@ Design summary (full reasoning in ADR-0030):
 
 ### 13.1 Users module — domain additions
 
-Add to `Modulith.Modules.Users/Domain/`:
+Add to `Hemma.Modules.Users/Domain/`:
 
 **`Role` value object (enum-like):**
 
@@ -916,7 +916,7 @@ Add to `Modulith.Modules.Users/Domain/`:
 
 ```bash
 dotnet ef migrations add AddUserRole \
-  --project src/Modules/Users/Modulith.Modules.Users \
+  --project src/Modules/Users/Hemma.Modules.Users \
   --context UsersDbContext \
   --output-dir Persistence/Migrations
 ```
@@ -926,7 +926,7 @@ dotnet ef migrations add AddUserRole \
 Each module declares its permission constants in its `.Contracts` project under `Authorization/`:
 
 ```csharp
-// Modulith.Modules.Catalog.Contracts/Authorization/CatalogPermissions.cs
+// Hemma.Modules.Catalog.Contracts/Authorization/CatalogPermissions.cs
 public static class CatalogPermissions
 {
     public const string ProductsRead  = "catalog.products.read";
@@ -939,10 +939,10 @@ public static class CatalogPermissions
 
 Apply to:
 
-- `Modulith.Modules.Users.Contracts` → `UsersPermissions` (role management, user administration).
-- `Modulith.Modules.Catalog.Contracts` → `CatalogPermissions`.
-- `Modulith.Modules.Audit.Contracts` → `AuditPermissions` (read trail).
-- `Modulith.Modules.Notifications.Contracts` → `NotificationsPermissions` (template admin).
+- `Hemma.Modules.Users.Contracts` → `UsersPermissions` (role management, user administration).
+- `Hemma.Modules.Catalog.Contracts` → `CatalogPermissions`.
+- `Hemma.Modules.Audit.Contracts` → `AuditPermissions` (read trail).
+- `Hemma.Modules.Notifications.Contracts` → `NotificationsPermissions` (template admin).
 
 Format rule (enforced by architectural test, 13.10): `{module}.{resource}.{action}`, lowercase, dot-separated, ASCII.
 
@@ -981,7 +981,7 @@ IReadOnlyCollection<string> Permissions { get; }
 bool HasPermission(string permission);
 ```
 
-Update `CurrentUser` default to read `ClaimTypes.Role` and all `permission` claims. This is a breaking change to `Modulith.Shared.Kernel`; all call sites already in-tree update trivially.
+Update `CurrentUser` default to read `ClaimTypes.Role` and all `permission` claims. This is a breaking change to `Hemma.Shared.Kernel`; all call sites already in-tree update trivially.
 
 ### 13.6a `GET /v1/users/me` — include role and permissions
 
@@ -1005,7 +1005,7 @@ Response caching: add `Cache-Control: private, no-store` on the endpoint. `me` i
 
 ### 13.7 Feature slices — role management
 
-Add under `Modules/Users/Modulith.Modules.Users/Features/`:
+Add under `Modules/Users/Hemma.Modules.Users/Features/`:
 
 - **`ChangeUserRole/`** — `PUT /v1/users/{userId}/role`
   - Body: `{ "role": "admin" | "user" }`.
@@ -1064,12 +1064,12 @@ Verify: Scalar UI shows an "Authorize" button; protected operations display a lo
 
 ### 13.10 Architectural tests
 
-Add to `Modulith.Architecture.Tests`:
+Add to `Hemma.Architecture.Tests`:
 
 - **Permission naming.** All `const string` fields on any `*Permissions` type match `^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*){2}$` (three dot-separated segments).
-- **Permission ownership.** The first segment of a permission constant equals the owning module's short name (`catalog.*` lives in `Modulith.Modules.Catalog.Contracts`).
+- **Permission ownership.** The first segment of a permission constant equals the owning module's short name (`catalog.*` lives in `Hemma.Modules.Catalog.Contracts`).
 - **No role literals in endpoints.** Endpoints do not call `RequireAuthorization("admin")` or `RequireRole(...)`; authorization is permission-based. (String literal check over endpoint files.)
-- **No raw role claim reads outside `CurrentUser`.** `ClaimTypes.Role` string is only referenced inside `Modulith.Shared.Infrastructure.Identity.CurrentUser` and `Modulith.Modules.Users.Security.*`.
+- **No raw role claim reads outside `CurrentUser`.** `ClaimTypes.Role` string is only referenced inside `Hemma.Shared.Infrastructure.Identity.CurrentUser` and `Hemma.Modules.Users.Security.*`.
 - **`User.Role` has a private setter.**
 
 ### 13.11 Integration tests
@@ -1123,7 +1123,7 @@ Add `UserRoleChangedV1` to the Audit module's subscribed-events list. Standard p
 
 ### 13.17 Configuration additions
 
-`Modulith.Api/appsettings.json` and dev overrides:
+`Hemma.Api/appsettings.json` and dev overrides:
 
 ```json
 "Modules": {
@@ -1187,7 +1187,7 @@ Design summary (full reasoning in ADR-0031):
 
 ### 14.1 Domain additions
 
-Add to `Modulith.Modules.Users/Domain/`:
+Add to `Hemma.Modules.Users/Domain/`:
 
 **`ExternalLoginProvider` enum:**
 
@@ -1255,7 +1255,7 @@ Add entity configurations and a migration:
 
 ```bash
 dotnet ef migrations add AddThirdPartyAuth \
-  --project src/Modules/Users/Modulith.Modules.Users \
+  --project src/Modules/Users/Hemma.Modules.Users \
   --context UsersDbContext \
   --output-dir Persistence/Migrations
 ```
@@ -1315,7 +1315,7 @@ This is the only Google-specific code in the phase. Adding Apple/Microsoft/GitHu
 
 ### 14.5 Feature slices
 
-Add under `Modules/Users/Modulith.Modules.Users/Features/ExternalLogin/Google/`:
+Add under `Modules/Users/Hemma.Modules.Users/Features/ExternalLogin/Google/`:
 
 - **`Login/`** — `POST /v1/auth/external/google/login`
   - Public; rate-limit `auth`.
@@ -1453,7 +1453,7 @@ This covers two cases the FK cascade misses:
 
 ### 14.11 Architectural tests
 
-Add to `Modulith.Architecture.Tests`:
+Add to `Hemma.Architecture.Tests`:
 
 - `ExternalLogin`, `PendingExternalLogin`, and `TermsAcceptance` have no public setters.
 - Nothing outside `Users.Features.CompleteOnboarding` writes to `TermsAcceptance` — it is an append-only artefact of the onboarding act.
@@ -1464,7 +1464,7 @@ Add to `Modulith.Architecture.Tests`:
 
 ### 14.12 Integration tests
 
-Add under `tests/Modules/Users/Modulith.Modules.Users.IntegrationTests/Features/ExternalLogin/Google/`. Register a test-double `IGoogleIdTokenVerifier` in `UsersApiFixture` to avoid depending on real Google JWKS.
+Add under `tests/Modules/Users/Hemma.Modules.Users.IntegrationTests/Features/ExternalLogin/Google/`. Register a test-double `IGoogleIdTokenVerifier` in `UsersApiFixture` to avoid depending on real Google JWKS.
 
 - **Already-linked sub** → `Login` issues tokens immediately; no email sent (assert Mailpit is empty for this test). Response DTO matches the existing password-`Login` response shape.
 - **First-time login, unknown email** → uniform 202 response; Mailpit has a "welcome" email; `Confirm` provisions a user with `HasCompletedOnboarding = false`; tokens issued; `UserProvisionedFromExternalV1` published; `UserRegisteredV1` **not** published.
@@ -1515,7 +1515,7 @@ Add under `tests/Modules/Users/Modulith.Modules.Users.IntegrationTests/Features/
 
 ### 14.15 Configuration additions
 
-`Modulith.Api/appsettings.json` and dev overrides:
+`Hemma.Api/appsettings.json` and dev overrides:
 
 ```json
 "Modules": {
@@ -1662,7 +1662,7 @@ Production:
 
 Upgrade the shared fixture layer so tests validate durable messaging, not just in-process asynchronous delivery.
 
-Changes to `tests/Modulith.TestSupport/ApiTestFixture.cs` and derived fixtures:
+Changes to `tests/Hemma.TestSupport/ApiTestFixture.cs` and derived fixtures:
 
 - Initialize Wolverine storage alongside the module `Database.MigrateAsync()` calls.
 - Reset Wolverine storage between tests, or include the Wolverine schema in the reset path in addition to `users`, `catalog`, `audit`, and `notifications`.
@@ -1762,7 +1762,7 @@ At the end of this roadmap:
 - Register → login → do things → erase account all work end-to-end.
 - Cross-module event delivery and scheduled maintenance messages survive process restarts through Wolverine's durable storage.
 - Cross-module event flow observable in the Aspire dashboard (traces connect).
-- `dotnet new modulith-module` and `dotnet new modulith-slice` produce correct scaffolds.
+- `dotnet new hemma-module` and `dotnet new hemma-slice` produce correct scaffolds.
 - CI runs three tiers reliably.
 - Documentation matches code.
 

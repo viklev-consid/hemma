@@ -1,6 +1,6 @@
 # Dead-Letter Queue Operations
 
-This runbook covers the full operator lifecycle for dead-lettered messages in Modulith: inspection, replay, removal, and retention policy.
+This runbook covers the full operator lifecycle for dead-lettered messages in Hemma: inspection, replay, removal, and retention policy.
 
 ---
 
@@ -69,7 +69,7 @@ You can also filter by type instead of listing IDs:
 
 ```json
 {
-  "messageType": "Modulith.Modules.Notifications.SendWelcomeEmail",
+  "messageType": "Hemma.Modules.Notifications.SendWelcomeEmail",
   "exceptionType": "System.IO.IOException"
 }
 ```
@@ -140,11 +140,11 @@ The DLQ is only useful if someone is watching it. Set up at least these two aler
 SELECT COUNT(*) FROM wolverine.wolverine_dead_letters;
 ```
 
-Trigger when count exceeds your SLA threshold (e.g., > 0 for critical paths, > 10 for bulk paths). The OpenTelemetry metrics emitted by the Notifications module (`modulith.notifications.emails.failed.terminal`, `modulith.notifications.send_guard.failed_recoveries`) can also drive this alert from your metrics platform without a direct DB query.
+Trigger when count exceeds your SLA threshold (e.g., > 0 for critical paths, > 10 for bulk paths). The OpenTelemetry metrics emitted by the Notifications module (`hemma.notifications.emails.failed.terminal`, `hemma.notifications.send_guard.failed_recoveries`) can also drive this alert from your metrics platform without a direct DB query.
 
 **Alert 2 — Notification failure rate spike**
 
-Monitor `modulith.notifications.emails.failed.transient` vs `modulith.notifications.emails.sent`. A sustained ratio above ~10 % over a 5-minute window indicates SMTP degradation and the retry queue is filling up.
+Monitor `hemma.notifications.emails.failed.transient` vs `hemma.notifications.emails.sent`. A sustained ratio above ~10 % over a 5-minute window indicates SMTP degradation and the retry queue is filling up.
 
 **Alert 3 — DLQ approaching retention limit**
 

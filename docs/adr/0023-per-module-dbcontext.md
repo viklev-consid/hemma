@@ -42,7 +42,7 @@ Migrations are module-scoped. The `dotnet ef migrations add` command takes `--pr
 
 ```bash
 dotnet ef migrations add AddOrderCancelledStatus \
-  --project src/Modules/Orders/Modulith.Modules.Orders \
+  --project src/Modules/Orders/Hemma.Modules.Orders \
   --context OrdersDbContext \
   --output-dir Persistence/Migrations
 ```

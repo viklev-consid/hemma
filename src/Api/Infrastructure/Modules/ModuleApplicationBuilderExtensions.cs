@@ -1,9 +1,9 @@
-using Modulith.Shared.Infrastructure.Modules;
+using Hemma.Shared.Infrastructure.Modules;
 using TickerQ.Utilities;
 using TickerQ.Utilities.Entities;
 using Wolverine;
 
-namespace Modulith.Api.Infrastructure.Modules;
+namespace Hemma.Api.Infrastructure.Modules;
 
 internal static class ModuleApplicationBuilderExtensions
 {

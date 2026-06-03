@@ -40,15 +40,15 @@ Every significant decision has an ADR. ADRs explain *why* — the context humans
 
 Failure messages name the rule, the type, and the fix:
 
-> FAIL: Modulith.Modules.Orders.Persistence.OrdersDbContext depends on Modulith.Modules.Users.Persistence.UsersDbContext. Modules must not share DbContexts. Use Users' public Contracts (via IMessageBus) to request data. See ADR-0005 and ADR-0023.
+> FAIL: Hemma.Modules.Orders.Persistence.OrdersDbContext depends on Hemma.Modules.Users.Persistence.UsersDbContext. Modules must not share DbContexts. Use Users' public Contracts (via IMessageBus) to request data. See ADR-0005 and ADR-0023.
 
 ### 4. Self-scaffolding via dotnet new
 
 Item templates for slices and modules:
 
 ```bash
-dotnet new modulith-slice --module Orders --name CancelOrder
-dotnet new modulith-module --name Inventory
+dotnet new hemma-slice --module Orders --name CancelOrder
+dotnet new hemma-module --name Inventory
 ```
 
 Produces correct file structure, namespaces, registrations. Agents (and humans) prefer scaffolding to manual creation — manual creation is where small inconsistencies enter.

@@ -9,9 +9,9 @@ This directory holds all tests. Four layers, each with strict scope. See [`docs/
 | Layer | Location | Scope | Speed |
 |---|---|---|---|
 | Unit | `tests/Modules/<Module>/*.UnitTests` | Domain only | Milliseconds |
-| Architectural | `tests/Modulith.Architecture.Tests` | Structural rules | Sub-second |
+| Architectural | `tests/Hemma.Architecture.Tests` | Structural rules | Sub-second |
 | Integration | `tests/Modules/<Module>/*.IntegrationTests` | One module end-to-end | Seconds per test |
-| Smoke | `tests/Modulith.SmokeTests` | Full API pipeline via TestServer + real containers | Tens of seconds |
+| Smoke | `tests/Hemma.SmokeTests` | Full API pipeline via TestServer + real containers | Tens of seconds |
 
 ---
 
@@ -63,7 +63,7 @@ Failure messages are custom-written to be actionable. When one fails, read it li
 
 ## TestSupport project
 
-`tests/Modulith.TestSupport` is shared infrastructure. Every module test project references it. Contents:
+`tests/Hemma.TestSupport` is shared infrastructure. Every module test project references it. Contents:
 
 - `ApiTestFixture` - base WebApplicationFactory + Testcontainers lifecycle.
 - `CreateAnonymousClient()` / `CreateAuthenticatedClient(...)` - JWT-backed `HttpClient` helpers.

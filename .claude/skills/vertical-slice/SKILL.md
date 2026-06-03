@@ -1,11 +1,11 @@
 ---
 name: vertical-slice
-description: Canonical workflow for adding or modifying a vertical slice in Modulith. Covers scaffold, file layout, naming, Request -> Command or Query -> Validator -> Handler -> Endpoint flow, Wolverine registration, integration events, and required tests.
+description: Canonical workflow for adding or modifying a vertical slice in Hemma. Covers scaffold, file layout, naming, Request -> Command or Query -> Validator -> Handler -> Endpoint flow, Wolverine registration, integration events, and required tests.
 ---
 
 # Vertical Slice
 
-Use this skill when you are adding or changing a feature under `src/Modules/<Module>/Modulith.Modules.<Module>/Features/<Feature>/`.
+Use this skill when you are adding or changing a feature under `src/Modules/<Module>/Hemma.Modules.<Module>/Features/<Feature>/`.
 
 This skill is for the normal case: an existing module, a well-scoped feature, and no architecture change.
 
@@ -58,7 +58,7 @@ If the feature both reads and writes, it is still a command slice. Return the re
 Start with:
 
 ```bash
-dotnet new modulith-slice --module <Module> --name <FeatureName>
+dotnet new hemma-slice --module <Module> --name <FeatureName>
 ```
 
 This is preferred over manual creation. The scaffold gives you the expected file set and naming.
@@ -66,7 +66,7 @@ This is preferred over manual creation. The scaffold gives you the expected file
 The canonical folder is:
 
 ```text
-src/Modules/<Module>/Modulith.Modules.<Module>/Features/<FeatureName>/
+src/Modules/<Module>/Hemma.Modules.<Module>/Features/<FeatureName>/
 ```
 
 ## Canonical file set
@@ -82,9 +82,9 @@ For the normal command slice, create or update these files in the feature folder
 
 Also expect to touch these non-slice files:
 
-- `src/Modules/<Module>/Modulith.Modules.<Module>/<Module>Routes.cs`
-- `src/Modules/<Module>/Modulith.Modules.<Module>/<Module>Module.cs`
-- `tests/Modules/<Module>/Modulith.Modules.<Module>.IntegrationTests/Features/<FeatureName>Tests.cs`
+- `src/Modules/<Module>/Hemma.Modules.<Module>/<Module>Routes.cs`
+- `src/Modules/<Module>/Hemma.Modules.<Module>/<Module>Module.cs`
+- `tests/Modules/<Module>/Hemma.Modules.<Module>.IntegrationTests/Features/<FeatureName>Tests.cs`
 
 For a simple query slice:
 
@@ -149,7 +149,7 @@ Use the request DTO for input coming from HTTP.
 Example:
 
 ```csharp
-namespace Modulith.Modules.Orders.Features.CancelOrder;
+namespace Hemma.Modules.Orders.Features.CancelOrder;
 
 public sealed record CancelOrderRequest(string Reason);
 ```
@@ -174,7 +174,7 @@ Commands and queries are the internal message shape for Wolverine.
 Example command:
 
 ```csharp
-namespace Modulith.Modules.Orders.Features.CancelOrder;
+namespace Hemma.Modules.Orders.Features.CancelOrder;
 
 public sealed record CancelOrderCommand(OrderId OrderId, string Reason);
 ```
@@ -373,7 +373,7 @@ Every new slice needs integration coverage.
 Write the test in:
 
 ```text
-tests/Modules/<Module>/Modulith.Modules.<Module>.IntegrationTests/Features/<FeatureName>Tests.cs
+tests/Modules/<Module>/Hemma.Modules.<Module>.IntegrationTests/Features/<FeatureName>Tests.cs
 ```
 
 Integration test requirements:

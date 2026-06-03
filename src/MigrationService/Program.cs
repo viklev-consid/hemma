@@ -4,13 +4,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Modulith.Api.Infrastructure.Scheduling;
-using Modulith.MigrationService;
-using Modulith.Modules.Audit.Persistence;
-using Modulith.Modules.Catalog.Persistence;
-using Modulith.Modules.Notifications.Persistence;
-using Modulith.Modules.Organizations.Persistence;
-using Modulith.Modules.Users.Persistence;
+using Hemma.Api.Infrastructure.Scheduling;
+using Hemma.MigrationService;
+using Hemma.Modules.Audit.Persistence;
+using Hemma.Modules.Catalog.Persistence;
+using Hemma.Modules.Notifications.Persistence;
+using Hemma.Modules.Organizations.Persistence;
+using Hemma.Modules.Users.Persistence;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -54,7 +54,7 @@ using var host = builder.Build();
 await using var scope = host.Services.CreateAsyncScope();
 var logger = scope.ServiceProvider
     .GetRequiredService<ILoggerFactory>()
-    .CreateLogger("Modulith.MigrationService");
+    .CreateLogger("Hemma.MigrationService");
 
 EnsureAllModuleDbContextsAreRegistered(scope.ServiceProvider);
 
@@ -92,7 +92,7 @@ static void EnsureAllModuleDbContextsAreRegistered(IServiceProvider services)
 
 static IEnumerable<Type> DiscoverModuleDbContexts()
 {
-    const string moduleAssemblyPrefix = "Modulith.Modules.";
+    const string moduleAssemblyPrefix = "Hemma.Modules.";
     const string contractsAssemblySuffix = ".Contracts";
 
     return Directory

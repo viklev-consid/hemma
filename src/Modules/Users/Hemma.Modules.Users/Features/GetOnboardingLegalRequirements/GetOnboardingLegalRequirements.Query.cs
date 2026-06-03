@@ -1,0 +1,3 @@
+namespace Hemma.Modules.Users.Features.GetOnboardingLegalRequirements;
+
+public sealed record GetOnboardingLegalRequirementsQuery;

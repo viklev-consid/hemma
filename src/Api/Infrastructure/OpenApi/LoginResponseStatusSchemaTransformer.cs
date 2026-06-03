@@ -1,9 +1,9 @@
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
-using Modulith.Modules.Users.Features.Login;
+using Hemma.Modules.Users.Features.Login;
 
-namespace Modulith.Api.Infrastructure.OpenApi;
+namespace Hemma.Api.Infrastructure.OpenApi;
 
 internal sealed class LoginResponseStatusSchemaTransformer : IOpenApiSchemaTransformer
 {

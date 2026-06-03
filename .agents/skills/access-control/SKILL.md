@@ -1,6 +1,6 @@
 ---
 name: access-control
-description: Endpoint-level guidance for applying authentication and authorization in Modulith. Covers RequireAuthorization, ICurrentUser, permission checks, and ownership-aware resource policies.
+description: Endpoint-level guidance for applying authentication and authorization in Hemma. Covers RequireAuthorization, ICurrentUser, permission checks, and ownership-aware resource policies.
 ---
 
 # Access Control
@@ -26,8 +26,8 @@ Before changing access checks, read:
 
 1. `docs/how-to/add-a-slice.md`
 2. `docs/how-to/auth/use-rbac.md`
-3. `src/Shared/Modulith.Shared.Infrastructure/Authorization/IResourcePolicy.cs`
-4. `src/Shared/Modulith.Shared.Infrastructure/Authorization/PermissionOrOwnerPolicy.cs`
+3. `src/Shared/Hemma.Shared.Infrastructure/Authorization/IResourcePolicy.cs`
+4. `src/Shared/Hemma.Shared.Infrastructure/Authorization/PermissionOrOwnerPolicy.cs`
 5. one nearby endpoint that already protects a similar resource
 
 ## The three common access patterns
@@ -206,6 +206,6 @@ Use these as the source of truth:
 
 - `docs/how-to/add-a-slice.md`
 - `docs/how-to/auth/use-rbac.md`
-- `src/Shared/Modulith.Shared.Infrastructure/Authorization/IResourcePolicy.cs`
-- `src/Shared/Modulith.Shared.Infrastructure/Authorization/PermissionOrOwnerPolicy.cs`
-- `src/Shared/Modulith.Shared.Kernel/Interfaces/ICurrentUser.cs`
+- `src/Shared/Hemma.Shared.Infrastructure/Authorization/IResourcePolicy.cs`
+- `src/Shared/Hemma.Shared.Infrastructure/Authorization/PermissionOrOwnerPolicy.cs`
+- `src/Shared/Hemma.Shared.Kernel/Interfaces/ICurrentUser.cs`

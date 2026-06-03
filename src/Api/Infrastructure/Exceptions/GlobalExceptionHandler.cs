@@ -2,7 +2,7 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Modulith.Api.Infrastructure.Exceptions;
+namespace Hemma.Api.Infrastructure.Exceptions;
 
 internal sealed partial class GlobalExceptionHandler(
     IProblemDetailsService problemDetailsService,

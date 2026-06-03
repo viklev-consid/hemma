@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Modulith.Modules.ModuleName.Contracts.Authorization;
-using Modulith.Shared.Infrastructure.Http;
+using Hemma.Modules.ModuleName.Contracts.Authorization;
+using Hemma.Shared.Infrastructure.Http;
 using Wolverine;
 
-namespace Modulith.Modules.ModuleName.Features.FeatureName;
+namespace Hemma.Modules.ModuleName.Features.FeatureName;
 
 internal static class FeatureNameEndpoint
 {
