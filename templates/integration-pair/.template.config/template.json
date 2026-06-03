@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Modulith",
+  "classifications": ["Modulith", "Integration", "Event", "Subscriber"],
+  "identity": "Modulith.IntegrationPair",
+  "name": "Modulith Integration Event and Subscriber Pair",
+  "shortName": "modulith-integration-pair",
+  "description": "Scaffolds a versioned integration event in a module contracts project and a subscriber handler in the module.",
+  "sourceName": "EventName",
+  "symbols": {
+    "module": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "ModuleName",
+      "fileRename": "ModuleName",
+      "isRequired": true,
+      "description": "The PascalCase module name that owns the event and subscriber scaffold."
+    },
+    "moduleNameLower": {
+      "type": "derived",
+      "valueSource": "module",
+      "valueTransform": "lowerCaseInvariant",
+      "replaces": "modulenamelower"
+    },
+    "eventNameLower": {
+      "type": "derived",
+      "valueSource": "name",
+      "valueTransform": "lowerCaseInvariant",
+      "replaces": "eventnamelower"
+    }
+  },
+  "sources": [
+    {
+      "source": "./ModuleName",
+      "target": ".",
+      "include": ["**/*"],
+      "exclude": [".template.config/**"]
+    }
+  ],
+  "postActions": [
+    {
+      "description": "Register the generated Wolverine subscriber.",
+      "manualInstructions": [
+        {
+          "text": "Add opts.Discovery.IncludeType<OnEventNameHandler>(); to ModuleNameModule.AddModuleNameHandlers. If the subscriber consumes another module's event, move it to the consuming module and reference only the publisher's .Contracts project."
+        }
+      ],
+      "actionId": "AC1156D0-6A73-4C5B-8D16-2D5B5523B704",
+      "continueOnError": true
+    }
+  ]
+}

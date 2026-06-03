@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Modulith",
+  "classifications": ["Modulith", "Slice", "Feature", "Query"],
+  "identity": "Modulith.QuerySlice",
+  "name": "Modulith Query Slice",
+  "shortName": "modulith-query-slice",
+  "description": "Scaffolds a read/query vertical slice inside an existing module.",
+  "sourceName": "FeatureName",
+  "symbols": {
+    "module": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "ModuleName",
+      "isRequired": true,
+      "description": "The PascalCase module name this query slice belongs to (e.g. Catalog, Orders)."
+    },
+    "moduleNameLower": {
+      "type": "derived",
+      "valueSource": "module",
+      "valueTransform": "lowerCaseInvariant",
+      "replaces": "modulenamelower"
+    },
+    "featureNameLower": {
+      "type": "derived",
+      "valueSource": "name",
+      "valueTransform": "lowerCaseInvariant",
+      "replaces": "featurenamelower"
+    }
+  },
+  "sources": [
+    {
+      "source": "./Features/FeatureName",
+      "target": ".",
+      "include": ["**/*"],
+      "exclude": [".template.config/**"]
+    }
+  ]
+}

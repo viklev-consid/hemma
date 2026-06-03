@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # ── Tier 1: Fast ─────────────────────────────────────────────────────────
+  # Runs on every push and PR. Build + unit + architectural tests only.
+  # No Docker, no containers. Target: < 1 minute.
+  fast:
+    name: Fast (build + unit + arch)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5.3.0
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: |
+          # Aspire injects RID-specific AppHost SDK packages, so its lock file is not portable.
+          dotnet restore src/AppHost/Modulith.AppHost.csproj
+          find src tests -name '*.csproj' ! -path 'src/AppHost/*' -exec dotnet restore --locked-mode {} \;
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Fast tests
+        run: dotnet test --no-build --configuration Release --filter "Category!=Integration&Category!=Smoke"

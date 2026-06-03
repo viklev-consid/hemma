@@ -1,0 +1,141 @@
+using System.Reflection;
+using Modulith.Modules.Catalog.Contracts.Events;
+using Modulith.Modules.Catalog.Domain;
+using NetArchTest.Rules;
+
+namespace Modulith.Architecture.Tests;
+
+[Trait("Category", "Architecture")]
+public sealed class CatalogModuleTests
+{
+    private static readonly Assembly catalogAssembly = typeof(Product).Assembly;
+    private static readonly Assembly contractsAssembly = typeof(ProductCreatedV1).Assembly;
+
+    [Fact]
+    public void CatalogDomain_HasNoEfCoreReferences()
+    {
+        var result = Types.InAssembly(catalogAssembly)
+            .That().ResideInNamespaceContaining(".Domain")
+            .ShouldNot().HaveDependencyOn("Microsoft.EntityFrameworkCore")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful,
+            $"FAIL: Types in Domain/ must not reference Microsoft.EntityFrameworkCore. " +
+            $"Move EF-dependent types to Persistence/. " +
+            $"Violations: {string.Join(", ", result.FailingTypeNames ?? [])}");
+    }
+
+    [Fact]
+    public void CatalogDomain_HasNoAspNetCoreReferences()
+    {
+        var result = Types.InAssembly(catalogAssembly)
+            .That().ResideInNamespaceContaining(".Domain")
+            .ShouldNot().HaveDependencyOn("Microsoft.AspNetCore")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful,
+            $"FAIL: Types in Domain/ must not reference Microsoft.AspNetCore. " +
+            $"Violations: {string.Join(", ", result.FailingTypeNames ?? [])}");
+    }
+
+    [Fact]
+    public void CatalogDomain_HasNoWolverineReferences()
+    {
+        var result = Types.InAssembly(catalogAssembly)
+            .That().ResideInNamespaceContaining(".Domain")
+            .ShouldNot().HaveDependencyOn("Wolverine")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful,
+            $"FAIL: Types in Domain/ must not reference Wolverine. " +
+            $"Violations: {string.Join(", ", result.FailingTypeNames ?? [])}");
+    }
+
+    [Fact]
+    public void CatalogDomain_HasNoFluentValidationReferences()
+    {
+        var result = Types.InAssembly(catalogAssembly)
+            .That().ResideInNamespaceContaining(".Domain")
+            .ShouldNot().HaveDependencyOn("FluentValidation")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful,
+            $"FAIL: Types in Catalog Domain/ must not reference FluentValidation. " +
+            $"Domain validation uses the Result pattern; FluentValidation belongs in feature slice Validators. " +
+            $"Violations: {string.Join(", ", result.FailingTypeNames ?? [])}");
+    }
+
+    [Fact]
+    public void CatalogDomain_HasNoFeatureManagementReferences()
+    {
+        var result = Types.InAssembly(catalogAssembly)
+            .That().ResideInNamespaceContaining(".Domain")
+            .ShouldNot().HaveDependencyOn("Microsoft.FeatureManagement")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful,
+            $"FAIL: Types in Catalog Domain/ must not reference Microsoft.FeatureManagement. " +
+            $"Feature flags belong at the edges (endpoint routing, handler selection). " +
+            $"Violations: {string.Join(", ", result.FailingTypeNames ?? [])}");
+    }
+
+    [Fact]
+    public void CatalogDomain_HasNoCachingReferences()
+    {
+        var result = Types.InAssembly(catalogAssembly)
+            .That().ResideInNamespaceContaining(".Domain")
+            .ShouldNot().HaveDependencyOn("Microsoft.Extensions.Caching")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful,
+            $"FAIL: Types in Catalog Domain/ must not reference Microsoft.Extensions.Caching. " +
+            $"Cache interaction belongs in handlers and infrastructure, not domain types. " +
+            $"Violations: {string.Join(", ", result.FailingTypeNames ?? [])}");
+    }
+
+    [Fact]
+    public void CatalogContracts_DoesNotReferenceCatalogInternal()
+    {
+        var referencedNames = contractsAssembly
+            .GetReferencedAssemblies()
+            .Select(a => a.Name)
+            .ToList();
+
+        Assert.False(
+            referencedNames.Contains(catalogAssembly.GetName().Name),
+            "FAIL: Catalog.Contracts must not reference Catalog internal project. " +
+            "This would expose internal types to other modules. " +
+            "Contracts should reference only Shared.Kernel and Shared.Contracts.");
+    }
+
+    [Fact]
+    public void CatalogIntegrationEvents_HaveVersionSuffix()
+    {
+        var eventTypes = contractsAssembly
+            .GetExportedTypes()
+            .Where(t => t.Namespace?.Contains(".Events") == true)
+            .Where(t => !t.Name.EndsWith("V1", StringComparison.Ordinal)
+                     && !t.Name.EndsWith("V2", StringComparison.Ordinal)
+                     && !t.Name.EndsWith("V3", StringComparison.Ordinal))
+            .Select(t => t.Name)
+            .ToList();
+
+        Assert.True(eventTypes.Count == 0,
+            $"FAIL: Integration events in Contracts/Events must have a version suffix (V1, V2, …). " +
+            $"Missing suffix on: {string.Join(", ", eventTypes)}.");
+    }
+
+    [Fact]
+    public void CatalogModule_DoesNotReferenceUsersInternalProject()
+    {
+        var referencedNames = catalogAssembly
+            .GetReferencedAssemblies()
+            .Select(a => a.Name)
+            .ToList();
+
+        Assert.False(
+            referencedNames.Contains("Modulith.Modules.Users"),
+            "FAIL: Catalog must not reference the Users internal project. " +
+            "Cross-module communication must go through Users.Contracts.");
+    }
+}

@@ -1,0 +1,405 @@
+using System.Globalization;
+using System.Security.Claims;
+using System.Text;
+using System.Threading.RateLimiting;
+using Asp.Versioning;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement;
+using Microsoft.IdentityModel.Tokens;
+using Modulith.Api.Infrastructure.DeadLetters;
+using Modulith.Api.Infrastructure.Exceptions;
+using Modulith.Api.Infrastructure.FeatureFlags;
+using Modulith.Api.Infrastructure.Logging;
+using Modulith.Api.Infrastructure.Modules;
+using Modulith.Api.Infrastructure.OpenApi;
+using Modulith.Api.Infrastructure.Scheduling;
+using Modulith.Modules.Users.Security.Authorization;
+using Modulith.Shared.Infrastructure.Auth;
+using Modulith.Shared.Infrastructure.Blobs;
+using Modulith.Shared.Infrastructure.Frontend;
+using Modulith.Shared.Infrastructure.Http;
+using Modulith.Shared.Infrastructure.Identity;
+using Modulith.Shared.Infrastructure.Logging;
+using Modulith.Shared.Infrastructure.Messaging;
+using Modulith.Shared.Infrastructure.Notifications;
+using Modulith.Shared.Infrastructure.Seeding;
+using Modulith.Shared.Infrastructure.Time;
+using Modulith.Shared.Kernel.Interfaces;
+using Scalar.AspNetCore;
+using TickerQ.Dashboard.DependencyInjection;
+using TickerQ.DependencyInjection;
+using TickerQ.EntityFrameworkCore.DependencyInjection;
+using Wolverine;
+using Wolverine.EntityFrameworkCore;
+using Wolverine.ErrorHandling;
+using Wolverine.Postgresql;
+
+var builder = WebApplication.CreateBuilder(args);
+var modules = ModuleCatalog.DiscoverInstallers();
+
+builder.Services.Configure<ForwardedHeadersOptions>(opts =>
+{
+    opts.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    // Coolify's Traefik container can move between Docker network addresses. The API port
+    // remains internal to the Compose network, so forwarded headers can be trusted here.
+    opts.KnownIPNetworks.Clear();
+    opts.KnownProxies.Clear();
+});
+
+// 1. Aspire service defaults (OTel, health checks, resilience, service discovery)
+builder.AddServiceDefaults();
+
+// 2. Serilog via appsettings.json with OTel sink
+builder.Host.UseModulithSerilog();
+
+// 3. ProblemDetails
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+// 4. Authentication — JWT Bearer, symmetric signing key from user-secrets in dev
+builder.Services
+    .AddOptions<JwtOptions>()
+    .Bind(builder.Configuration.GetSection("Jwt"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer();
+
+builder.Services
+    .AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<IOptions<JwtOptions>>((bearerOpts, jwtOpts) =>
+    {
+        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOpts.Value.SigningKey));
+        bearerOpts.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = signingKey,
+            ValidateIssuer = true,
+            ValidIssuer = jwtOpts.Value.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwtOpts.Value.Audience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(1)
+        };
+        bearerOpts.Events = new JwtBearerEvents
+        {
+            OnChallenge = async ctx =>
+            {
+                ctx.HandleResponse();
+                ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                ctx.Response.ContentType = "application/problem+json";
+                await ctx.Response.WriteAsJsonAsync(new ProblemDetails
+                {
+                    Type = "https://tools.ietf.org/html/rfc7235#section-3.1",
+                    Title = "Unauthorized",
+                    Status = StatusCodes.Status401Unauthorized
+                });
+            },
+            OnForbidden = async ctx =>
+            {
+                ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+                ctx.Response.ContentType = "application/problem+json";
+                await ctx.Response.WriteAsJsonAsync(new ProblemDetails
+                {
+                    Type = "https://tools.ietf.org/html/rfc7231#section-6.5.3",
+                    Title = "Forbidden",
+                    Status = StatusCodes.Status403Forbidden
+                });
+            }
+        };
+    });
+
+// 5. Authorization with baseline policies
+builder.Services.AddAuthorization(opts =>
+{
+    opts.AddPolicy("Authenticated", policy => policy.RequireAuthenticatedUser());
+    // Admin policy — gates dead-letter management and other operator-facing endpoints.
+    // The "admin" role is assigned via PUT /v1/users/{id}/role and grants every permission.
+    opts.AddPolicy("Admin", policy => policy.RequireRole("admin"));
+});
+
+// 5a. Browser CORS policy. This is only for trusted browser clients; non-browser API clients
+// do not participate in CORS.
+builder.Services.AddBrowserCors(builder.Configuration);
+
+// 5b. Frontend link generation for user-facing emails.
+builder.Services.AddFrontendLinks(builder.Configuration);
+
+// 6. OpenAPI + Scalar
+builder.Services.AddOpenApi(opts =>
+{
+    opts.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+    opts.AddOperationTransformer<AuthorizationOperationTransformer>();
+    opts.AddSchemaTransformer<LoginResponseStatusSchemaTransformer>();
+});
+
+// 7. Module registration
+builder.InstallModules(modules);
+
+// 7a. RBAC — must follow module registrations so all *.Contracts assemblies are loaded
+builder.Services.AddRbac();
+
+// 8. API versioning
+builder.Services.AddApiVersioning(opts =>
+{
+    opts.DefaultApiVersion = new ApiVersion(1, 0);
+    opts.ReportApiVersions = true;
+    opts.AssumeDefaultVersionWhenUnspecified = true;
+    opts.ApiVersionReader = ApiVersionReader.Combine(
+        new UrlSegmentApiVersionReader(),
+        new HeaderApiVersionReader("X-Api-Version"));
+});
+
+// 9. Rate limiting with tiered policies (in-memory; for distributed limiting use ingress-layer)
+builder.Services.AddRateLimiter(opts =>
+{
+    opts.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+    {
+        var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            $"global:{ip}",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = 1000,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            });
+    });
+
+    // Sliding window, partitioned by IP — prevents credential-stuffing from authenticated tokens
+    opts.AddPolicy("auth", ctx =>
+    {
+        var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetSlidingWindowLimiter(
+            $"auth:{ip}",
+            _ => new SlidingWindowRateLimiterOptions
+            {
+                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = 5,
+                SegmentsPerWindow = 4,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            });
+    });
+
+    opts.AddPolicy("write", ctx => PerUserPartition("write", ctx, 60));
+    opts.AddPolicy("read", ctx => PerUserPartition("read", ctx, 300));
+    opts.AddPolicy("expensive", ctx => PerUserPartition("expensive", ctx, 10));
+    opts.AddPolicy("operator", ctx => PerUserPartition("operator", ctx, 30));
+
+    opts.OnRejected = async (ctx, token) =>
+    {
+        ctx.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        if (ctx.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            ctx.HttpContext.Response.Headers.RetryAfter =
+                ((int)retryAfter.TotalSeconds).ToString(CultureInfo.InvariantCulture);
+        }
+        await ctx.HttpContext.Response.WriteAsJsonAsync(
+            new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc6585#section-4",
+                Title = "Too Many Requests",
+                Status = StatusCodes.Status429TooManyRequests,
+                Extensions =
+                {
+                    ["errorCode"] = "rate_limit_exceeded",
+                    ["traceId"] = System.Diagnostics.Activity.Current?.TraceId.ToString()
+                }
+            },
+            cancellationToken: token);
+    };
+});
+
+// 10. HybridCache backed by Redis (gracefully degrades to L1-only without Redis)
+builder.AddRedisDistributedCache("cache");
+builder.Services.AddHybridCache();
+
+// 11. Feature management with per-user targeting
+builder.Services
+    .AddFeatureManagement()
+    .WithTargeting<CurrentUserTargetingContextAccessor>();
+
+// 12. TickerQ — recurring scheduled jobs and operator dashboard
+builder.Services.AddTickerQ(opts =>
+{
+    opts.AddOperationalStore(store =>
+    {
+        store.UseTickerQDbContext<TickerQOperationalDbContext>(
+            db => db.UseNpgsql(
+                builder.Configuration.GetConnectionString("db"),
+                npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", TickerQOperationalDbContext.Schema)),
+            TickerQOperationalDbContext.Schema);
+    });
+
+    opts.AddDashboard(dashboard =>
+    {
+        dashboard.SetBasePath("/admin/jobs");
+        dashboard.WithHostAuthentication("Admin");
+    });
+
+    opts.ConfigureModuleJobs(modules);
+});
+
+// 13. Wolverine — messaging, outbox, delayed messages, and handler middleware
+builder.UseWolverine(opts =>
+{
+    opts.PersistMessagesWithPostgresql(
+        builder.Configuration.GetConnectionString("db")!,
+        "wolverine");
+
+    opts.Policies.AutoApplyTransactions();
+    opts.Policies.UseDurableLocalQueues();
+
+    opts.Durability.OutboxStaleTime = TimeSpan.FromMinutes(5);
+    opts.Durability.InboxStaleTime = TimeSpan.FromMinutes(10);
+
+    // Dead-letter retention: keep for 30 days, then Wolverine's background job purges
+    // automatically. 30 days balances investigative window against unbounded table growth.
+    // Adjust via ADR if a longer SLA is required.
+    opts.Durability.DeadLetterQueueExpirationEnabled = true;
+    opts.Durability.DeadLetterQueueExpiration = TimeSpan.FromDays(30);
+
+    // ── Error-handling policies (explicit, evidence-based) ─────────────────────────────────
+    // IOException covers transient network failures from non-SMTP handlers and other I/O
+    // paths. SMTP-specific exceptions are classified by SmtpEmailSender into
+    // RetryableSmtpException / TerminalSmtpException (see below) so this policy no longer
+    // fires for email delivery.
+    opts.OnException<System.IO.IOException>()
+        .RetryWithCooldown(
+            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(30),
+            TimeSpan.FromMinutes(2));
+
+    // Transient SMTP failures: 4xx server responses, protocol errors, connection drops, I/O errors.
+    // SmtpEmailSender wraps these as RetryableSmtpException; handlers reset the send claim
+    // to Pending before rethrowing so the retry can re-claim immediately.
+    //
+    // Future improvement: add a circuit breaker for RetryableSmtpException by routing
+    // notification messages to a dedicated local queue and calling CircuitBreaker() on it.
+    // This prevents all in-flight notifications from burning through retries independently
+    // when the SMTP server is known-down. Requires a queue-routing change; track as a task.
+    opts.OnException<RetryableSmtpException>()
+        .RetryWithCooldown(
+            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(30),
+            TimeSpan.FromMinutes(2));
+
+    // Permanent SMTP failures: 5xx server responses, TLS handshake/certificate errors,
+    // authentication failures (wrong credentials, unsupported mechanism), and
+    // ServiceNotAuthenticatedException (server requires auth that was never established).
+    // All require configuration changes — retrying will not succeed. Handlers mark the
+    // notification log as Failed before rethrowing. Move directly to the dead-letter queue.
+    opts.OnException<TerminalSmtpException>()
+        .MoveToErrorQueue();
+
+    // InvalidOperationException in a message handler indicates a programming error or a
+    // non-recoverable state violation (e.g. calling an EF Core operation on a disposed context,
+    // or a domain invariant raised unexpectedly as an exception rather than ErrorOr<T>). Retrying
+    // is pointless and would only delay failure visibility. Move directly to the error queue so
+    // the failure is surfaced immediately for operational triage.
+    opts.OnException<InvalidOperationException>()
+        .MoveToErrorQueue();
+
+    opts.Policies.AddMiddleware<FluentValidationMiddleware>(_ => true);
+    opts.Policies.AddMiddleware<AuditMiddleware>(_ => true);
+    opts.Policies.AddMiddleware<CacheInvalidationMiddleware>(_ => true);
+
+    // Register internal handlers per module (internal types require explicit inclusion)
+    opts.ConfigureModuleMessaging(modules);
+});
+
+// Shared infrastructure services
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddSingleton<IClock, SystemClock>();
+builder.Services.AddBlobStorage(builder.Configuration, builder.Environment);
+
+var app = builder.Build();
+
+app.UseForwardedHeaders();
+
+// Health and liveness endpoints — exempt from rate limiting via Aspire ServiceDefaults
+app.MapDefaultEndpoints();
+
+// 13. Global exception handler (converts unhandled exceptions to ProblemDetails with traceId)
+app.UseExceptionHandler();
+
+var corsOptions = app.Services.GetRequiredService<IOptions<CorsOptions>>().Value;
+app.UseCors(corsOptions.PolicyName);
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+if (!app.Environment.IsEnvironment("Test"))
+{
+    app.UseRateLimiter();
+}
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi().DisableRateLimiting();
+    app.MapScalarApiReference().DisableRateLimiting();
+}
+else
+{
+    app.MapOpenApi().RequireAuthorization().DisableRateLimiting();
+}
+
+app.UseHttpsRedirection();
+
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Test"))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    await scope.ServiceProvider.GetRequiredService<TickerQOperationalDbContext>().Database.MigrateAsync();
+}
+
+app.UseTickerQ();
+
+// 14. Module endpoint registrations
+app.MapModuleEndpoints(modules);
+app.UseModules(modules);
+
+// 15. Admin — dead-letter management (Admin policy, all environments)
+app.MapDeadLetterAdminEndpoints();
+
+// 15. Dev seeders (idempotent)
+var moduleSeedersEnabled = builder.Configuration.GetValue("Modules:Seeders:Enabled", true);
+if (moduleSeedersEnabled && (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Test")))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var seeders = scope.ServiceProvider.GetServices<IModuleSeeder>();
+    foreach (var seeder in seeders)
+    {
+        await seeder.SeedAsync();
+    }
+}
+
+var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+WolverineStartupLog.OutboxActive(startupLogger);
+
+await app.RunAsync();
+
+static RateLimitPartition<string> PerUserPartition(string policy, HttpContext ctx, int limit) =>
+    RateLimitPartition.GetFixedWindowLimiter(
+        $"{policy}:{(ctx.User.Identity?.IsAuthenticated == true
+            ? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anon"
+            : ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown")}",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            Window = TimeSpan.FromMinutes(1),
+            PermitLimit = limit,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0
+        });
+
+// Needed for WebApplicationFactory<Program> in integration tests.
+public partial class Program { }
