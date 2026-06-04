@@ -1,5 +1,14 @@
 using FluentValidation;
 using Hemma.Modules.Economy.Contracts.Authorization;
+using Hemma.Modules.Economy.Features.AddCategory;
+using Hemma.Modules.Economy.Features.CopyBudgetFromPreviousPeriod;
+using Hemma.Modules.Economy.Features.CreateAccount;
+using Hemma.Modules.Economy.Features.CreateBudget;
+using Hemma.Modules.Economy.Features.CreateEconomySettings;
+using Hemma.Modules.Economy.Features.ListAccounts;
+using Hemma.Modules.Economy.Features.ListCategories;
+using Hemma.Modules.Economy.Features.UpdateCycleStartDay;
+using Hemma.Modules.Economy.Features.UpsertBudgetLine;
 using Hemma.Modules.Economy.Gdpr;
 using Hemma.Modules.Economy.Persistence;
 using Hemma.Modules.Economy.Seeding;
@@ -61,11 +70,30 @@ public static class EconomyModule
 
     public static WolverineOptions AddEconomyHandlers(this WolverineOptions opts)
     {
+        opts.Discovery.IncludeType<CreateEconomySettingsHandler>();
+        opts.Discovery.IncludeType<UpdateCycleStartDayHandler>();
+        opts.Discovery.IncludeType<CreateAccountHandler>();
+        opts.Discovery.IncludeType<ListAccountsHandler>();
+        opts.Discovery.IncludeType<AddCategoryHandler>();
+        opts.Discovery.IncludeType<ListCategoriesHandler>();
+        opts.Discovery.IncludeType<CreateBudgetHandler>();
+        opts.Discovery.IncludeType<UpsertBudgetLineHandler>();
+        opts.Discovery.IncludeType<CopyBudgetFromPreviousPeriodHandler>();
         return opts;
     }
 
     public static IEndpointRouteBuilder MapEconomyEndpoints(this IEndpointRouteBuilder app)
     {
+        CreateEconomySettingsEndpoint.Map(app);
+        UpdateCycleStartDayEndpoint.Map(app);
+        CreateAccountEndpoint.Map(app);
+        ListAccountsEndpoint.Map(app);
+        AddCategoryEndpoint.Map(app);
+        ListCategoriesEndpoint.Map(app);
+        CreateBudgetEndpoint.Map(app);
+        UpsertBudgetLineEndpoint.Map(app);
+        CopyBudgetFromPreviousPeriodEndpoint.Map(app);
+
         return app;
     }
 }

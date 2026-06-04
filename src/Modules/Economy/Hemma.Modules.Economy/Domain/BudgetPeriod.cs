@@ -12,4 +12,6 @@ public sealed record BudgetPeriod(DateOnly StartsOn, DateOnly EndsOn)
 
         return new BudgetPeriod(start, start.AddMonths(1).AddDays(-1));
     }
+
+    public BudgetPeriod Previous() => new(StartsOn.AddMonths(-1), StartsOn.AddDays(-1));
 }

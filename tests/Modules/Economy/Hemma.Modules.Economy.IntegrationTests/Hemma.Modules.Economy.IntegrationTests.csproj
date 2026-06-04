@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\src\Modules\Economy\Hemma.Modules.Economy\Hemma.Modules.Economy.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Modules\Households\Hemma.Modules.Households\Hemma.Modules.Households.csproj" />
     <ProjectReference Include="..\..\..\Hemma.TestSupport\Hemma.TestSupport.csproj" />
   </ItemGroup>
 
