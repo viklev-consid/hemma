@@ -41,9 +41,6 @@ internal static class HouseholdsErrors
     public static readonly ErrorOr.Error RoleInvalid =
         ErrorOr.Error.Validation("Households.Role.Invalid", "Household role is not valid.");
 
-    public static readonly ErrorOr.Error RoleEscalationForbidden =
-        ErrorOr.Error.Forbidden("Households.Role.EscalationForbidden", "Cannot grant or modify an household role at or above your authority.");
-
     public static readonly ErrorOr.Error PlatformOverrideMutationForbidden =
         ErrorOr.Error.Forbidden("Households.PlatformOverride.MutationForbidden", "Platform override cannot mutate household state.");
 

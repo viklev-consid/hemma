@@ -40,7 +40,7 @@ public sealed class HouseholdTests
     {
         var household = CreateHousehold();
 
-        var result = household.ChangeMemberRole(ownerId, HouseholdRole.Admin);
+        var result = household.ChangeMemberRole(ownerId, HouseholdRole.Member);
 
         Assert.True(result.IsError);
         Assert.Equal(HouseholdRole.Owner, household.FindActiveMembership(ownerId)?.Role);
@@ -65,36 +65,34 @@ public sealed class HouseholdTests
         var userId = Guid.NewGuid();
         household.AddMember(userId, HouseholdRole.Member, clock);
 
-        var result = household.AddMember(userId, HouseholdRole.Admin, clock);
+        var result = household.AddMember(userId, HouseholdRole.Member, clock);
 
         Assert.True(result.IsError);
     }
 
     [Fact]
-    public void RemoveMemberAsActor_WhenActorRankIsLowerThanTarget_ReturnsError()
+    public void RemoveMemberAsActor_WhenMemberRemovesAnotherMember_ReturnsError()
     {
         var household = CreateHousehold();
-        var adminId = Guid.NewGuid();
+        var targetId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
-        household.AddMember(adminId, HouseholdRole.Admin, clock);
+        household.AddMember(targetId, HouseholdRole.Member, clock);
         household.AddMember(memberId, HouseholdRole.Member, clock);
 
-        var result = household.RemoveMemberAsActor(memberId, adminId, clock);
+        var result = household.RemoveMemberAsActor(memberId, targetId, clock);
 
         Assert.True(result.IsError);
-        Assert.True(household.FindActiveMembership(adminId)?.IsActive);
+        Assert.True(household.FindActiveMembership(targetId)?.IsActive);
     }
 
     [Fact]
-    public void RemoveMemberAsActor_WhenActorRankEqualsTarget_RemovesTarget()
+    public void RemoveMemberAsActor_WhenOwnerRemovesMember_RemovesTarget()
     {
         var household = CreateHousehold();
-        var actorId = Guid.NewGuid();
         var targetId = Guid.NewGuid();
-        household.AddMember(actorId, HouseholdRole.Admin, clock);
-        household.AddMember(targetId, HouseholdRole.Admin, clock);
+        household.AddMember(targetId, HouseholdRole.Member, clock);
 
-        var result = household.RemoveMemberAsActor(actorId, targetId, clock);
+        var result = household.RemoveMemberAsActor(ownerId, targetId, clock);
 
         Assert.False(result.IsError);
         Assert.Null(household.FindActiveMembership(targetId));

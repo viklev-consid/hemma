@@ -115,7 +115,7 @@ public sealed class Household : AggregateRoot<HouseholdId>, IAuditableEntity
     public ErrorOr<string> ChangeMemberRole(Guid actorUserId, Guid targetUserId, HouseholdRole role)
     {
         var actor = FindActiveMembership(actorUserId);
-        if (actor is null)
+        if (actor is null || actor.Role != HouseholdRole.Owner)
         {
             return HouseholdsErrors.MemberNotFound;
         }
@@ -126,12 +126,6 @@ public sealed class Household : AggregateRoot<HouseholdId>, IAuditableEntity
             return HouseholdsErrors.MemberNotFound;
         }
 
-        var requiredRank = Math.Max(target.Role.Rank, role.Rank);
-        if (actor.Role.Rank < requiredRank)
-        {
-            return HouseholdsErrors.RoleEscalationForbidden;
-        }
-
         var oldRole = target.Role.Name;
         var change = ChangeMemberRole(targetUserId, role);
         return change.IsError ? change.Errors : oldRole;
@@ -140,14 +134,12 @@ public sealed class Household : AggregateRoot<HouseholdId>, IAuditableEntity
     public ErrorOr<Success> EnsureCanInviteRole(Guid actorUserId, HouseholdRole role)
     {
         var actor = FindActiveMembership(actorUserId);
-        if (actor is null)
+        if (actor is null || actor.Role != HouseholdRole.Owner)
         {
             return HouseholdsErrors.MemberNotFound;
         }
 
-        return actor.Role.Rank >= role.Rank
-            ? Result.Success
-            : HouseholdsErrors.RoleEscalationForbidden;
+        return Result.Success;
     }
 
     public ErrorOr<Success> RemoveMember(Guid userId, Guid removedByUserId, IClock clock)
@@ -187,9 +179,9 @@ public sealed class Household : AggregateRoot<HouseholdId>, IAuditableEntity
             return HouseholdsErrors.MemberNotFound;
         }
 
-        if (actorUserId != targetUserId && actor.Role.Rank < target.Role.Rank)
+        if (actorUserId != targetUserId && actor.Role != HouseholdRole.Owner)
         {
-            return HouseholdsErrors.RoleEscalationForbidden;
+            return HouseholdsErrors.MemberNotFound;
         }
 
         return RemoveMember(targetUserId, actorUserId, clock);

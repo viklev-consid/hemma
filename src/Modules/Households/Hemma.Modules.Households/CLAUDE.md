@@ -11,7 +11,7 @@ For general module conventions, see [`../../CLAUDE.md`](../../CLAUDE.md). For th
 - **Household** - the root aggregate. Identified by `HouseholdId` (typed Guid).
 - **HouseholdSlug** - globally unique URL-friendly reference. Routes accept either slug or household ID as `householdRef`.
 - **HouseholdMembership** - a user's active or historical role in an household.
-- **HouseholdRole** - `owner`, `admin`, `member`, or `viewer`, with rank used to prevent privilege escalation.
+- **HouseholdRole** - `owner` or `member`; owners manage the household, members can read household/member information.
 - **HouseholdInvitation** - email-scoped, single-use invitation into one household with one requested role. Raw token exists only in transit; the stored token is a SHA-256 hash.
 - **HouseholdScope** - public scoped-authorization contract used by modules that need household-aware permissions.
 

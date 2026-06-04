@@ -44,31 +44,31 @@ public sealed class HouseholdSecurityTests(HouseholdsApiFixture fixture) : IAsyn
     }
 
     [Fact]
-    public async Task Admin_CannotPromoteSelfToOwner()
+    public async Task Member_CannotPromoteSelfToOwner()
     {
         var ownerId = Guid.NewGuid();
-        var adminId = Guid.NewGuid();
+        var memberId = Guid.NewGuid();
         var org = await CreateHouseholdAsync(ownerId, "Acme", "acme");
-        await AddMemberAsync(org.Id, adminId, HouseholdRole.Admin);
-        using var adminClient = fixture.CreateAuthenticatedClient(adminId, "admin@example.com", "Admin");
+        await AddMemberAsync(org.Id, memberId, HouseholdRole.Member);
+        using var memberClient = fixture.CreateAuthenticatedClient(memberId, "member@example.com", "Member");
 
-        var response = await adminClient.PutAsJsonAsync(
-            $"/v1/households/{org.Slug}/members/{adminId}/role",
+        var response = await memberClient.PutAsJsonAsync(
+            $"/v1/households/{org.Slug}/members/{memberId}/role",
             new ChangeHouseholdMemberRoleRequest("owner"));
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]
-    public async Task Admin_CannotCreateOwnerInvitation()
+    public async Task Member_CannotCreateOwnerInvitation()
     {
         var ownerId = Guid.NewGuid();
-        var adminId = Guid.NewGuid();
+        var memberId = Guid.NewGuid();
         var org = await CreateHouseholdAsync(ownerId, "Acme", "acme");
-        await AddMemberAsync(org.Id, adminId, HouseholdRole.Admin);
-        using var adminClient = fixture.CreateAuthenticatedClient(adminId, "admin@example.com", "Admin");
+        await AddMemberAsync(org.Id, memberId, HouseholdRole.Member);
+        using var memberClient = fixture.CreateAuthenticatedClient(memberId, "member@example.com", "Member");
 
-        var response = await adminClient.PostAsJsonAsync(
+        var response = await memberClient.PostAsJsonAsync(
             $"/v1/households/{org.Slug}/invitations",
             new CreateHouseholdInvitationRequest("alt@example.com", "owner"));
 
@@ -76,15 +76,15 @@ public sealed class HouseholdSecurityTests(HouseholdsApiFixture fixture) : IAsyn
     }
 
     [Fact]
-    public async Task Admin_CannotDeleteHousehold()
+    public async Task Member_CannotDeleteHousehold()
     {
         var ownerId = Guid.NewGuid();
-        var adminId = Guid.NewGuid();
+        var memberId = Guid.NewGuid();
         var org = await CreateHouseholdAsync(ownerId, "Acme", "acme");
-        await AddMemberAsync(org.Id, adminId, HouseholdRole.Admin);
-        using var adminClient = fixture.CreateAuthenticatedClient(adminId, "admin@example.com", "Admin");
+        await AddMemberAsync(org.Id, memberId, HouseholdRole.Member);
+        using var memberClient = fixture.CreateAuthenticatedClient(memberId, "member@example.com", "Member");
 
-        var response = await adminClient.DeleteAsync($"/v1/households/{org.Slug}");
+        var response = await memberClient.DeleteAsync($"/v1/households/{org.Slug}");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -191,46 +191,46 @@ public sealed class HouseholdSecurityTests(HouseholdsApiFixture fixture) : IAsyn
     }
 
     [Fact]
-    public async Task Viewer_CanLeaveHousehold()
+    public async Task Member_CanLeaveHousehold()
     {
         var ownerId = Guid.NewGuid();
-        var viewerId = Guid.NewGuid();
+        var memberId = Guid.NewGuid();
         var org = await CreateHouseholdAsync(ownerId, "Acme", "acme");
-        await AddMemberAsync(org.Id, viewerId, HouseholdRole.Viewer);
-        using var client = fixture.CreateAuthenticatedClient(viewerId, "viewer@example.com", "Viewer");
+        await AddMemberAsync(org.Id, memberId, HouseholdRole.Member);
+        using var client = fixture.CreateAuthenticatedClient(memberId, "member@example.com", "Member");
 
-        var response = await client.DeleteAsync($"/v1/households/{org.Slug}/members/{viewerId}");
+        var response = await client.DeleteAsync($"/v1/households/{org.Slug}/members/{memberId}");
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         var isActive = await fixture.QueryDbAsync<HouseholdsDbContext, bool>((db, ct) =>
-            db.Memberships.AnyAsync(m => m.HouseholdId == org.Id && m.UserId == viewerId && m.IsActive, ct));
+            db.Memberships.AnyAsync(m => m.HouseholdId == org.Id && m.UserId == memberId && m.IsActive, ct));
         Assert.False(isActive);
     }
 
     [Fact]
-    public async Task Member_CannotRemoveHigherRankedAdmin()
+    public async Task Member_CannotRemoveAnotherMember()
     {
         var ownerId = Guid.NewGuid();
-        var adminId = Guid.NewGuid();
+        var targetId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
         var org = await CreateHouseholdAsync(ownerId, "Acme", "acme");
-        await AddMemberAsync(org.Id, adminId, HouseholdRole.Admin);
+        await AddMemberAsync(org.Id, targetId, HouseholdRole.Member);
         await AddMemberAsync(org.Id, memberId, HouseholdRole.Member);
         using var client = fixture.CreateAuthenticatedClient(memberId, "member@example.com", "Member");
 
-        var response = await client.DeleteAsync($"/v1/households/{org.Slug}/members/{adminId}");
+        var response = await client.DeleteAsync($"/v1/households/{org.Slug}/members/{targetId}");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]
-    public async Task Admin_CannotRemoveOwner()
+    public async Task Member_CannotRemoveOwner()
     {
         var ownerId = Guid.NewGuid();
-        var adminId = Guid.NewGuid();
+        var memberId = Guid.NewGuid();
         var org = await CreateHouseholdAsync(ownerId, "Acme", "acme");
-        await AddMemberAsync(org.Id, adminId, HouseholdRole.Admin);
-        using var client = fixture.CreateAuthenticatedClient(adminId, "admin@example.com", "Admin");
+        await AddMemberAsync(org.Id, memberId, HouseholdRole.Member);
+        using var client = fixture.CreateAuthenticatedClient(memberId, "member@example.com", "Member");
 
         var response = await client.DeleteAsync($"/v1/households/{org.Slug}/members/{ownerId}");
 

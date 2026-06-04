@@ -5,31 +5,25 @@ namespace Hemma.Modules.Households.Domain;
 
 public sealed record HouseholdRole
 {
-    public static readonly HouseholdRole Owner = new("owner", rank: 3);
-    public static readonly HouseholdRole Admin = new("admin", rank: 2);
-    public static readonly HouseholdRole Member = new("member", rank: 1);
-    public static readonly HouseholdRole Viewer = new("viewer", rank: 0);
+    public static readonly HouseholdRole Owner = new("owner");
+    public static readonly HouseholdRole Member = new("member");
 
     private static readonly Dictionary<string, HouseholdRole> known =
         new Dictionary<string, HouseholdRole>(StringComparer.OrdinalIgnoreCase)
         {
             [Owner.Name] = Owner,
-            [Admin.Name] = Admin,
-            [Member.Name] = Member,
-            [Viewer.Name] = Viewer
+            [Member.Name] = Member
         };
 
-    private HouseholdRole(string name, int rank)
+    private HouseholdRole(string name)
     {
         Name = name;
-        Rank = rank;
     }
 
     public string Name { get; }
-    public int Rank { get; }
 
     public static IReadOnlyCollection<HouseholdRole> All { get; } =
-        [Owner, Admin, Member, Viewer];
+        [Owner, Member];
 
     public static ErrorOr<HouseholdRole> Create(string name)
     {

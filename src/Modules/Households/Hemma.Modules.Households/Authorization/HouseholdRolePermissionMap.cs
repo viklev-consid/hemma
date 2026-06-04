@@ -18,23 +18,10 @@ internal static class HouseholdRolePermissionMap
                 HouseholdsPermissions.InvitationsManage,
                 HouseholdsPermissions.AuditRead
             ],
-            [HouseholdRole.Admin.Name] =
-            [
-                HouseholdsPermissions.HouseholdsRead,
-                HouseholdsPermissions.HouseholdsWrite,
-                HouseholdsPermissions.MembersRead,
-                HouseholdsPermissions.MembersManage,
-                HouseholdsPermissions.InvitationsManage,
-                HouseholdsPermissions.AuditRead
-            ],
             [HouseholdRole.Member.Name] =
             [
                 HouseholdsPermissions.HouseholdsRead,
                 HouseholdsPermissions.MembersRead
-            ],
-            [HouseholdRole.Viewer.Name] =
-            [
-                HouseholdsPermissions.HouseholdsRead
             ]
         };
 
