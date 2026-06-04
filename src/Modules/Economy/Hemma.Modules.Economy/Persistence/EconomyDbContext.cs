@@ -1,10 +1,16 @@
-using Microsoft.EntityFrameworkCore;
+using Hemma.Modules.Economy.Domain;
 using Hemma.Shared.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Persistence;
 
 public sealed class EconomyDbContext(DbContextOptions<EconomyDbContext> options) : ModuleDbContext(options)
 {
+    public DbSet<EconomySettings> EconomySettings => Set<EconomySettings>();
+    public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Budget> Budgets => Set<Budget>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

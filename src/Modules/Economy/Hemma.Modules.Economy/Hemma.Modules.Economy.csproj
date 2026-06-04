@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Hemma.Modules.Economy.Contracts\Hemma.Modules.Economy.Contracts.csproj" />
+    <ProjectReference Include="..\..\Households\Hemma.Modules.Households.Contracts\Hemma.Modules.Households.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Shared\Hemma.Shared.Infrastructure\Hemma.Shared.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\Shared\Hemma.Shared.Kernel\Hemma.Shared.Kernel.csproj" />
   </ItemGroup>
@@ -19,6 +20,10 @@
     <PackageReference Include="ErrorOr" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
