@@ -27,9 +27,9 @@ The architecture is designed to be easy to split into separate services later, b
 │                    TickerQ recurring jobs + admin dashboard           │
 │                                  │                                    │
 │  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐          │
-│  │  Users   │   │  Orgs    │   │ Catalog  │   │  Notifi- │   ...    │
+│  │  Users   │   │  Orgs    │   │  Audit   │   │  Notifi- │   ...    │
 │  │ Module   │   │  Module  │   │  Module  │   │ cations  │          │
-│  │          │   │          │   │  Module  │   │          │          │
+│  │          │   │          │   │          │   │  Module  │          │
 │  │  own DB  │   │  own DB  │   │  own DB  │   │  own DB  │          │
 │  │  schema  │   │  schema  │   │  schema  │   │  schema  │          │
 │  └──────────┘   └──────────┘   └──────────┘   └──────────┘          │
@@ -68,9 +68,6 @@ Hemma.sln
 │       ├── Organizations/
 │       │   ├── Hemma.Modules.Organizations/        # Internal
 │       │   └── Hemma.Modules.Organizations.Contracts/
-│       ├── Catalog/
-│       │   ├── Hemma.Modules.Catalog/
-│       │   └── Hemma.Modules.Catalog.Contracts/
 │       ├── Notifications/
 │       │   ├── Hemma.Modules.Notifications/
 │       │   └── Hemma.Modules.Notifications.Contracts/

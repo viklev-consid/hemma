@@ -7,7 +7,6 @@ using Microsoft.Extensions.Logging;
 using Hemma.Api.Infrastructure.Scheduling;
 using Hemma.MigrationService;
 using Hemma.Modules.Audit.Persistence;
-using Hemma.Modules.Catalog.Persistence;
 using Hemma.Modules.Notifications.Persistence;
 using Hemma.Modules.Organizations.Persistence;
 using Hemma.Modules.Users.Persistence;
@@ -23,11 +22,6 @@ builder.Services.AddDbContext<UsersDbContext>(opts =>
     opts.UseNpgsql(
         connectionString,
         npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", "users")));
-
-builder.Services.AddDbContext<CatalogDbContext>(opts =>
-    opts.UseNpgsql(
-        connectionString,
-        npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", "catalog")));
 
 builder.Services.AddDbContext<AuditDbContext>(opts =>
     opts.UseNpgsql(
@@ -59,7 +53,6 @@ var logger = scope.ServiceProvider
 EnsureAllModuleDbContextsAreRegistered(scope.ServiceProvider);
 
 await MigrateAsync<UsersDbContext>(scope.ServiceProvider, logger);
-await MigrateAsync<CatalogDbContext>(scope.ServiceProvider, logger);
 await MigrateAsync<AuditDbContext>(scope.ServiceProvider, logger);
 await MigrateAsync<NotificationsDbContext>(scope.ServiceProvider, logger);
 await MigrateAsync<OrganizationsDbContext>(scope.ServiceProvider, logger);

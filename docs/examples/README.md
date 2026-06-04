@@ -4,8 +4,6 @@ Worked patterns extracted from the real modules. Each file shows one pattern end
 
 | File | Pattern | Source module |
 |---|---|---|
-| [`simple-query-slice.md`](simple-query-slice.md) | Read-only slice with no validator | Catalog / `ListProducts` |
-| [`command-with-event.md`](command-with-event.md) | Command slice that publishes an integration event | Catalog / `CreateProduct` |
 | [`cross-module-subscriber.md`](cross-module-subscriber.md) | Integration event subscriber with idempotency and consent | Notifications / `OnUserRegisteredHandler` |
 | [`scheduled-job.md`](scheduled-job.md) | TickerQ cron trigger dispatching a Wolverine command | Users / `SweepExpiredTokens` |
 | [`security-sensitive-slice.md`](security-sensitive-slice.md) | Slice with enumeration resistance (always-200) | Users / `ForgotPassword` |

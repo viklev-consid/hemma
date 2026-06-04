@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Hemma.Modules.Audit.Persistence;
-using Hemma.Modules.Catalog.Persistence;
 using Hemma.Modules.Notifications.Persistence;
 using Hemma.Modules.Organizations.Persistence;
 using Hemma.Modules.Users.Domain;
@@ -48,13 +47,12 @@ public class UsersApiFixture : ApiTestFixture
     protected override async Task MigrateAsync(IServiceProvider services)
     {
         await services.GetRequiredService<UsersDbContext>().Database.MigrateAsync();
-        await services.GetRequiredService<CatalogDbContext>().Database.MigrateAsync();
         await services.GetRequiredService<AuditDbContext>().Database.MigrateAsync();
         await services.GetRequiredService<NotificationsDbContext>().Database.MigrateAsync();
         await services.GetRequiredService<OrganizationsDbContext>().Database.MigrateAsync();
     }
 
-    protected override string[] GetSchemasToReset() => ["users", "catalog", "audit", "notifications", "organizations"];
+    protected override string[] GetSchemasToReset() => ["users", "audit", "notifications", "organizations"];
 }
 
 public sealed class InviteOnlyUsersApiFixture : UsersApiFixture

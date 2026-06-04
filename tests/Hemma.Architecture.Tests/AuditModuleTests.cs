@@ -125,20 +125,6 @@ public sealed class AuditModuleTests
     }
 
     [Fact]
-    public void AuditModule_DoesNotReferenceCatalogInternalProject()
-    {
-        var referencedNames = auditAssembly
-            .GetReferencedAssemblies()
-            .Select(a => a.Name)
-            .ToList();
-
-        Assert.False(
-            referencedNames.Contains("Hemma.Modules.Catalog"),
-            "FAIL: Audit must not reference the Catalog internal project. " +
-            "Subscribe to Catalog.Contracts events instead. See ADR-0005.");
-    }
-
-    [Fact]
     public void AuditIntegrationContracts_HaveVersionSuffix()
     {
         // Audit.Contracts exposes queries and DTOs, not integration events.
