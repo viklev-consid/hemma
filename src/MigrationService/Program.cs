@@ -1,15 +1,15 @@
 using System.Reflection;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Hemma.Api.Infrastructure.Scheduling;
 using Hemma.MigrationService;
 using Hemma.Modules.Audit.Persistence;
-using Hemma.Modules.Notifications.Persistence;
 using Hemma.Modules.Households.Persistence;
+using Hemma.Modules.Notifications.Persistence;
 using Hemma.Modules.Users.Persistence;
+using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -53,8 +53,10 @@ var logger = scope.ServiceProvider
 EnsureAllModuleDbContextsAreRegistered(scope.ServiceProvider);
 
 await MigrateAsync<UsersDbContext>(scope.ServiceProvider, logger);
+await BootstrapAuditAsync(scope.ServiceProvider);
 await MigrateAsync<AuditDbContext>(scope.ServiceProvider, logger);
 await MigrateAsync<NotificationsDbContext>(scope.ServiceProvider, logger);
+await BootstrapHouseholdsAsync(scope.ServiceProvider);
 await MigrateAsync<HouseholdsDbContext>(scope.ServiceProvider, logger);
 await MigrateAsync<TickerQOperationalDbContext>(scope.ServiceProvider, logger);
 
@@ -66,6 +68,18 @@ static async Task MigrateAsync<TDbContext>(IServiceProvider services, ILogger lo
     var db = services.GetRequiredService<TDbContext>();
     MigrationLog.Applying(logger, typeof(TDbContext).Name);
     await db.Database.MigrateAsync();
+}
+
+static async Task BootstrapAuditAsync(IServiceProvider services)
+{
+    var db = services.GetRequiredService<AuditDbContext>();
+    await AuditMigrationBootstrap.EnsureRenamedHouseholdMigrationHistoryAsync(db);
+}
+
+static async Task BootstrapHouseholdsAsync(IServiceProvider services)
+{
+    var db = services.GetRequiredService<HouseholdsDbContext>();
+    await HouseholdsMigrationBootstrap.EnsureRenamedFromOrganizationsAsync(db);
 }
 
 static void EnsureAllModuleDbContextsAreRegistered(IServiceProvider services)
