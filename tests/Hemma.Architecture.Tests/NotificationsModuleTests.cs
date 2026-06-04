@@ -1,6 +1,5 @@
 using System.Reflection;
 using Hemma.Modules.Audit.Domain;
-using Hemma.Modules.Catalog.Domain;
 using Hemma.Modules.Notifications.Domain;
 using Hemma.Modules.Users.Domain;
 using NetArchTest.Rules;
@@ -109,20 +108,6 @@ public sealed class NotificationsModuleTests
     }
 
     [Fact]
-    public void NotificationsModule_DoesNotReferenceCatalogInternalProject()
-    {
-        var referencedNames = notificationsAssembly
-            .GetReferencedAssemblies()
-            .Select(a => a.Name)
-            .ToList();
-
-        Assert.False(
-            referencedNames.Contains("Hemma.Modules.Catalog"),
-            "FAIL: Notifications must not reference the Catalog internal project. " +
-            "Subscribe to Catalog.Contracts events instead. See ADR-0005.");
-    }
-
-    [Fact]
     public void IEmailSender_IsNotUsedOutsideNotificationsAndSharedInfrastructure()
     {
         // IEmailSender lives in Hemma.Shared.Infrastructure.Notifications.
@@ -131,7 +116,6 @@ public sealed class NotificationsModuleTests
         var otherModuleAssemblies = new[]
         {
             typeof(User).Assembly,
-            typeof(Product).Assembly,
             typeof(AuditEntry).Assembly,
         };
 

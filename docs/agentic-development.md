@@ -205,7 +205,7 @@ If you're new to the codebase (human or agent):
 4. [`AGENTS.md`](../AGENTS.md) — the primary operating manual
 5. [`CLAUDE.md`](../CLAUDE.md) — Claude-oriented compatibility guidance
 6. [`docs/adr/0001-modular-monolith.md`](adr/0001-modular-monolith.md) and on — the reasoning
-7. A concrete module — pick Users or Catalog. Read it end-to-end, including tests.
+7. A concrete module — pick Users or Organizations. Read it end-to-end, including tests.
 8. [`docs/how-to/add-a-slice.md`](how-to/add-a-slice.md) — when you're ready to add something
 9. [`.claude/`](../.claude/) — review the harness hooks, commands, and sub-agent definitions to understand what runs automatically and when
 

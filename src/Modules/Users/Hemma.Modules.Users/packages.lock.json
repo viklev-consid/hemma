@@ -645,9 +645,9 @@
         "dependencies": {
           "EFCore.NamingConventions": "[10.0.1, )",
           "FluentValidation": "[12.1.1, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )",
           "MailKit": "[4.16.0, )",
           "Microsoft.Extensions.Caching.Hybrid": "[10.5.0, )",
-          "Hemma.Shared.Kernel": "[1.0.0, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.1, )",
           "Serilog": "[4.3.1, )",
           "Serilog.Enrichers.Environment": "[3.0.1, )",

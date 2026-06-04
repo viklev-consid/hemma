@@ -98,7 +98,7 @@ The `/me` endpoint returns the caller's current role, sorted permissions, and a 
   "displayName": "...",
   "createdAt": "...",
   "role": "admin",
-  "permissions": ["audit.trail.read", "catalog.products.read", "..."],
+  "permissions": ["audit.trail.read", "organizations.organizations.read", "..."],
   "permissionsVersion": "abc123..."
 }
 ```
