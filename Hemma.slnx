@@ -14,6 +14,10 @@
       <Project Path="src/Modules/Audit/Hemma.Modules.Audit/Hemma.Modules.Audit.csproj" />
       <Project Path="src/Modules/Audit/Hemma.Modules.Audit.Contracts/Hemma.Modules.Audit.Contracts.csproj" />
     </Folder>
+    <Folder Name="/src/Modules/Economy/">
+      <Project Path="src/Modules/Economy/Hemma.Modules.Economy/Hemma.Modules.Economy.csproj" />
+      <Project Path="src/Modules/Economy/Hemma.Modules.Economy.Contracts/Hemma.Modules.Economy.Contracts.csproj" />
+    </Folder>
     <Folder Name="/src/Modules/Notifications/">
       <Project Path="src/Modules/Notifications/Hemma.Modules.Notifications/Hemma.Modules.Notifications.csproj" />
       <Project Path="src/Modules/Notifications/Hemma.Modules.Notifications.Contracts/Hemma.Modules.Notifications.Contracts.csproj" />
@@ -41,6 +45,8 @@
     <Project Path="tests/Hemma.SmokeTests/Hemma.SmokeTests.csproj" />
     <Project Path="tests/Hemma.TestSupport/Hemma.TestSupport.csproj" />
     <Project Path="tests/Modules/Audit/Hemma.Modules.Audit.IntegrationTests/Hemma.Modules.Audit.IntegrationTests.csproj" />
+    <Project Path="tests/Modules/Economy/Hemma.Modules.Economy.IntegrationTests/Hemma.Modules.Economy.IntegrationTests.csproj" />
+    <Project Path="tests/Modules/Economy/Hemma.Modules.Economy.UnitTests/Hemma.Modules.Economy.UnitTests.csproj" />
     <Project Path="tests/Modules/Notifications/Hemma.Modules.Notifications.IntegrationTests/Hemma.Modules.Notifications.IntegrationTests.csproj" />
     <Project Path="tests/Modules/Households/Hemma.Modules.Households.IntegrationTests/Hemma.Modules.Households.IntegrationTests.csproj" />
     <Project Path="tests/Modules/Households/Hemma.Modules.Households.UnitTests/Hemma.Modules.Households.UnitTests.csproj" />

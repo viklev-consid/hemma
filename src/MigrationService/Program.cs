@@ -2,6 +2,7 @@ using System.Reflection;
 using Hemma.Api.Infrastructure.Scheduling;
 using Hemma.MigrationService;
 using Hemma.Modules.Audit.Persistence;
+using Hemma.Modules.Economy.Persistence;
 using Hemma.Modules.Households.Persistence;
 using Hemma.Modules.Notifications.Persistence;
 using Hemma.Modules.Users.Persistence;
@@ -33,6 +34,11 @@ builder.Services.AddDbContext<NotificationsDbContext>(opts =>
         connectionString,
         npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", "notifications")));
 
+builder.Services.AddDbContext<EconomyDbContext>(opts =>
+    opts.UseNpgsql(
+        connectionString,
+        npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", "economy")));
+
 builder.Services.AddDbContext<HouseholdsDbContext>(opts =>
     opts.UseNpgsql(
         connectionString,
@@ -56,6 +62,7 @@ await MigrateAsync<UsersDbContext>(scope.ServiceProvider, logger);
 await BootstrapAuditAsync(scope.ServiceProvider);
 await MigrateAsync<AuditDbContext>(scope.ServiceProvider, logger);
 await MigrateAsync<NotificationsDbContext>(scope.ServiceProvider, logger);
+await MigrateAsync<EconomyDbContext>(scope.ServiceProvider, logger);
 await BootstrapHouseholdsAsync(scope.ServiceProvider);
 await MigrateAsync<HouseholdsDbContext>(scope.ServiceProvider, logger);
 await MigrateAsync<TickerQOperationalDbContext>(scope.ServiceProvider, logger);
