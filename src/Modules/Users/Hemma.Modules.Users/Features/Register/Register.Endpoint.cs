@@ -24,7 +24,7 @@ internal static class RegisterEndpoint
                     request.Password,
                     request.DisplayName,
                     request.InvitationToken,
-                    request.OrganizationInvitationToken);
+                    request.HouseholdInvitationToken);
                 var result = await bus.InvokeAsync<ErrorOr.ErrorOr<RegisterResponse>>(command, ct);
                 return result.ToProblemDetailsOr(r => Results.Created($"/v1/users/{r.UserId}", r));
             })

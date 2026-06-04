@@ -38,19 +38,19 @@ Every module is two projects:
 
 See [`docs/architecture.md`](../../docs/architecture.md) for full detail.
 
-## Organization-scoped modules
+## Household-scoped modules
 
-Organization support is opt-in. A module that owns organization-scoped resources stores an `OrganizationId` value in its own schema and exposes routes under:
+Household support is opt-in. A module that owns household-scoped resources stores an `HouseholdId` value in its own schema and exposes routes under:
 
 ```text
-/v1/organizations/{organizationRef}/...
+/v1/households/{householdRef}/...
 ```
 
-Resolve `organizationRef` (ID or slug) at the endpoint boundary. Commands, queries, persisted rows, and integration events use the durable organization ID.
+Resolve `householdRef` (ID or slug) at the endpoint boundary. Commands, queries, persisted rows, and integration events use the durable household ID.
 
-Use the shared scoped-authorization abstractions with `OrganizationScope` from `Organizations.Contracts`. Do not reference the Organizations internal project, query its tables, or add cross-schema foreign keys.
+Use the shared scoped-authorization abstractions with `HouseholdScope` from `Households.Contracts`. Do not reference the Households internal project, query its tables, or add cross-schema foreign keys.
 
-Platform override for global admins is explicit per endpoint/policy call. Never model global admins as hidden organization members.
+Platform override for global admins is explicit per endpoint/policy call. Never model global admins as hidden household members.
 
 ---
 

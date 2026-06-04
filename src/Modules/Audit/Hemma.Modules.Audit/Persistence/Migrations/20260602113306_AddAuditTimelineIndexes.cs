@@ -17,10 +17,10 @@ public partial class AddAuditTimelineIndexes : Migration
             columns: new[] { "actor_id", "occurred_at" });
 
         migrationBuilder.CreateIndex(
-            name: "ix_audit_entries_organization_id_occurred_at",
+            name: "ix_audit_entries_household_id_occurred_at",
             schema: "audit",
             table: "audit_entries",
-            columns: new[] { "organization_id", "occurred_at" });
+            columns: new[] { "household_id", "occurred_at" });
 
         migrationBuilder.CreateIndex(
             name: "ix_audit_entries_resource_id_occurred_at",
@@ -38,7 +38,7 @@ public partial class AddAuditTimelineIndexes : Migration
             table: "audit_entries");
 
         migrationBuilder.DropIndex(
-            name: "ix_audit_entries_organization_id_occurred_at",
+            name: "ix_audit_entries_household_id_occurred_at",
             schema: "audit",
             table: "audit_entries");
 

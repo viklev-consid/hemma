@@ -35,8 +35,8 @@ public sealed class FrontendUrlBuilder(IOptions<FrontendOptions> options) : IFro
             ["lockEmail"] = "1",
         });
 
-    public string AcceptOrganizationInvitation(string token, string email) =>
-        Build(options.Value.Paths.OrganizationInvitation, new Dictionary<string, string?>
+    public string AcceptHouseholdInvitation(string token, string email) =>
+        Build(options.Value.Paths.HouseholdInvitation, new Dictionary<string, string?>
         (StringComparer.Ordinal)
         {
             ["token"] = token,

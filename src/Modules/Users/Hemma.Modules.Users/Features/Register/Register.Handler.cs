@@ -2,8 +2,8 @@ using ErrorOr;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Hemma.Modules.Organizations.Contracts.Commands;
-using Hemma.Modules.Organizations.Contracts.Queries;
+using Hemma.Modules.Households.Contracts.Commands;
+using Hemma.Modules.Households.Contracts.Queries;
 using Hemma.Modules.Users.Contracts;
 using Hemma.Modules.Users.Contracts.Events;
 using Hemma.Modules.Users.Domain;
@@ -29,7 +29,7 @@ public sealed class RegisterHandler(
         LoggerMessage.Define<Guid, string>(
             LogLevel.Warning,
             new EventId(1001, nameof(registrationCompensated)),
-            "Compensated registration for user {UserId} after organization invitation acceptance failed with {ErrorCodes}");
+            "Compensated registration for user {UserId} after household invitation acceptance failed with {ErrorCodes}");
 
     public async Task<ErrorOr<RegisterResponse>> Handle(RegisterCommand cmd, CancellationToken ct)
         => await UsersTelemetry.InstrumentAsync(nameof(RegisterHandler), () => HandleCoreAsync(cmd, ct));
@@ -45,7 +45,7 @@ public sealed class RegisterHandler(
         var email = emailResult.Value;
 
         UserInvitation? invitation = null;
-        ErrorOr<ValidateOrganizationInvitationForRegistrationResponse>? organizationInvitation = null;
+        ErrorOr<ValidateHouseholdInvitationForRegistrationResponse>? householdInvitation = null;
         var registration = options.Value.Registration;
         if (registration.Mode == RegistrationMode.Disabled)
         {
@@ -55,7 +55,7 @@ public sealed class RegisterHandler(
         if (registration.Mode == RegistrationMode.InviteOnly)
         {
             if (string.IsNullOrWhiteSpace(cmd.InvitationToken) &&
-                string.IsNullOrWhiteSpace(cmd.OrganizationInvitationToken))
+                string.IsNullOrWhiteSpace(cmd.HouseholdInvitationToken))
             {
                 return UsersErrors.RegistrationUnavailable;
             }
@@ -68,13 +68,13 @@ public sealed class RegisterHandler(
                     return UsersErrors.RegistrationUnavailable;
                 }
             }
-            else if (!string.IsNullOrWhiteSpace(cmd.OrganizationInvitationToken))
+            else if (!string.IsNullOrWhiteSpace(cmd.HouseholdInvitationToken))
             {
-                organizationInvitation = await ValidateOrganizationInvitationAsync(
-                    cmd.OrganizationInvitationToken,
+                householdInvitation = await ValidateHouseholdInvitationAsync(
+                    cmd.HouseholdInvitationToken,
                     email.Value,
                     ct);
-                if (organizationInvitation.Value.IsError)
+                if (householdInvitation.Value.IsError)
                 {
                     return UsersErrors.RegistrationUnavailable;
                 }
@@ -82,15 +82,15 @@ public sealed class RegisterHandler(
         }
 
         if (registration.Mode != RegistrationMode.InviteOnly &&
-            !string.IsNullOrWhiteSpace(cmd.OrganizationInvitationToken))
+            !string.IsNullOrWhiteSpace(cmd.HouseholdInvitationToken))
         {
-            organizationInvitation = await ValidateOrganizationInvitationAsync(
-                cmd.OrganizationInvitationToken,
+            householdInvitation = await ValidateHouseholdInvitationAsync(
+                cmd.HouseholdInvitationToken,
                 email.Value,
                 ct);
-            if (organizationInvitation.Value.IsError)
+            if (householdInvitation.Value.IsError)
             {
-                return organizationInvitation.Value.Errors;
+                return householdInvitation.Value.Errors;
             }
         }
 
@@ -142,15 +142,15 @@ public sealed class RegisterHandler(
                 : UsersErrors.EmailAlreadyRegistered;
         }
 
-        if (!string.IsNullOrWhiteSpace(cmd.OrganizationInvitationToken))
+        if (!string.IsNullOrWhiteSpace(cmd.HouseholdInvitationToken))
         {
-            var acceptOrganizationInvitation = await AcceptOrganizationInvitationOrCompensateAsync(
-                cmd.OrganizationInvitationToken,
+            var acceptHouseholdInvitation = await AcceptHouseholdInvitationOrCompensateAsync(
+                cmd.HouseholdInvitationToken,
                 user,
                 ct);
-            if (acceptOrganizationInvitation.IsError)
+            if (acceptHouseholdInvitation.IsError)
             {
-                return acceptOrganizationInvitation.Errors;
+                return acceptHouseholdInvitation.Errors;
             }
         }
 
@@ -168,16 +168,16 @@ public sealed class RegisterHandler(
         return new RegisterResponse(user.Id.Value);
     }
 
-    private async Task<ErrorOr<Success>> AcceptOrganizationInvitationOrCompensateAsync(
-        string organizationInvitationToken,
+    private async Task<ErrorOr<Success>> AcceptHouseholdInvitationOrCompensateAsync(
+        string householdInvitationToken,
         User user,
         CancellationToken ct)
     {
         try
         {
-            var result = await bus.InvokeAsync<ErrorOr<AcceptedOrganizationInvitationForUserResponse>>(
-                new AcceptOrganizationInvitationForUserCommand(
-                    organizationInvitationToken,
+            var result = await bus.InvokeAsync<ErrorOr<AcceptedHouseholdInvitationForUserResponse>>(
+                new AcceptHouseholdInvitationForUserCommand(
+                    householdInvitationToken,
                     user.Id.Value,
                     user.Email.Value),
                 ct);
@@ -215,12 +215,12 @@ public sealed class RegisterHandler(
         await db.SaveChangesAsync(ct);
     }
 
-    private async Task<ErrorOr<ValidateOrganizationInvitationForRegistrationResponse>> ValidateOrganizationInvitationAsync(
+    private async Task<ErrorOr<ValidateHouseholdInvitationForRegistrationResponse>> ValidateHouseholdInvitationAsync(
         string rawToken,
         string email,
         CancellationToken ct) =>
-        await bus.InvokeAsync<ErrorOr<ValidateOrganizationInvitationForRegistrationResponse>>(
-            new ValidateOrganizationInvitationForRegistrationQuery(rawToken, email),
+        await bus.InvokeAsync<ErrorOr<ValidateHouseholdInvitationForRegistrationResponse>>(
+            new ValidateHouseholdInvitationForRegistrationQuery(rawToken, email),
             ct);
 
     private async Task<UserInvitation?> LoadInvitationForTokenAsync(string rawToken, CancellationToken ct)

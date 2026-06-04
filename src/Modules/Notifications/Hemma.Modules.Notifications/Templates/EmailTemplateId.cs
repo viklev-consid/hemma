@@ -8,7 +8,7 @@ public readonly record struct EmailTemplateId(string Value)
 
     public static EmailTemplateId EmailConfirmationRequest { get; } = new("users.email-confirmation-request");
 
-    public static EmailTemplateId OrganizationInvitation { get; } = new("organizations.invitation");
+    public static EmailTemplateId HouseholdInvitation { get; } = new("households.invitation");
 
     public static EmailTemplateId PasswordChanged { get; } = new("users.password-changed");
 

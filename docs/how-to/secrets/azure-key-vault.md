@@ -119,7 +119,7 @@ To move to RSA/ECDSA signing, first introduce a signing-key abstraction and upda
 
 ## Variant: Connecting to a Pre-existing Vault
 
-If your organization provisions Key Vault centrally:
+If your household provisions Key Vault centrally:
 
 1. Skip Aspire provisioning.
 2. Supply the vault URI as `ConnectionStrings:secrets` through environment variables or deployment configuration.

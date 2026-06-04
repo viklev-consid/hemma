@@ -10,7 +10,7 @@ public sealed class FileEmailTemplateRendererTests
             { EmailTemplateId.EmailChangeRequest, new EmailChangeRequestModel("token-123", "https://app.example.com/email-change"), "Confirm email address change" },
             { EmailTemplateId.EmailChanged, new EmailChangedModel("alice@example.com"), "Email address changed" },
             { EmailTemplateId.EmailConfirmationRequest, new EmailConfirmationRequestModel("Alice", "token-123", "https://app.example.com/confirm-email"), "Confirm your email address" },
-            { EmailTemplateId.OrganizationInvitation, new OrganizationInvitationModel("Admin", "token-123", "https://app.example.com/org-invite"), "Organization invitation" },
+            { EmailTemplateId.HouseholdInvitation, new HouseholdInvitationModel("Admin", "token-123", "https://app.example.com/org-invite"), "Household invitation" },
             { EmailTemplateId.PasswordChanged, EmptyEmailTemplateModel.Instance, "Password changed" },
             { EmailTemplateId.PasswordResetConfirmation, EmptyEmailTemplateModel.Instance, "Password reset successful" },
             { EmailTemplateId.PasswordResetRequest, new PasswordResetRequestModel("token-123", "https://app.example.com/reset-password"), "Password reset request" },

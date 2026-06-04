@@ -1,8 +1,8 @@
-using Hemma.Modules.Organizations.Contracts.Commands;
+using Hemma.Modules.Households.Contracts.Commands;
 
 namespace Hemma.Modules.Users.Features.DeleteAccount;
 
-public sealed record DeleteAccountResponse(IReadOnlyCollection<UserErasureBlockingOrganization> BlockingOrganizations)
+public sealed record DeleteAccountResponse(IReadOnlyCollection<UserErasureBlockingHousehold> BlockingHouseholds)
 {
-    public bool CanDelete => BlockingOrganizations.Count == 0;
+    public bool CanDelete => BlockingHouseholds.Count == 0;
 }

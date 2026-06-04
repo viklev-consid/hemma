@@ -18,13 +18,13 @@ After completing this how-to:
 - Entra's "Assignment required" is **on** — users must be explicitly assigned to a role to reach the app. Unassigned users are blocked at the Entra login screen.
 - A manual "refresh profile" endpoint re-fetches Graph data on demand.
 
-> **On the role scope.** Intentionally minimal. `Admin` and `User` are about *application capability* — can you administer the app, can you use it at all. Domain-level roles (Manager, HR, etc.) are a separate concern that belongs in an Organization module, sourced from your HR system or Entra org data. Don't add them to the app registration; don't conflate "who you are in the org" with "what the app lets you do."
+> **On the role scope.** Intentionally minimal. `Admin` and `User` are about *application capability* — can you administer the app, can you use it at all. Domain-level roles (Manager, HR, etc.) are a separate concern that belongs in an Household module, sourced from your HR system or Entra org data. Don't add them to the app registration; don't conflate "who you are in the org" with "what the app lets you do."
 
 ## Non-goals
 
 - Multi-tenant / B2B guest users. Document as a variant; don't implement.
 - External ID / B2C (customer-facing).
-- Organization-scoped authorization (reporting chain, data scoping). Deliberately out of scope — see `docs/howto/authorization/` if/when added.
+- Household-scoped authorization (reporting chain, data scoping). Deliberately out of scope — see `docs/howto/authorization/` if/when added.
 - Entra group claims. Using app roles instead.
 - Token issuance. This app is a resource server only; it validates tokens, never issues them.
 
@@ -340,7 +340,7 @@ Every other endpoint is protected by the fallback policy — authenticated + has
 
 For retrieving the current app user inside handlers, extend `ICurrentUser` to expose the `app_user_id` claim as a `UserId`, plus an `IsAdmin` convenience backed by the `roles` claim.
 
-> **Domain-level authorization goes elsewhere.** Checks like "is this user the manager of that employee" or "does this user belong to HR" are not app-role checks. They belong in a domain service in the relevant module (Organization, HR, etc.), called explicitly from handlers and returning an `Error.Forbidden(...)` failure. Keep the `roles` claim for Admin/User only — don't stuff domain concepts into it.
+> **Domain-level authorization goes elsewhere.** Checks like "is this user the manager of that employee" or "does this user belong to HR" are not app-role checks. They belong in a domain service in the relevant module (Household, HR, etc.), called explicitly from handlers and returning an `Error.Forbidden(...)` failure. Keep the `roles` claim for Admin/User only — don't stuff domain concepts into it.
 
 ### 8. Refresh profile endpoint
 
@@ -408,7 +408,7 @@ Integration tests: use `WebApplicationFactory` with a custom scheme that forges 
 
 ## Extensions
 
-- **Organization-scoped authorization** (reporting chain, data scoping). Deliberately out of scope. If added, it becomes a separate Organization module with its own source-of-truth decision (Entra sync vs. app-owned). See `docs/howto/authorization/` (to be written).
+- **Household-scoped authorization** (reporting chain, data scoping). Deliberately out of scope. If added, it becomes a separate Household module with its own source-of-truth decision (Entra sync vs. app-owned). See `docs/howto/authorization/` (to be written).
 - **Scheduled profile refresh.** A Wolverine scheduled job that refreshes all users' profiles weekly. Trade-off: keeps data fresh without user action, at the cost of sustained Graph load. Only add if the staleness of first-login data becomes a real complaint.
 - **Conditional Access-aware error handling.** Entra may issue `claims challenge` responses requiring step-up auth (e.g., MFA for a sensitive action). Handling these cleanly means surfacing the challenge to the SPA. Defer until there's a concrete requirement.
 - **Sign-out.** Entra sign-out is a redirect to Entra's logout endpoint; the API doesn't really participate beyond clearing any server-side session (which you don't have — tokens are bearer). Document in the SPA's auth flow, not here.
@@ -417,9 +417,9 @@ Integration tests: use `WebApplicationFactory` with a custom scheme that forges 
 
 ## Variant: Multi-tenant (B2B)
 
-If the app is later used by multiple customer organizations:
+If the app is later used by multiple customer households:
 
-- Change `AzureAd:TenantId` to `"common"` or `"organizations"`.
+- Change `AzureAd:TenantId` to `"common"` or `"households"`.
 - Add `TokenValidationParameters.ValidateIssuer = false` and a custom `IssuerValidator` that accepts any tenant (or a known allowlist).
 - `User` aggregate needs a `TenantId` alongside `EntraOid` — `oid` is only unique within a tenant. Unique index becomes `(TenantId, EntraOid)`.
 - Every query that returns user data needs tenant filtering — likely via a global query filter. This is non-trivial and warrants its own how-to.

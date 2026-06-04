@@ -27,12 +27,12 @@ internal static class DeleteAccountEndpoint
                         ? Results.NoContent()
                         : Results.Problem(
                             title: "Conflict",
-                            detail: "Transfer ownership or delete owned organizations before deleting this user.",
+                            detail: "Transfer ownership or delete owned households before deleting this user.",
                             statusCode: StatusCodes.Status409Conflict,
                             extensions: new Dictionary<string, object?>(StringComparer.Ordinal)
                             {
-                                ["errorCode"] = "Organizations.Owner.UserErasureBlocked",
-                                ["blockingOrganizations"] = response.BlockingOrganizations
+                                ["errorCode"] = "Households.Owner.UserErasureBlocked",
+                                ["blockingHouseholds"] = response.BlockingHouseholds
                             }));
             })
         .WithName("DeleteAccount")

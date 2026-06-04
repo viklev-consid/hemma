@@ -10,5 +10,5 @@ public interface IFrontendUrlBuilder
 
     string AcceptUserInvitation(string token, string email);
 
-    string AcceptOrganizationInvitation(string token, string email);
+    string AcceptHouseholdInvitation(string token, string email);
 }

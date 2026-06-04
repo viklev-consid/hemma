@@ -12,7 +12,7 @@ public sealed class AuditEntry : Entity<AuditEntryId>
         Guid? actorId,
         string? resourceType,
         Guid? resourceId,
-        Guid? organizationId,
+        Guid? householdId,
         string? accessMode,
         string payload,
         DateTimeOffset occurredAt,
@@ -22,7 +22,7 @@ public sealed class AuditEntry : Entity<AuditEntryId>
         ActorId = actorId;
         ResourceType = resourceType;
         ResourceId = resourceId;
-        OrganizationId = organizationId;
+        HouseholdId = householdId;
         AccessMode = accessMode;
         Payload = payload;
         OccurredAt = occurredAt;
@@ -33,7 +33,7 @@ public sealed class AuditEntry : Entity<AuditEntryId>
     public Guid? ActorId { get; private set; }
     public string? ResourceType { get; private set; }
     public Guid? ResourceId { get; private set; }
-    public Guid? OrganizationId { get; private set; }
+    public Guid? HouseholdId { get; private set; }
     public string? AccessMode { get; private set; }
     public string Payload { get; private set; } = string.Empty;
     public DateTimeOffset OccurredAt { get; private set; }
@@ -47,7 +47,7 @@ public sealed class AuditEntry : Entity<AuditEntryId>
         string payload,
         DateTimeOffset occurredAt,
         Guid? idempotencyKey = null,
-        Guid? organizationId = null,
+        Guid? householdId = null,
         string? accessMode = null)
         => new(
             new AuditEntryId(Guid.NewGuid()),
@@ -55,7 +55,7 @@ public sealed class AuditEntry : Entity<AuditEntryId>
             actorId,
             resourceType,
             resourceId,
-            organizationId,
+            householdId,
             accessMode,
             payload,
             occurredAt,

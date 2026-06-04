@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Hemma.Modules.Audit.Persistence;
 using Hemma.Modules.Notifications.Persistence;
-using Hemma.Modules.Organizations.Persistence;
+using Hemma.Modules.Households.Persistence;
 using Hemma.Modules.Users.Persistence;
 using Hemma.TestSupport;
 
@@ -82,9 +82,9 @@ public sealed class SmokeTestFixture : ApiTestFixture
         await services.GetRequiredService<UsersDbContext>().Database.MigrateAsync();
         await services.GetRequiredService<AuditDbContext>().Database.MigrateAsync();
         await services.GetRequiredService<NotificationsDbContext>().Database.MigrateAsync();
-        await services.GetRequiredService<OrganizationsDbContext>().Database.MigrateAsync();
+        await services.GetRequiredService<HouseholdsDbContext>().Database.MigrateAsync();
     }
 
     protected override string[] GetSchemasToReset() =>
-        ["users", "audit", "notifications", "organizations"];
+        ["users", "audit", "notifications", "households"];
 }

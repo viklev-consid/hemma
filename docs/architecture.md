@@ -65,9 +65,9 @@ Hemma.sln
 │       ├── Users/
 │       │   ├── Hemma.Modules.Users/                # Internal
 │       │   └── Hemma.Modules.Users.Contracts/      # Public messages
-│       ├── Organizations/
-│       │   ├── Hemma.Modules.Organizations/        # Internal
-│       │   └── Hemma.Modules.Organizations.Contracts/
+│       ├── Households/
+│       │   ├── Hemma.Modules.Households/        # Internal
+│       │   └── Hemma.Modules.Households.Contracts/
 │       ├── Notifications/
 │       │   ├── Hemma.Modules.Notifications/
 │       │   └── Hemma.Modules.Notifications.Contracts/
@@ -216,23 +216,23 @@ See [`adr/0005-module-communication-patterns.md`](adr/0005-module-communication-
 
 The rule of thumb: if more than one module needs it and it has no domain meaning, it lives in `Shared.Infrastructure`. If it has domain meaning, it's a module.
 
-## Organization scope
+## Household scope
 
-Organizations are the template's workspace/account primitive. They support collaboration products and B2B-style apps without forcing full infrastructure-level multi-tenancy.
+Households are the template's workspace/account primitive. They support collaboration products and B2B-style apps without forcing full infrastructure-level multi-tenancy.
 
-Organization-scoped routes use:
+Household-scoped routes use:
 
 ```text
-/v1/organizations/{organizationRef}/...
+/v1/households/{householdRef}/...
 ```
 
-`organizationRef` may be an organization ID or slug. Endpoints resolve it at the HTTP boundary, then handlers, persistence, and integration events use the durable `OrganizationId`.
+`householdRef` may be an household ID or slug. Endpoints resolve it at the HTTP boundary, then handlers, persistence, and integration events use the durable `HouseholdId`.
 
-Modules that opt into organization ownership store `OrganizationId` in their own schema. They do not add cross-schema foreign keys, query Organizations tables, or reference Organizations internals. They authorize through shared scoped-authorization abstractions and the public `OrganizationScope` contract.
+Modules that opt into household ownership store `HouseholdId` in their own schema. They do not add cross-schema foreign keys, query Households tables, or reference Households internals. They authorize through shared scoped-authorization abstractions and the public `HouseholdScope` contract.
 
-Global RBAC remains for platform capabilities. Organization membership roles are scoped and can differ by organization. A global admin may use platform override only when an endpoint explicitly opts in; this does not create hidden organization membership.
+Global RBAC remains for platform capabilities. Household membership roles are scoped and can differ by household. A global admin may use platform override only when an endpoint explicitly opts in; this does not create hidden household membership.
 
-User erasure keeps organization business records where needed, but removes personal identity from retained organization history. Membership erasure removes active access, clears the retained membership `UserId`, and lets audit keep organization scope without email, display name, raw token, or organization name snapshots in payloads.
+User erasure keeps household business records where needed, but removes personal identity from retained household history. Membership erasure removes active access, clears the retained membership `UserId`, and lets audit keep household scope without email, display name, raw token, or household name snapshots in payloads.
 
 ---
 

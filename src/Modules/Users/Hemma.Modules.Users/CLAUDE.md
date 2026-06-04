@@ -119,7 +119,7 @@ Do not implement these without an explicit request:
 - Account lockout after failed logins.
 - Breach password checks.
 - External identity providers.
-- Multi-tenancy or organization membership.
+- Multi-tenancy or household membership.
 - Admin user impersonation.
 
 Authentication stays in Users. JWT validation is shared infrastructure, but issuance and refresh-token lifecycle stay here.
