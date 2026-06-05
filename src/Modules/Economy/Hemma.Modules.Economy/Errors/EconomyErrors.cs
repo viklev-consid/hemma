@@ -46,4 +46,22 @@ internal static class EconomyErrors
 
     public static readonly ErrorOr.Error BudgetLineNotAllowed =
         ErrorOr.Error.Validation("Economy.Budget.LineNotAllowed", "Category is not budgetable.");
+
+    public static readonly ErrorOr.Error TransactionNotFound =
+        ErrorOr.Error.NotFound("Economy.Transaction.NotFound", "Transaction was not found.");
+
+    public static readonly ErrorOr.Error TransactionKindInvalid =
+        ErrorOr.Error.Validation("Economy.Transaction.KindInvalid", "Transaction kind must be Expense or Income.");
+
+    public static readonly ErrorOr.Error ReceiptBlobInvalid =
+        ErrorOr.Error.Validation("Economy.Transaction.ReceiptBlobInvalid", "Receipt blob reference is invalid.");
+
+    public static readonly ErrorOr.Error ReceiptFileInvalid =
+        ErrorOr.Error.Validation("Economy.Transaction.ReceiptFileInvalid", "Receipt file must be a supported image or PDF and within the allowed size.");
+
+    public static readonly ErrorOr.Error TransferModeInvalid =
+        ErrorOr.Error.Validation("Economy.Transfer.ModeInvalid", "Transfer mode must be Neutral or Savings.");
+
+    public static readonly ErrorOr.Error TransferInvalid =
+        ErrorOr.Error.Validation("Economy.Transfer.Invalid", "Transfer must have two reconciling legs in the same household and currency.");
 }

@@ -10,6 +10,8 @@ public sealed class EconomyDbContext(DbContextOptions<EconomyDbContext> options)
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Budget> Budgets => Set<Budget>();
+    public DbSet<Transaction> Transactions => Set<Transaction>();
+    public DbSet<Transfer> Transfers => Set<Transfer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
