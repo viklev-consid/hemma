@@ -1,13 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Hemma.Modules.Users.Domain;
 using Hemma.Modules.Users.Features.Login;
 using Hemma.Modules.Users.Features.Register;
 using Hemma.Modules.Users.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Hemma.SmokeTests;
 
@@ -120,7 +120,13 @@ public sealed class SmokeTests(SmokeTestFixture fixture) : IAsyncLifetime
 
         var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("3.1.1", doc.GetProperty("openapi").GetString());
-        Assert.True(doc.TryGetProperty("paths", out _), "OpenAPI document should contain paths.");
+        Assert.True(doc.TryGetProperty("paths", out var paths), "OpenAPI document should contain paths.");
+        Assert.True(paths.TryGetProperty("/v1/economy/analytics/category-trend", out _));
+        Assert.True(paths.TryGetProperty("/v1/economy/analytics/spend-breakdown", out _));
+        Assert.True(paths.TryGetProperty("/v1/economy/analytics/period-comparison", out _));
+        Assert.True(paths.TryGetProperty("/v1/economy/analytics/income-vs-expense", out _));
+        Assert.True(paths.TryGetProperty("/v1/economy/analytics/variance-history", out _));
+        Assert.True(paths.TryGetProperty("/v1/economy/analytics/top-transactions", out _));
 
         var loginResponseSchema = doc
             .GetProperty("components")

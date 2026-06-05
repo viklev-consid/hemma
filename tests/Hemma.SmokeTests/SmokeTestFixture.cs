@@ -1,14 +1,14 @@
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using Hemma.Modules.Audit.Persistence;
+using Hemma.Modules.Households.Persistence;
+using Hemma.Modules.Notifications.Persistence;
+using Hemma.Modules.Users.Persistence;
+using Hemma.TestSupport;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Hemma.Modules.Audit.Persistence;
-using Hemma.Modules.Notifications.Persistence;
-using Hemma.Modules.Households.Persistence;
-using Hemma.Modules.Users.Persistence;
-using Hemma.TestSupport;
 
 namespace Hemma.SmokeTests;
 
