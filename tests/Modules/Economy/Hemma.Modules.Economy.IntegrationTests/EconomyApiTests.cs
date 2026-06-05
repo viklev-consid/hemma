@@ -6,8 +6,14 @@ using Hemma.Modules.Economy.Features.CopyBudgetFromPreviousPeriod;
 using Hemma.Modules.Economy.Features.CreateAccount;
 using Hemma.Modules.Economy.Features.CreateBudget;
 using Hemma.Modules.Economy.Features.CreateEconomySettings;
+using Hemma.Modules.Economy.Features.CreateTransfer;
+using Hemma.Modules.Economy.Features.GetAccountBalances;
+using Hemma.Modules.Economy.Features.GetBudgetSummary;
 using Hemma.Modules.Economy.Features.ListAccounts;
 using Hemma.Modules.Economy.Features.ListCategories;
+using Hemma.Modules.Economy.Features.ListTransactions;
+using Hemma.Modules.Economy.Features.RecordTransaction;
+using Hemma.Modules.Economy.Features.SearchTransactionNote;
 using Hemma.Modules.Economy.Features.UpsertBudgetLine;
 using Hemma.Modules.Households.Domain;
 using Hemma.Modules.Households.Persistence;
@@ -155,6 +161,135 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         Assert.Equal(1200, line.Amount.Amount);
     }
 
+    [Fact]
+    public async Task Transactions_CanRecordSearchAndFilterByReceipt()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var category = await AddBudgetCategoryAsync(client, household.Id.Value, "Groceries");
+
+        var created = await client.PostAsJsonAsync(
+            "/v1/economy/transactions",
+            new RecordTransactionRequest(
+                household.Id.Value,
+                account.AccountId,
+                category.CategoryId,
+                new MoneyRequest(125, "SEK"),
+                new DateOnly(2026, 6, 5),
+                "ICA receipt",
+                "Expense",
+                ownerId));
+
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var transaction = await created.Content.ReadFromJsonAsync<TransactionResponse>();
+        Assert.NotNull(transaction);
+
+        using var form = new MultipartFormDataContent();
+        form.Add(new StringContent(household.Id.Value.ToString()), "householdId");
+        var file = new ByteArrayContent([1, 2, 3]);
+        file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
+        form.Add(file, "file", "receipt.pdf");
+        var attached = await client.PostAsync($"/v1/economy/transactions/{transaction.TransactionId}/receipt", form);
+        Assert.Equal(HttpStatusCode.OK, attached.StatusCode);
+
+        var withReceipt = await client.GetFromJsonAsync<ListTransactionsResponse>(
+            $"/v1/economy/transactions?householdId={household.Id.Value}&hasReceipt=true");
+        Assert.NotNull(withReceipt);
+        Assert.Single(withReceipt.Transactions);
+
+        var search = await client.GetFromJsonAsync<SearchTransactionNoteResponse>(
+            $"/v1/economy/transactions/search?householdId={household.Id.Value}&search=receipt");
+        Assert.NotNull(search);
+        Assert.Single(search.Transactions);
+    }
+
+    [Fact]
+    public async Task NeutralTransfer_ChangesBalancesWithoutBudgetActuals()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var checking = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var savings = await CreateAccountAsync(client, household.Id.Value, "Savings", "Savings", 0);
+        var category = await AddBudgetCategoryAsync(client, household.Id.Value, "Transfer Bucket");
+        var budget = await CreateBudgetAsync(client, household.Id.Value, new DateOnly(2026, 6, 5));
+        var budgetLine = await client.PutAsJsonAsync(
+            "/v1/economy/budgets/lines",
+            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, category.CategoryId, new MoneyRequest(500, "SEK")));
+        budgetLine.EnsureSuccessStatusCode();
+
+        var transfer = await client.PostAsJsonAsync(
+            "/v1/economy/transfers",
+            new CreateTransferRequest(
+                household.Id.Value,
+                checking.AccountId,
+                savings.AccountId,
+                new MoneyRequest(250, "SEK"),
+                new DateOnly(2026, 6, 5),
+                "Move money",
+                "Neutral",
+                category.CategoryId,
+                ownerId));
+        Assert.True(
+            transfer.StatusCode == HttpStatusCode.Created,
+            await transfer.Content.ReadAsStringAsync());
+
+        var balances = await client.GetFromJsonAsync<GetAccountBalancesResponse>(
+            $"/v1/economy/accounts/balances?householdId={household.Id.Value}");
+        Assert.NotNull(balances);
+        Assert.Equal(750, balances.Accounts.Single(account => account.AccountId == checking.AccountId).Balance.Amount);
+        Assert.Equal(250, balances.Accounts.Single(account => account.AccountId == savings.AccountId).Balance.Amount);
+
+        var summary = await client.GetFromJsonAsync<GetBudgetSummaryResponse>(
+            $"/v1/economy/budget-summary?householdId={household.Id.Value}&anchorDate=2026-06-05");
+        Assert.NotNull(summary);
+        Assert.Equal(0, summary.Lines.Single(line => line.CategoryId == category.CategoryId).Actual.Amount);
+    }
+
+    [Fact]
+    public async Task SavingsTransfer_CountsAsBudgetActualAndCanBeOverPace()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var checking = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 10000);
+        var savings = await CreateAccountAsync(client, household.Id.Value, "Savings", "Savings", 0);
+        var category = await AddBudgetCategoryAsync(client, household.Id.Value, "Sparande");
+        var budget = await CreateBudgetAsync(client, household.Id.Value, new DateOnly(2026, 6, 5));
+        var budgetLine = await client.PutAsJsonAsync(
+            "/v1/economy/budgets/lines",
+            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, category.CategoryId, new MoneyRequest(6000, "SEK")));
+        budgetLine.EnsureSuccessStatusCode();
+
+        var transfer = await client.PostAsJsonAsync(
+            "/v1/economy/transfers",
+            new CreateTransferRequest(
+                household.Id.Value,
+                checking.AccountId,
+                savings.AccountId,
+                new MoneyRequest(5000, "SEK"),
+                new DateOnly(2026, 6, 18),
+                "Savings allocation",
+                "Savings",
+                category.CategoryId,
+                ownerId));
+        Assert.True(
+            transfer.StatusCode == HttpStatusCode.Created,
+            await transfer.Content.ReadAsStringAsync());
+
+        var summary = await client.GetFromJsonAsync<GetBudgetSummaryResponse>(
+            $"/v1/economy/budget-summary?householdId={household.Id.Value}&anchorDate=2026-06-18");
+        Assert.NotNull(summary);
+        var line = summary.Lines.Single(line => line.CategoryId == category.CategoryId);
+        Assert.Equal(5000, line.Actual.Amount);
+        Assert.True(line.IsOverPace);
+    }
+
     private static async Task<CreateEconomySettingsResponse> CreateSettingsAsync(HttpClient client, Guid householdId)
     {
         var response = await client.PostAsJsonAsync(
@@ -175,6 +310,17 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         var category = await response.Content.ReadFromJsonAsync<CategoryResponse>();
         Assert.NotNull(category);
         return category;
+    }
+
+    private static async Task<AccountResponse> CreateAccountAsync(HttpClient client, Guid householdId, string name, string type, decimal openingBalance)
+    {
+        var response = await client.PostAsJsonAsync(
+            "/v1/economy/accounts",
+            new CreateAccountRequest(householdId, name, type, new MoneyRequest(openingBalance, "SEK")));
+        response.EnsureSuccessStatusCode();
+        var account = await response.Content.ReadFromJsonAsync<AccountResponse>();
+        Assert.NotNull(account);
+        return account;
     }
 
     private static async Task<BudgetResponse> CreateBudgetAsync(HttpClient client, Guid householdId, DateOnly anchorDate)

@@ -1,12 +1,19 @@
 using FluentValidation;
 using Hemma.Modules.Economy.Contracts.Authorization;
+using Hemma.Modules.Economy.Features.AttachReceipt;
 using Hemma.Modules.Economy.Features.AddCategory;
 using Hemma.Modules.Economy.Features.CopyBudgetFromPreviousPeriod;
 using Hemma.Modules.Economy.Features.CreateAccount;
 using Hemma.Modules.Economy.Features.CreateBudget;
 using Hemma.Modules.Economy.Features.CreateEconomySettings;
+using Hemma.Modules.Economy.Features.CreateTransfer;
+using Hemma.Modules.Economy.Features.GetAccountBalances;
+using Hemma.Modules.Economy.Features.GetBudgetSummary;
 using Hemma.Modules.Economy.Features.ListAccounts;
 using Hemma.Modules.Economy.Features.ListCategories;
+using Hemma.Modules.Economy.Features.ListTransactions;
+using Hemma.Modules.Economy.Features.RecordTransaction;
+using Hemma.Modules.Economy.Features.SearchTransactionNote;
 using Hemma.Modules.Economy.Features.UpdateCycleStartDay;
 using Hemma.Modules.Economy.Features.UpsertBudgetLine;
 using Hemma.Modules.Economy.Gdpr;
@@ -79,6 +86,13 @@ public static class EconomyModule
         opts.Discovery.IncludeType<CreateBudgetHandler>();
         opts.Discovery.IncludeType<UpsertBudgetLineHandler>();
         opts.Discovery.IncludeType<CopyBudgetFromPreviousPeriodHandler>();
+        opts.Discovery.IncludeType<RecordTransactionHandler>();
+        opts.Discovery.IncludeType<AttachReceiptHandler>();
+        opts.Discovery.IncludeType<ListTransactionsHandler>();
+        opts.Discovery.IncludeType<SearchTransactionNoteHandler>();
+        opts.Discovery.IncludeType<CreateTransferHandler>();
+        opts.Discovery.IncludeType<GetAccountBalancesHandler>();
+        opts.Discovery.IncludeType<GetBudgetSummaryHandler>();
         return opts;
     }
 
@@ -93,6 +107,13 @@ public static class EconomyModule
         CreateBudgetEndpoint.Map(app);
         UpsertBudgetLineEndpoint.Map(app);
         CopyBudgetFromPreviousPeriodEndpoint.Map(app);
+        RecordTransactionEndpoint.Map(app);
+        AttachReceiptEndpoint.Map(app);
+        ListTransactionsEndpoint.Map(app);
+        SearchTransactionNoteEndpoint.Map(app);
+        CreateTransferEndpoint.Map(app);
+        GetAccountBalancesEndpoint.Map(app);
+        GetBudgetSummaryEndpoint.Map(app);
 
         return app;
     }
