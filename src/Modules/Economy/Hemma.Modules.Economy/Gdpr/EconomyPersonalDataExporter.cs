@@ -13,7 +13,6 @@ public sealed class EconomyPersonalDataExporter(EconomyDbContext db) : IPersonal
             .AsNoTracking()
             .Where(transaction => transaction.PayerId == user.UserId)
             .OrderBy(transaction => transaction.OccurredOn)
-            .ThenBy(transaction => transaction.Id.Value)
             .Select(transaction => new
             {
                 transactionId = transaction.Id.Value,
