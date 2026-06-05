@@ -325,20 +325,19 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 
 ## Phase 7 — Cross-cutting & privacy (backend portion)
 
-**Goal:** Audit, GDPR, Notifications prefs, Tier-2 field encryption. Nothing ships to production until all phases are complete; implement encryption when it is simplest for the codebase, but before any real production Economy data exists.
+**Goal:** Audit, GDPR, Notifications prefs. Tier-2 field encryption is explicitly deferred until a household key-wrap design is agreed.
 
 ### Tasks
 1. **GDPR:** export + erase for Economy data; subscribe to `GdprErasureRequestedV1`, `HouseholdMemberRemovedV1`. Erasure cascades to receipt blobs.
 2. **Audit:** subscribe write slices to the Audit module.
 3. **Notifications:** per-household preferences for budget/bill/trial alerts.
-4. **Encryption (Tier 2):** app-level field protection on sensitive columns + receipt blob metadata via ASP.NET DataProtection protectors; key ring stored on the filesystem outside Postgres; per-household key wrap.
+4. **Encryption (Tier 2):** deferred. Do not implement field encryption or per-household key wrap in this phase.
 
-**DataProtection note:** ADR-0021 warns not to use DataProtection for arbitrary configuration secrets. Economy encryption is a deliberate field-protection use, consistent with the existing Users module's TOTP-secret protection pattern, not config secret storage. Keep protector purposes stable and versioned so protected values remain decryptable across deployments.
+**DataProtection note:** ADR-0021 warns not to use DataProtection for arbitrary configuration secrets. Economy field encryption may still use DataProtection later for deliberate field protection, consistent with the existing Users module's TOTP-secret protection pattern, but only after the per-household key-wrap design is documented.
 
 **Acceptance:**
 - GDPR export returns all of a member's Economy data; erase cascades to receipt blobs per agreed rule.
-- Sensitive fields unreadable in a raw DB dump.
-- DataProtection keys are persisted outside Postgres on the filesystem and are covered by deployment backup/restore procedures.
+- Tier-2 field encryption remains out of scope for this phase.
 - Audit entries for every mutating Economy slice.
 
 **API surface published this phase:** `/v1/economy/gdpr/export`, notification-preference endpoints (verify if owned here or by Notifications module). Update OpenAPI.
