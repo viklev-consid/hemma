@@ -37,8 +37,14 @@ public sealed class PreviewImportHandler(EconomyDbContext db)
             .OrderBy(x => x.Pattern)
             .ToListAsync(ct);
 
+        var subscriptions = await db.Subscriptions
+            .AsNoTracking()
+            .Where(x => x.HouseholdId == query.HouseholdId && x.LifecycleState != SubscriptionLifecycleState.Cancelled)
+            .OrderBy(x => x.Name)
+            .ToListAsync(ct);
+
         var rows = query.Rows
-            .Select(row => EnrichRow(query.AccountId, row, existingFingerprintSet, possibleDuplicates, rules))
+            .Select(row => EnrichRow(query.AccountId, row, existingFingerprintSet, possibleDuplicates, rules, subscriptions))
             .ToList();
 
         return new PreviewImportResponse(
@@ -53,7 +59,8 @@ public sealed class PreviewImportHandler(EconomyDbContext db)
         NormalizedImportRowRequest row,
         HashSet<string> existingFingerprintSet,
         IReadOnlyList<PossibleDuplicate> possibleDuplicates,
-        IReadOnlyList<CategorizationRule> rules)
+        IReadOnlyList<CategorizationRule> rules,
+        IReadOnlyList<Subscription> subscriptions)
     {
         var errors = ValidateRow(row);
         var description = row.Description?.Trim();
@@ -88,6 +95,10 @@ public sealed class PreviewImportHandler(EconomyDbContext db)
             suggestedCategoryId = rules.FirstOrDefault(rule => rule.Matches(description))?.TargetCategoryId.Value;
         }
 
+        var suggestedSubscriptionMatches = row.OccurredOn is not null && row.Amount is not null && !string.IsNullOrWhiteSpace(description)
+            ? SuggestSubscriptionMatches(subscriptions, row.OccurredOn.Value, Math.Abs(row.Amount.Value), description)
+            : [];
+
         return new ImportRowResponse(
             row.RowNumber,
             row.OccurredOn,
@@ -102,7 +113,38 @@ public sealed class PreviewImportHandler(EconomyDbContext db)
             row.CategoryId,
             duplicateState,
             rowFingerprint,
+            suggestedSubscriptionMatches,
             errors);
+    }
+
+    private static List<SubscriptionMatchSuggestionResponse> SuggestSubscriptionMatches(
+        IReadOnlyList<Subscription> subscriptions,
+        DateOnly occurredOn,
+        decimal amount,
+        string description)
+    {
+        return subscriptions
+            .Where(subscription => subscription.Cadence.ChargesInMonth(subscription.StartsOn, occurredOn.Year, occurredOn.Month))
+            .Select(subscription => new
+            {
+                Subscription = subscription,
+                DescriptionMatch = description.Contains(subscription.Name, StringComparison.OrdinalIgnoreCase),
+                AmountDelta = Math.Abs(subscription.ExpectedAmount.Amount - amount),
+                DayDelta = Math.Abs(subscription.Cadence.ChargeDay - occurredOn.Day)
+            })
+            .Where(candidate =>
+                candidate.DescriptionMatch &&
+                candidate.DayDelta <= 3 &&
+                candidate.AmountDelta <= Math.Max(5m, candidate.Subscription.ExpectedAmount.Amount * 0.10m))
+            .OrderBy(candidate => candidate.DayDelta)
+            .ThenBy(candidate => candidate.AmountDelta)
+            .Take(3)
+            .Select(candidate => new SubscriptionMatchSuggestionResponse(
+                candidate.Subscription.Id.Value,
+                candidate.Subscription.Name,
+                "suggested",
+                MoneyResponse.From(candidate.Subscription.ExpectedAmount)))
+            .ToList();
     }
 
     private static List<ImportRowValidationErrorResponse> ValidateRow(NormalizedImportRowRequest row)

@@ -22,6 +22,7 @@ using Hemma.Modules.Economy.Features.ListRecurringBills;
 using Hemma.Modules.Economy.Features.ListTransactions;
 using Hemma.Modules.Economy.Features.RecordTransaction;
 using Hemma.Modules.Economy.Features.SearchTransactionNote;
+using Hemma.Modules.Economy.Features.Subscriptions;
 using Hemma.Modules.Economy.Features.UpsertBudgetLine;
 using Hemma.Modules.Economy.Jobs;
 using Hemma.Modules.Households.Domain;
@@ -520,6 +521,105 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         Assert.Equal(2, reimportBody.DuplicateCount);
     }
 
+    [Fact]
+    public async Task SubscriptionLifecycle_DoesNotPostTransactionsAndDerivesPriceHistory()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+
+        var subscription = await CreateSubscriptionAsync(
+            client,
+            household.Id.Value,
+            account.AccountId,
+            "Spotify",
+            119,
+            15,
+            new DateOnly(2026, 1, 15));
+
+        var emptyTransactions = await client.GetFromJsonAsync<ListTransactionsResponse>(
+            $"/v1/economy/transactions?householdId={household.Id.Value}");
+        Assert.NotNull(emptyTransactions);
+        Assert.Empty(emptyTransactions.Transactions);
+
+        var first = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 99, new DateOnly(2026, 2, 15), "Spotify");
+        var second = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 119, new DateOnly(2026, 3, 15), "Spotify");
+        await LinkSubscriptionAsync(client, household.Id.Value, subscription.SubscriptionId, first.TransactionId);
+        await LinkSubscriptionAsync(client, household.Id.Value, subscription.SubscriptionId, second.TransactionId);
+
+        var history = await client.GetFromJsonAsync<ChargeHistoryResponse>(
+            $"/v1/economy/subscriptions/{subscription.SubscriptionId}/charge-history?householdId={household.Id.Value}");
+        Assert.NotNull(history);
+        Assert.Equal(2, history.Charges.Count);
+        var priceChange = Assert.Single(history.PriceChanges);
+        Assert.Equal(99, priceChange.PreviousAmount.Amount);
+        Assert.Equal(119, priceChange.NewAmount.Amount);
+    }
+
+    [Fact]
+    public async Task SubscriptionMonthCalendar_ReturnsPredictedAndActualChargesForSelectedMonth()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var subscription = await CreateSubscriptionAsync(
+            client,
+            household.Id.Value,
+            account.AccountId,
+            "Spotify",
+            119,
+            15,
+            new DateOnly(2026, 1, 15));
+        var transaction = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 119, new DateOnly(2026, 3, 15), "Spotify");
+        await LinkSubscriptionAsync(client, household.Id.Value, subscription.SubscriptionId, transaction.TransactionId);
+
+        var march = await client.GetFromJsonAsync<MonthChargeCalendarResponse>(
+            $"/v1/economy/subscriptions/month-calendar?householdId={household.Id.Value}&month=2026-03-01");
+
+        Assert.NotNull(march);
+        var day = Assert.Single(march.Days);
+        Assert.Equal(new DateOnly(2026, 3, 15), day.Date);
+        var charge = Assert.Single(day.Charges);
+        Assert.Equal("actual", charge.MatchState);
+        Assert.Equal(transaction.TransactionId, charge.TransactionId);
+    }
+
+    [Fact]
+    public async Task ImportPreview_SuggestsSubscriptionMatchWithoutLinking()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var subscription = await CreateSubscriptionAsync(
+            client,
+            household.Id.Value,
+            account.AccountId,
+            "Spotify",
+            119,
+            15,
+            new DateOnly(2026, 1, 15));
+
+        var preview = await client.PostAsJsonAsync(
+            "/v1/economy/import/preview",
+            new PreviewImportRequest(
+                household.Id.Value,
+                account.AccountId,
+                [new NormalizedImportRowRequest(1, new DateOnly(2026, 3, 16), -119m, "Spotify AB", "SEK", null, null, null, null, null)]));
+
+        preview.EnsureSuccessStatusCode();
+        var body = await preview.Content.ReadFromJsonAsync<PreviewImportResponse>();
+        Assert.NotNull(body);
+        var suggestion = Assert.Single(body.Rows[0].SuggestedSubscriptionMatches);
+        Assert.Equal(subscription.SubscriptionId, suggestion.SubscriptionId);
+        Assert.Equal("suggested", suggestion.MatchState);
+    }
+
     private static async Task<CreateEconomySettingsResponse> CreateSettingsAsync(HttpClient client, Guid householdId)
     {
         var response = await client.PostAsJsonAsync(
@@ -595,6 +695,67 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         var bill = await response.Content.ReadFromJsonAsync<RecurringBillResponse>();
         Assert.NotNull(bill);
         return bill;
+    }
+
+    private static async Task<SubscriptionResponse> CreateSubscriptionAsync(
+        HttpClient client,
+        Guid householdId,
+        Guid accountId,
+        string name,
+        decimal expectedAmount,
+        int chargeDay,
+        DateOnly startsOn)
+    {
+        var response = await client.PostAsJsonAsync(
+            "/v1/economy/subscriptions",
+            new CreateSubscriptionRequest(
+                householdId,
+                name,
+                "Monthly",
+                1,
+                chargeDay,
+                new MoneyRequest(expectedAmount, "SEK"),
+                "Active",
+                null,
+                accountId,
+                startsOn));
+        response.EnsureSuccessStatusCode();
+        var subscription = await response.Content.ReadFromJsonAsync<SubscriptionResponse>();
+        Assert.NotNull(subscription);
+        return subscription;
+    }
+
+    private static async Task<TransactionResponse> RecordTransactionAsync(
+        HttpClient client,
+        Guid householdId,
+        Guid accountId,
+        decimal amount,
+        DateOnly occurredOn,
+        string note)
+    {
+        var response = await client.PostAsJsonAsync(
+            "/v1/economy/transactions",
+            new RecordTransactionRequest(
+                householdId,
+                accountId,
+                null,
+                new MoneyRequest(amount, "SEK"),
+                occurredOn,
+                note,
+                "Expense",
+                null));
+        response.EnsureSuccessStatusCode();
+        var transaction = await response.Content.ReadFromJsonAsync<TransactionResponse>();
+        Assert.NotNull(transaction);
+        return transaction;
+    }
+
+    private static async Task LinkSubscriptionAsync(HttpClient client, Guid householdId, Guid subscriptionId, Guid transactionId)
+    {
+        var response = await client.PostAsJsonAsync(
+            $"/v1/economy/subscriptions/{subscriptionId}/link",
+            new LinkTransactionRequest(householdId, transactionId));
+        response.EnsureSuccessStatusCode();
     }
 
     private async Task<(HouseholdId Id, string Slug)> CreateHouseholdAsync(Guid ownerId, string name, string slug)

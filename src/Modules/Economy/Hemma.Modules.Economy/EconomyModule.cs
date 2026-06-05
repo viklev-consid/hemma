@@ -24,6 +24,7 @@ using Hemma.Modules.Economy.Features.RecordTransaction;
 using Hemma.Modules.Economy.Features.ResumeOccurrence;
 using Hemma.Modules.Economy.Features.SearchTransactionNote;
 using Hemma.Modules.Economy.Features.SkipOccurrence;
+using Hemma.Modules.Economy.Features.Subscriptions;
 using Hemma.Modules.Economy.Features.UpdateCycleStartDay;
 using Hemma.Modules.Economy.Features.UpsertBudgetLine;
 using Hemma.Modules.Economy.Gdpr;
@@ -113,7 +114,9 @@ public static class EconomyModule
         opts.Discovery.IncludeType<CategorizationRuleHandler>();
         opts.Discovery.IncludeType<PreviewImportHandler>();
         opts.Discovery.IncludeType<CommitImportHandler>();
+        opts.Discovery.IncludeType<SubscriptionHandler>();
         opts.Discovery.IncludeType<RunDueBillsHandler>();
+        opts.Discovery.IncludeType<TrialRenewalReminderHandler>();
         return opts;
     }
 
@@ -121,6 +124,7 @@ public static class EconomyModule
         this TickerOptionsBuilder<TimeTickerEntity, CronTickerEntity> opts)
     {
         _ = typeof(RunDueBillsJob);
+        _ = typeof(TrialRenewalReminderJob);
         return opts;
     }
 
@@ -151,6 +155,7 @@ public static class EconomyModule
         CategorizationRuleEndpoint.Map(app);
         PreviewImportEndpoint.Map(app);
         CommitImportEndpoint.Map(app);
+        SubscriptionEndpoint.Map(app);
 
         return app;
     }

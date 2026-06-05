@@ -16,4 +16,5 @@ public sealed record ImportRowResponse(
     Guid? SelectedCategoryId,
     string DuplicateState,
     string RowFingerprint,
+    IReadOnlyList<SubscriptionMatchSuggestionResponse> SuggestedSubscriptionMatches,
     IReadOnlyList<ImportRowValidationErrorResponse> Errors);
