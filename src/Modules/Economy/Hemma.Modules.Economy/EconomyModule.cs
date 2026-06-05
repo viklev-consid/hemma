@@ -2,6 +2,7 @@ using FluentValidation;
 using Hemma.Modules.Economy.Contracts.Authorization;
 using Hemma.Modules.Economy.Features.AddCategory;
 using Hemma.Modules.Economy.Features.AttachReceipt;
+using Hemma.Modules.Economy.Features.CategorizationRules;
 using Hemma.Modules.Economy.Features.ChangeRecurringBillOccurrence;
 using Hemma.Modules.Economy.Features.ConfirmEstimatedBill;
 using Hemma.Modules.Economy.Features.CopyBudgetFromPreviousPeriod;
@@ -12,6 +13,8 @@ using Hemma.Modules.Economy.Features.CreateRecurringBill;
 using Hemma.Modules.Economy.Features.CreateTransfer;
 using Hemma.Modules.Economy.Features.GetAccountBalances;
 using Hemma.Modules.Economy.Features.GetBudgetSummary;
+using Hemma.Modules.Economy.Features.Import.CommitImport;
+using Hemma.Modules.Economy.Features.Import.PreviewImport;
 using Hemma.Modules.Economy.Features.ListAccounts;
 using Hemma.Modules.Economy.Features.ListCategories;
 using Hemma.Modules.Economy.Features.ListRecurringBills;
@@ -107,6 +110,9 @@ public static class EconomyModule
         opts.Discovery.IncludeType<ListRecurringBillsHandler>();
         opts.Discovery.IncludeType<ConfirmEstimatedBillHandler>();
         opts.Discovery.IncludeType<ChangeRecurringBillOccurrenceHandler>();
+        opts.Discovery.IncludeType<CategorizationRuleHandler>();
+        opts.Discovery.IncludeType<PreviewImportHandler>();
+        opts.Discovery.IncludeType<CommitImportHandler>();
         opts.Discovery.IncludeType<RunDueBillsHandler>();
         return opts;
     }
@@ -142,6 +148,9 @@ public static class EconomyModule
         SkipOccurrenceEndpoint.Map(app);
         PauseOccurrenceEndpoint.Map(app);
         ResumeOccurrenceEndpoint.Map(app);
+        CategorizationRuleEndpoint.Map(app);
+        PreviewImportEndpoint.Map(app);
+        CommitImportEndpoint.Map(app);
 
         return app;
     }

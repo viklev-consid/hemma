@@ -12,6 +12,10 @@ using Hemma.Modules.Economy.Features.ChangeRecurringBillOccurrence;
 using Hemma.Modules.Economy.Features.ConfirmEstimatedBill;
 using Hemma.Modules.Economy.Features.GetAccountBalances;
 using Hemma.Modules.Economy.Features.GetBudgetSummary;
+using Hemma.Modules.Economy.Features.CategorizationRules;
+using Hemma.Modules.Economy.Features.Import.CommitImport;
+using Hemma.Modules.Economy.Features.Import.Contracts;
+using Hemma.Modules.Economy.Features.Import.PreviewImport;
 using Hemma.Modules.Economy.Features.ListAccounts;
 using Hemma.Modules.Economy.Features.ListCategories;
 using Hemma.Modules.Economy.Features.ListRecurringBills;
@@ -423,6 +427,97 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         var transaction = Assert.Single(transactions.Transactions);
         Assert.Equal("Income", transaction.Kind);
         Assert.Equal(new DateOnly(2026, 7, 5), transaction.OccurredOn);
+    }
+
+    [Fact]
+    public async Task ImportPreview_ReturnsRowErrorsAndAppliesCategorizationRules()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var food = await AddBudgetCategoryAsync(client, household.Id.Value, "Food");
+
+        var ruleResponse = await client.PostAsJsonAsync(
+            "/v1/economy/categorization-rules",
+            new CategorizationRuleRequest(household.Id.Value, "Contains", "ICA", food.CategoryId));
+        ruleResponse.EnsureSuccessStatusCode();
+
+        var preview = await client.PostAsJsonAsync(
+            "/v1/economy/import/preview",
+            new PreviewImportRequest(
+                household.Id.Value,
+                account.AccountId,
+                [
+                    new NormalizedImportRowRequest(1, new DateOnly(2026, 6, 5), -123.45m, "ICA Kvantum", "SEK", null, "A1", null, null, null),
+                    new NormalizedImportRowRequest(2, null, null, "", null, null, null, null, null, null)
+                ]));
+
+        preview.EnsureSuccessStatusCode();
+        var body = await preview.Content.ReadFromJsonAsync<PreviewImportResponse>();
+        Assert.NotNull(body);
+        Assert.NotEmpty(body.PreviewFingerprint);
+        Assert.Equal(food.CategoryId, body.Rows[0].SuggestedCategoryId);
+        Assert.Equal("None", body.Rows[0].DuplicateState);
+        Assert.NotEmpty(body.Rows[1].Errors);
+    }
+
+    [Fact]
+    public async Task ImportCommit_RejectsChangedFingerprintAndReimportFlagsDuplicates()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var category = await AddBudgetCategoryAsync(client, household.Id.Value, "Groceries");
+        var rows = new[]
+        {
+            new NormalizedImportRowRequest(1, new DateOnly(2026, 6, 5), -99m, "ICA", "SEK", null, "A1", null, null, category.CategoryId),
+            new NormalizedImportRowRequest(2, new DateOnly(2026, 6, 6), 250m, "Salary", "SEK", null, "B1", null, null, null)
+        };
+
+        var previewResponse = await client.PostAsJsonAsync(
+            "/v1/economy/import/preview",
+            new PreviewImportRequest(household.Id.Value, account.AccountId, rows));
+        previewResponse.EnsureSuccessStatusCode();
+        var preview = await previewResponse.Content.ReadFromJsonAsync<PreviewImportResponse>();
+        Assert.NotNull(preview);
+
+        var changedRows = rows
+            .Select((row, index) => index == 0 ? row with { Description = "Changed" } : row)
+            .ToArray();
+        var changedCommit = await client.PostAsJsonAsync(
+            "/v1/economy/import/commit",
+            new CommitImportRequest(household.Id.Value, account.AccountId, preview.PreviewFingerprint, changedRows));
+        Assert.Equal(HttpStatusCode.Conflict, changedCommit.StatusCode);
+
+        var committed = await client.PostAsJsonAsync(
+            "/v1/economy/import/commit",
+            new CommitImportRequest(household.Id.Value, account.AccountId, preview.PreviewFingerprint, rows));
+        committed.EnsureSuccessStatusCode();
+        var commitBody = await committed.Content.ReadFromJsonAsync<CommitImportResponse>();
+        Assert.NotNull(commitBody);
+        Assert.Equal(2, commitBody.ImportedCount);
+        Assert.Single(commitBody.SuggestedRules);
+
+        var reimportPreviewResponse = await client.PostAsJsonAsync(
+            "/v1/economy/import/preview",
+            new PreviewImportRequest(household.Id.Value, account.AccountId, rows));
+        reimportPreviewResponse.EnsureSuccessStatusCode();
+        var reimportPreview = await reimportPreviewResponse.Content.ReadFromJsonAsync<PreviewImportResponse>();
+        Assert.NotNull(reimportPreview);
+        Assert.All(reimportPreview.Rows, row => Assert.Equal("Exact", row.DuplicateState));
+
+        var reimportCommit = await client.PostAsJsonAsync(
+            "/v1/economy/import/commit",
+            new CommitImportRequest(household.Id.Value, account.AccountId, reimportPreview.PreviewFingerprint, rows));
+        reimportCommit.EnsureSuccessStatusCode();
+        var reimportBody = await reimportCommit.Content.ReadFromJsonAsync<CommitImportResponse>();
+        Assert.NotNull(reimportBody);
+        Assert.Equal(0, reimportBody.ImportedCount);
+        Assert.Equal(2, reimportBody.DuplicateCount);
     }
 
     private static async Task<CreateEconomySettingsResponse> CreateSettingsAsync(HttpClient client, Guid householdId)

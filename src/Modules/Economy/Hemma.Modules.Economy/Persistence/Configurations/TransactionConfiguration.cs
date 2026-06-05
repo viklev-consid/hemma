@@ -68,6 +68,9 @@ internal sealed class TransactionConfiguration : IEntityTypeConfiguration<Transa
         builder.Property(transaction => transaction.IsPending)
             .IsRequired();
 
+        builder.Property(transaction => transaction.ImportFingerprint)
+            .HasMaxLength(128);
+
         builder.HasOne<Account>()
             .WithMany()
             .HasForeignKey(transaction => transaction.AccountId)
@@ -83,5 +86,8 @@ internal sealed class TransactionConfiguration : IEntityTypeConfiguration<Transa
         builder.HasIndex(transaction => transaction.CategoryId);
         builder.HasIndex(transaction => transaction.PayerId);
         builder.HasIndex(transaction => transaction.TransferId);
+        builder.HasIndex(transaction => new { transaction.AccountId, transaction.ImportFingerprint })
+            .IsUnique()
+            .HasFilter("\"import_fingerprint\" IS NOT NULL");
     }
 }

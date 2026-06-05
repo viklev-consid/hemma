@@ -18,7 +18,8 @@ public sealed class Transaction : AggregateRoot<TransactionId>
         Guid? payerId,
         TransferId? transferId,
         bool isTransferOutflow,
-        bool isPending) : base(id)
+        bool isPending,
+        string? importFingerprint = null) : base(id)
     {
         HouseholdId = householdId;
         AccountId = accountId;
@@ -31,6 +32,7 @@ public sealed class Transaction : AggregateRoot<TransactionId>
         TransferId = transferId;
         IsTransferOutflow = isTransferOutflow;
         IsPending = isPending;
+        ImportFingerprint = importFingerprint;
     }
 
     private Transaction() : base(default!) { }
@@ -49,6 +51,7 @@ public sealed class Transaction : AggregateRoot<TransactionId>
     public TransferId? TransferId { get; private set; }
     public bool IsTransferOutflow { get; private set; }
     public bool IsPending { get; private set; }
+    public string? ImportFingerprint { get; private set; }
 
     public bool HasReceipt => ReceiptBlobContainer is not null && ReceiptBlobKey is not null;
 
@@ -90,6 +93,37 @@ public sealed class Transaction : AggregateRoot<TransactionId>
             transferId: null,
             isTransferOutflow: false,
             isPending: false);
+    }
+
+    public static ErrorOr<Transaction> RecordImported(
+        Guid householdId,
+        Account account,
+        Category? category,
+        Money amount,
+        DateOnly occurredOn,
+        string description,
+        TransactionKind kind,
+        string importFingerprint)
+    {
+        if (string.IsNullOrWhiteSpace(importFingerprint) || importFingerprint.Length > 128)
+        {
+            return EconomyErrors.ImportFingerprintInvalid;
+        }
+
+        return new Transaction(
+            TransactionId.New(),
+            householdId,
+            account.Id,
+            category?.Id,
+            amount,
+            occurredOn,
+            NormalizeNote(description),
+            kind,
+            payerId: null,
+            transferId: null,
+            isTransferOutflow: false,
+            isPending: false,
+            importFingerprint.Trim());
     }
 
     public static ErrorOr<Transaction> RecordPending(

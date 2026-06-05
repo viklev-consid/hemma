@@ -85,4 +85,19 @@ internal static class EconomyErrors
 
     public static readonly ErrorOr.Error RecurringBillOccurrenceInvalid =
         ErrorOr.Error.Validation("Economy.RecurringBill.OccurrenceInvalid", "Recurring bill occurrence cannot be changed.");
+
+    public static readonly ErrorOr.Error CategorizationRuleNotFound =
+        ErrorOr.Error.NotFound("Economy.CategorizationRule.NotFound", "Categorization rule was not found.");
+
+    public static readonly ErrorOr.Error CategorizationRuleMatchInvalid =
+        ErrorOr.Error.Validation("Economy.CategorizationRule.MatchInvalid", "Categorization rule match must be Contains or Regex.");
+
+    public static readonly ErrorOr.Error CategorizationRulePatternInvalid =
+        ErrorOr.Error.Validation("Economy.CategorizationRule.PatternInvalid", "Categorization rule pattern is required, must be at most 200 characters, and must be valid for regex rules.");
+
+    public static readonly ErrorOr.Error ImportFingerprintInvalid =
+        ErrorOr.Error.Validation("Economy.Import.FingerprintInvalid", "Import preview fingerprint is invalid.");
+
+    public static readonly ErrorOr.Error ImportFingerprintMismatch =
+        ErrorOr.Error.Conflict("Economy.Import.FingerprintMismatch", "Imported rows do not match the preview fingerprint.");
 }
