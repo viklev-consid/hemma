@@ -1,7 +1,3 @@
-using Microsoft.AspNetCore.Routing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Hemma.Modules.Audit.Authorization;
 using Hemma.Modules.Audit.Contracts.Authorization;
 using Hemma.Modules.Audit.Features.GetAuditTrail;
@@ -12,6 +8,10 @@ using Hemma.Modules.Audit.Persistence;
 using Hemma.Shared.Infrastructure.Authorization;
 using Hemma.Shared.Infrastructure.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry;
 using Wolverine;
 

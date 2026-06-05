@@ -1,8 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Economy.Persistence;
 using Hemma.Shared.Infrastructure.Blobs;
 using Hemma.Shared.Kernel.Gdpr;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Gdpr;
 
