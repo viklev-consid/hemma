@@ -17,7 +17,8 @@ public sealed class Transaction : AggregateRoot<TransactionId>
         TransactionKind kind,
         Guid? payerId,
         TransferId? transferId,
-        bool isTransferOutflow) : base(id)
+        bool isTransferOutflow,
+        bool isPending) : base(id)
     {
         HouseholdId = householdId;
         AccountId = accountId;
@@ -29,6 +30,7 @@ public sealed class Transaction : AggregateRoot<TransactionId>
         PayerId = payerId;
         TransferId = transferId;
         IsTransferOutflow = isTransferOutflow;
+        IsPending = isPending;
     }
 
     private Transaction() : base(default!) { }
@@ -46,6 +48,7 @@ public sealed class Transaction : AggregateRoot<TransactionId>
     public Guid? PayerId { get; private set; }
     public TransferId? TransferId { get; private set; }
     public bool IsTransferOutflow { get; private set; }
+    public bool IsPending { get; private set; }
 
     public bool HasReceipt => ReceiptBlobContainer is not null && ReceiptBlobKey is not null;
 
@@ -85,7 +88,28 @@ public sealed class Transaction : AggregateRoot<TransactionId>
             kind,
             payerId,
             transferId: null,
-            isTransferOutflow: false);
+            isTransferOutflow: false,
+            isPending: false);
+    }
+
+    public static ErrorOr<Transaction> RecordPending(
+        Guid householdId,
+        Account account,
+        Category? category,
+        Money amount,
+        DateOnly occurredOn,
+        string? note,
+        TransactionKind kind,
+        Guid? payerId)
+    {
+        var transaction = Record(householdId, account, category, amount, occurredOn, note, kind, payerId);
+        if (transaction.IsError)
+        {
+            return transaction.Errors;
+        }
+
+        transaction.Value.IsPending = true;
+        return transaction;
     }
 
     public static ErrorOr<Transaction> CreateTransferLeg(
@@ -120,7 +144,8 @@ public sealed class Transaction : AggregateRoot<TransactionId>
             TransactionKind.Transfer,
             payerId,
             transferId,
-            isOutflow);
+            isOutflow,
+            isPending: false);
     }
 
     public ErrorOr<Success> AttachReceipt(string container, string key)
@@ -132,6 +157,24 @@ public sealed class Transaction : AggregateRoot<TransactionId>
 
         ReceiptBlobContainer = container.Trim();
         ReceiptBlobKey = key.Trim();
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> ConfirmPending(Money amount, DateOnly occurredOn)
+    {
+        if (!IsPending)
+        {
+            return EconomyErrors.TransactionNotPending;
+        }
+
+        if (!string.Equals(Amount.Currency, amount.Currency, StringComparison.OrdinalIgnoreCase))
+        {
+            return EconomyErrors.CurrencyMismatch;
+        }
+
+        Amount = amount;
+        OccurredOn = occurredOn;
+        IsPending = false;
         return Result.Success;
     }
 

@@ -6,20 +6,26 @@ using Hemma.Modules.Economy.Features.CopyBudgetFromPreviousPeriod;
 using Hemma.Modules.Economy.Features.CreateAccount;
 using Hemma.Modules.Economy.Features.CreateBudget;
 using Hemma.Modules.Economy.Features.CreateEconomySettings;
+using Hemma.Modules.Economy.Features.CreateRecurringBill;
 using Hemma.Modules.Economy.Features.CreateTransfer;
+using Hemma.Modules.Economy.Features.ChangeRecurringBillOccurrence;
+using Hemma.Modules.Economy.Features.ConfirmEstimatedBill;
 using Hemma.Modules.Economy.Features.GetAccountBalances;
 using Hemma.Modules.Economy.Features.GetBudgetSummary;
 using Hemma.Modules.Economy.Features.ListAccounts;
 using Hemma.Modules.Economy.Features.ListCategories;
+using Hemma.Modules.Economy.Features.ListRecurringBills;
 using Hemma.Modules.Economy.Features.ListTransactions;
 using Hemma.Modules.Economy.Features.RecordTransaction;
 using Hemma.Modules.Economy.Features.SearchTransactionNote;
 using Hemma.Modules.Economy.Features.UpsertBudgetLine;
+using Hemma.Modules.Economy.Jobs;
 using Hemma.Modules.Households.Domain;
 using Hemma.Modules.Households.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Wolverine;
 
 namespace Hemma.Modules.Economy.IntegrationTests;
 
@@ -290,6 +296,135 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         Assert.True(line.IsOverPace);
     }
 
+    [Fact]
+    public async Task FixedRecurringBill_RunDueBills_PostsOneTransactionPerCycle()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var category = await AddBudgetCategoryAsync(client, household.Id.Value, "Software");
+        var bill = await CreateRecurringBillAsync(
+            client,
+            household.Id.Value,
+            account.AccountId,
+            category.CategoryId,
+            "Streaming",
+            "Fixed",
+            "Expense",
+            119,
+            new DateOnly(2026, 6, 1),
+            5);
+
+        var bus = fixture.Services.GetRequiredService<IMessageBus>();
+        await bus.InvokeAsync(new RunDueBills(new DateOnly(2026, 6, 5)), CancellationToken.None);
+        await bus.InvokeAsync(new RunDueBills(new DateOnly(2026, 6, 5)), CancellationToken.None);
+
+        var transactions = await client.GetFromJsonAsync<ListTransactionsResponse>(
+            $"/v1/economy/transactions?householdId={household.Id.Value}");
+        Assert.NotNull(transactions);
+        var transaction = Assert.Single(transactions.Transactions);
+        Assert.Equal(119, transaction.Amount.Amount);
+        Assert.False(transaction.IsPending);
+
+        var listed = await client.GetFromJsonAsync<ListRecurringBillsResponse>(
+            $"/v1/economy/recurring-bills?householdId={household.Id.Value}");
+        Assert.NotNull(listed);
+        Assert.Equal(new DateOnly(2026, 7, 5), listed.RecurringBills.Single(x => x.RecurringBillId == bill.RecurringBillId).NextDueOn);
+    }
+
+    [Fact]
+    public async Task EstimatedRecurringBill_IsPendingUntilConfirmed()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var category = await AddBudgetCategoryAsync(client, household.Id.Value, "Utilities");
+        var bill = await CreateRecurringBillAsync(
+            client,
+            household.Id.Value,
+            account.AccountId,
+            category.CategoryId,
+            "Electricity",
+            "Estimated",
+            "Expense",
+            500,
+            new DateOnly(2026, 6, 1),
+            5);
+
+        var bus = fixture.Services.GetRequiredService<IMessageBus>();
+        await bus.InvokeAsync(new RunDueBills(new DateOnly(2026, 6, 5)), CancellationToken.None);
+
+        var pendingList = await client.GetFromJsonAsync<ListRecurringBillsResponse>(
+            $"/v1/economy/recurring-bills?householdId={household.Id.Value}");
+        Assert.NotNull(pendingList);
+        var pending = Assert.Single(pendingList.RecurringBills.Single(x => x.RecurringBillId == bill.RecurringBillId).PendingOccurrences);
+        Assert.NotNull(pending.TransactionId);
+
+        var balancesBefore = await client.GetFromJsonAsync<GetAccountBalancesResponse>(
+            $"/v1/economy/accounts/balances?householdId={household.Id.Value}");
+        Assert.NotNull(balancesBefore);
+        Assert.Equal(1000, balancesBefore.Accounts.Single(x => x.AccountId == account.AccountId).Balance.Amount);
+
+        var confirmed = await client.PostAsJsonAsync(
+            $"/v1/economy/recurring-bills/{bill.RecurringBillId}/confirm",
+            new ConfirmEstimatedBillRequest(
+                household.Id.Value,
+                pending.TransactionId.Value,
+                new MoneyRequest(650, "SEK"),
+                new DateOnly(2026, 6, 6)));
+        confirmed.EnsureSuccessStatusCode();
+        var transaction = await confirmed.Content.ReadFromJsonAsync<TransactionResponse>();
+        Assert.NotNull(transaction);
+        Assert.False(transaction.IsPending);
+        Assert.Equal(650, transaction.Amount.Amount);
+
+        var balancesAfter = await client.GetFromJsonAsync<GetAccountBalancesResponse>(
+            $"/v1/economy/accounts/balances?householdId={household.Id.Value}");
+        Assert.NotNull(balancesAfter);
+        Assert.Equal(350, balancesAfter.Accounts.Single(x => x.AccountId == account.AccountId).Balance.Amount);
+    }
+
+    [Fact]
+    public async Task SkippingOccurrence_DoesNotAffectLaterCycles()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var bill = await CreateRecurringBillAsync(
+            client,
+            household.Id.Value,
+            account.AccountId,
+            null,
+            "Allowance",
+            "Fixed",
+            "Income",
+            100,
+            new DateOnly(2026, 6, 1),
+            5);
+
+        var skipped = await client.PostAsJsonAsync(
+            $"/v1/economy/recurring-bills/{bill.RecurringBillId}/skip",
+            new ChangeRecurringBillOccurrenceRequest(household.Id.Value, new DateOnly(2026, 6, 5)));
+        skipped.EnsureSuccessStatusCode();
+
+        var bus = fixture.Services.GetRequiredService<IMessageBus>();
+        await bus.InvokeAsync(new RunDueBills(new DateOnly(2026, 6, 5)), CancellationToken.None);
+        await bus.InvokeAsync(new RunDueBills(new DateOnly(2026, 7, 5)), CancellationToken.None);
+
+        var transactions = await client.GetFromJsonAsync<ListTransactionsResponse>(
+            $"/v1/economy/transactions?householdId={household.Id.Value}");
+        Assert.NotNull(transactions);
+        var transaction = Assert.Single(transactions.Transactions);
+        Assert.Equal("Income", transaction.Kind);
+        Assert.Equal(new DateOnly(2026, 7, 5), transaction.OccurredOn);
+    }
+
     private static async Task<CreateEconomySettingsResponse> CreateSettingsAsync(HttpClient client, Guid householdId)
     {
         var response = await client.PostAsJsonAsync(
@@ -332,6 +467,39 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         var budget = await response.Content.ReadFromJsonAsync<BudgetResponse>();
         Assert.NotNull(budget);
         return budget;
+    }
+
+    private static async Task<RecurringBillResponse> CreateRecurringBillAsync(
+        HttpClient client,
+        Guid householdId,
+        Guid accountId,
+        Guid? categoryId,
+        string name,
+        string type,
+        string direction,
+        decimal amount,
+        DateOnly startsOn,
+        int dayOfMonth)
+    {
+        var response = await client.PostAsJsonAsync(
+            "/v1/economy/recurring-bills",
+            new CreateRecurringBillRequest(
+                householdId,
+                name,
+                accountId,
+                categoryId,
+                new MoneyRequest(amount, "SEK"),
+                type,
+                direction,
+                "Monthly",
+                1,
+                dayOfMonth,
+                startsOn,
+                null));
+        response.EnsureSuccessStatusCode();
+        var bill = await response.Content.ReadFromJsonAsync<RecurringBillResponse>();
+        Assert.NotNull(bill);
+        return bill;
     }
 
     private async Task<(HouseholdId Id, string Slug)> CreateHouseholdAsync(Guid ownerId, string name, string slug)

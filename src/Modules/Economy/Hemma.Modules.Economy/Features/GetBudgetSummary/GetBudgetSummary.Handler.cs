@@ -32,6 +32,7 @@ public sealed class GetBudgetSummaryHandler(EconomyDbContext db)
             .Where(x => x.HouseholdId == query.HouseholdId &&
                         x.OccurredOn >= budget.PeriodStartsOn &&
                         x.OccurredOn <= budget.PeriodEndsOn &&
+                        !x.IsPending &&
                         x.CategoryId != null)
             .ToListAsync(ct);
 

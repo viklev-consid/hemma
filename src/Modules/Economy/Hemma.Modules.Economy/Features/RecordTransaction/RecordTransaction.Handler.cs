@@ -93,6 +93,7 @@ public sealed class RecordTransactionHandler(EconomyDbContext db, IMessageBus bu
                         x.CategoryId == transaction.CategoryId &&
                         x.OccurredOn >= budget.PeriodStartsOn &&
                         x.OccurredOn <= budget.PeriodEndsOn &&
+                        !x.IsPending &&
                         x.Kind == TransactionKind.Expense)
             .SumAsync(x => x.Amount.Amount, ct);
 

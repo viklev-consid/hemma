@@ -8,13 +8,13 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Hemma.Modules.Economy.Persistence.Migrations;
-
-[DbContext(typeof(EconomyDbContext))]
-partial class EconomyDbContextModelSnapshot : ModelSnapshot
+namespace Hemma.Modules.Economy.Persistence.Migrations
 {
-    protected override void BuildModel(ModelBuilder modelBuilder)
+    [DbContext(typeof(EconomyDbContext))]
+    partial class EconomyDbContextModelSnapshot : ModelSnapshot
     {
+        protected override void BuildModel(ModelBuilder modelBuilder)
+        {
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("economy")
@@ -178,6 +178,108 @@ partial class EconomyDbContextModelSnapshot : ModelSnapshot
                     b.ToTable("economy_settings", "economy");
                 });
 
+            modelBuilder.Entity("Hemma.Modules.Economy.Domain.RecurringBill", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("direction");
+
+                    b.Property<Guid>("HouseholdId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("household_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name");
+
+                    b.Property<DateOnly>("NextDueOn")
+                        .HasColumnType("date")
+                        .HasColumnName("next_due_on");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("note");
+
+                    b.Property<DateOnly>("StartsOn")
+                        .HasColumnType("date")
+                        .HasColumnName("starts_on");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("type");
+
+                    b.HasKey("Id")
+                        .HasName("pk_recurring_bills");
+
+                    b.HasIndex("AccountId")
+                        .HasDatabaseName("ix_recurring_bills_account_id");
+
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("ix_recurring_bills_category_id");
+
+                    b.HasIndex("HouseholdId", "NextDueOn")
+                        .HasDatabaseName("ix_recurring_bills_household_id_next_due_on");
+
+                    b.ToTable("recurring_bills", "economy");
+                });
+
+            modelBuilder.Entity("Hemma.Modules.Economy.Domain.RecurringBillOccurrence", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("DueOn")
+                        .HasColumnType("date")
+                        .HasColumnName("due_on");
+
+                    b.Property<Guid>("RecurringBillId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recurring_bill_id");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("state");
+
+                    b.Property<Guid?>("TransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("transaction_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_recurring_bill_occurrences");
+
+                    b.HasIndex("TransactionId")
+                        .HasDatabaseName("ix_recurring_bill_occurrences_transaction_id");
+
+                    b.HasIndex("RecurringBillId", "DueOn")
+                        .IsUnique()
+                        .HasDatabaseName("ix_recurring_bill_occurrences_recurring_bill_id_due_on");
+
+                    b.ToTable("recurring_bill_occurrences", "economy");
+                });
+
             modelBuilder.Entity("Hemma.Modules.Economy.Domain.Transaction", b =>
                 {
                     b.Property<Guid>("Id")
@@ -195,6 +297,10 @@ partial class EconomyDbContextModelSnapshot : ModelSnapshot
                     b.Property<Guid>("HouseholdId")
                         .HasColumnType("uuid")
                         .HasColumnName("household_id");
+
+                    b.Property<bool>("IsPending")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_pending");
 
                     b.Property<bool>("IsTransferOutflow")
                         .HasColumnType("boolean")
@@ -371,6 +477,98 @@ partial class EconomyDbContextModelSnapshot : ModelSnapshot
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Hemma.Modules.Economy.Domain.RecurringBill", b =>
+                {
+                    b.HasOne("Hemma.Modules.Economy.Domain.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_recurring_bills_accounts_account_id");
+
+                    b.HasOne("Hemma.Modules.Economy.Domain.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_recurring_bills_categories_category_id");
+
+                    b.OwnsOne("Hemma.Modules.Economy.Domain.Money", "Amount", b1 =>
+                        {
+                            b1.Property<Guid>("RecurringBillId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("amount");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)")
+                                .HasColumnName("currency");
+
+                            b1.HasKey("RecurringBillId");
+
+                            b1.ToTable("recurring_bills", "economy");
+
+                            b1.WithOwner()
+                                .HasForeignKey("RecurringBillId")
+                                .HasConstraintName("fk_recurring_bills_recurring_bills_id");
+                        });
+
+                    b.OwnsOne("Hemma.Modules.Economy.Domain.RecurringBillCadence", "Cadence", b1 =>
+                        {
+                            b1.Property<Guid>("RecurringBillId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<int>("DayOfMonth")
+                                .HasColumnType("integer")
+                                .HasColumnName("cadence_day_of_month");
+
+                            b1.Property<string>("Frequency")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("character varying(32)")
+                                .HasColumnName("cadence_frequency");
+
+                            b1.Property<int>("Interval")
+                                .HasColumnType("integer")
+                                .HasColumnName("cadence_interval");
+
+                            b1.HasKey("RecurringBillId");
+
+                            b1.ToTable("recurring_bills", "economy");
+
+                            b1.WithOwner()
+                                .HasForeignKey("RecurringBillId")
+                                .HasConstraintName("fk_recurring_bills_recurring_bills_id");
+                        });
+
+                    b.Navigation("Amount")
+                        .IsRequired();
+
+                    b.Navigation("Cadence")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Hemma.Modules.Economy.Domain.RecurringBillOccurrence", b =>
+                {
+                    b.HasOne("Hemma.Modules.Economy.Domain.RecurringBill", null)
+                        .WithMany("Occurrences")
+                        .HasForeignKey("RecurringBillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_recurring_bill_occurrences_recurring_bills_recurring_bill_id");
+
+                    b.HasOne("Hemma.Modules.Economy.Domain.Transaction", null)
+                        .WithMany()
+                        .HasForeignKey("TransactionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_recurring_bill_occurrences_transactions_transaction_id");
+                });
+
             modelBuilder.Entity("Hemma.Modules.Economy.Domain.Transaction", b =>
                 {
                     b.HasOne("Hemma.Modules.Economy.Domain.Account", null)
@@ -436,6 +634,12 @@ partial class EconomyDbContextModelSnapshot : ModelSnapshot
                 {
                     b.Navigation("Lines");
                 });
+
+            modelBuilder.Entity("Hemma.Modules.Economy.Domain.RecurringBill", b =>
+                {
+                    b.Navigation("Occurrences");
+                });
 #pragma warning restore 612, 618
+        }
     }
 }

@@ -65,6 +65,9 @@ internal sealed class TransactionConfiguration : IEntityTypeConfiguration<Transa
         builder.Property(transaction => transaction.IsTransferOutflow)
             .IsRequired();
 
+        builder.Property(transaction => transaction.IsPending)
+            .IsRequired();
+
         builder.HasOne<Account>()
             .WithMany()
             .HasForeignKey(transaction => transaction.AccountId)

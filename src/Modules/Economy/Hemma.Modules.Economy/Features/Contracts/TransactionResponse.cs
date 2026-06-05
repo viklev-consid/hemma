@@ -11,6 +11,7 @@ public sealed record TransactionResponse(
     DateOnly OccurredOn,
     string? Note,
     string Kind,
+    bool IsPending,
     bool HasReceipt,
     Guid? PayerId)
 {
@@ -24,6 +25,7 @@ public sealed record TransactionResponse(
             transaction.OccurredOn,
             transaction.Note,
             transaction.Kind.Name,
+            transaction.IsPending,
             transaction.HasReceipt,
             transaction.PayerId);
 }

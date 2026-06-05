@@ -2,21 +2,29 @@ using FluentValidation;
 using Hemma.Modules.Economy.Contracts.Authorization;
 using Hemma.Modules.Economy.Features.AddCategory;
 using Hemma.Modules.Economy.Features.AttachReceipt;
+using Hemma.Modules.Economy.Features.ChangeRecurringBillOccurrence;
+using Hemma.Modules.Economy.Features.ConfirmEstimatedBill;
 using Hemma.Modules.Economy.Features.CopyBudgetFromPreviousPeriod;
 using Hemma.Modules.Economy.Features.CreateAccount;
 using Hemma.Modules.Economy.Features.CreateBudget;
 using Hemma.Modules.Economy.Features.CreateEconomySettings;
+using Hemma.Modules.Economy.Features.CreateRecurringBill;
 using Hemma.Modules.Economy.Features.CreateTransfer;
 using Hemma.Modules.Economy.Features.GetAccountBalances;
 using Hemma.Modules.Economy.Features.GetBudgetSummary;
 using Hemma.Modules.Economy.Features.ListAccounts;
 using Hemma.Modules.Economy.Features.ListCategories;
+using Hemma.Modules.Economy.Features.ListRecurringBills;
 using Hemma.Modules.Economy.Features.ListTransactions;
+using Hemma.Modules.Economy.Features.PauseOccurrence;
 using Hemma.Modules.Economy.Features.RecordTransaction;
+using Hemma.Modules.Economy.Features.ResumeOccurrence;
 using Hemma.Modules.Economy.Features.SearchTransactionNote;
+using Hemma.Modules.Economy.Features.SkipOccurrence;
 using Hemma.Modules.Economy.Features.UpdateCycleStartDay;
 using Hemma.Modules.Economy.Features.UpsertBudgetLine;
 using Hemma.Modules.Economy.Gdpr;
+using Hemma.Modules.Economy.Jobs;
 using Hemma.Modules.Economy.Persistence;
 using Hemma.Modules.Economy.Seeding;
 using Hemma.Shared.Infrastructure.Authorization;
@@ -30,6 +38,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry;
+using TickerQ.Utilities;
+using TickerQ.Utilities.Entities;
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
 
@@ -93,6 +103,18 @@ public static class EconomyModule
         opts.Discovery.IncludeType<CreateTransferHandler>();
         opts.Discovery.IncludeType<GetAccountBalancesHandler>();
         opts.Discovery.IncludeType<GetBudgetSummaryHandler>();
+        opts.Discovery.IncludeType<CreateRecurringBillHandler>();
+        opts.Discovery.IncludeType<ListRecurringBillsHandler>();
+        opts.Discovery.IncludeType<ConfirmEstimatedBillHandler>();
+        opts.Discovery.IncludeType<ChangeRecurringBillOccurrenceHandler>();
+        opts.Discovery.IncludeType<RunDueBillsHandler>();
+        return opts;
+    }
+
+    public static TickerOptionsBuilder<TimeTickerEntity, CronTickerEntity> AddEconomyJobs(
+        this TickerOptionsBuilder<TimeTickerEntity, CronTickerEntity> opts)
+    {
+        _ = typeof(RunDueBillsJob);
         return opts;
     }
 
@@ -114,6 +136,12 @@ public static class EconomyModule
         CreateTransferEndpoint.Map(app);
         GetAccountBalancesEndpoint.Map(app);
         GetBudgetSummaryEndpoint.Map(app);
+        CreateRecurringBillEndpoint.Map(app);
+        ListRecurringBillsEndpoint.Map(app);
+        ConfirmEstimatedBillEndpoint.Map(app);
+        SkipOccurrenceEndpoint.Map(app);
+        PauseOccurrenceEndpoint.Map(app);
+        ResumeOccurrenceEndpoint.Map(app);
 
         return app;
     }

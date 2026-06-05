@@ -19,6 +19,7 @@ public sealed class GetAccountBalancesHandler(EconomyDbContext db)
         var transactions = await db.Transactions
             .AsNoTracking()
             .Where(transaction => transaction.HouseholdId == query.HouseholdId)
+            .Where(transaction => !transaction.IsPending)
             .ToListAsync(ct);
 
         var balances = accounts.Select(account =>

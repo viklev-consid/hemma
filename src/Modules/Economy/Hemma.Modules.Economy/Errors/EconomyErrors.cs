@@ -53,6 +53,9 @@ internal static class EconomyErrors
     public static readonly ErrorOr.Error TransactionKindInvalid =
         ErrorOr.Error.Validation("Economy.Transaction.KindInvalid", "Transaction kind must be Expense or Income.");
 
+    public static readonly ErrorOr.Error TransactionNotPending =
+        ErrorOr.Error.Conflict("Economy.Transaction.NotPending", "Transaction is not pending confirmation.");
+
     public static readonly ErrorOr.Error ReceiptBlobInvalid =
         ErrorOr.Error.Validation("Economy.Transaction.ReceiptBlobInvalid", "Receipt blob reference is invalid.");
 
@@ -64,4 +67,22 @@ internal static class EconomyErrors
 
     public static readonly ErrorOr.Error TransferInvalid =
         ErrorOr.Error.Validation("Economy.Transfer.Invalid", "Transfer must have two reconciling legs in the same household and currency.");
+
+    public static readonly ErrorOr.Error RecurringBillNotFound =
+        ErrorOr.Error.NotFound("Economy.RecurringBill.NotFound", "Recurring bill was not found.");
+
+    public static readonly ErrorOr.Error RecurringBillInvalid =
+        ErrorOr.Error.Validation("Economy.RecurringBill.Invalid", "Recurring bill is invalid.");
+
+    public static readonly ErrorOr.Error RecurringBillTypeInvalid =
+        ErrorOr.Error.Validation("Economy.RecurringBill.TypeInvalid", "Recurring bill type must be Fixed or Estimated.");
+
+    public static readonly ErrorOr.Error RecurringBillDirectionInvalid =
+        ErrorOr.Error.Validation("Economy.RecurringBill.DirectionInvalid", "Recurring bill direction must be Expense or Income.");
+
+    public static readonly ErrorOr.Error RecurringBillCadenceInvalid =
+        ErrorOr.Error.Validation("Economy.RecurringBill.CadenceInvalid", "Recurring bill cadence must have a valid frequency, interval, and day of month.");
+
+    public static readonly ErrorOr.Error RecurringBillOccurrenceInvalid =
+        ErrorOr.Error.Validation("Economy.RecurringBill.OccurrenceInvalid", "Recurring bill occurrence cannot be changed.");
 }
