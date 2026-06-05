@@ -24,6 +24,7 @@ using Hemma.Modules.Economy.Features.ListAccounts;
 using Hemma.Modules.Economy.Features.ListCategories;
 using Hemma.Modules.Economy.Features.ListRecurringBills;
 using Hemma.Modules.Economy.Features.ListTransactions;
+using Hemma.Modules.Economy.Features.NotificationPreferences;
 using Hemma.Modules.Economy.Features.RecordTransaction;
 using Hemma.Modules.Economy.Features.SearchTransactionNote;
 using Hemma.Modules.Economy.Features.Subscriptions;
@@ -837,6 +838,38 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
                 .SingleOrDefaultAsync(ct));
 
         Assert.Equal("Account", auditEntry);
+    }
+
+    [Fact]
+    public async Task NotificationPreferences_CanReadDefaultsAndUpdate()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Prefs", "prefs");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+
+        var defaults = await client.GetFromJsonAsync<EconomyNotificationPreferencesResponse>(
+            $"/v1/economy/notification-preferences?householdId={household.Id.Value}");
+
+        Assert.NotNull(defaults);
+        Assert.True(defaults.BudgetAlertsEnabled);
+        Assert.True(defaults.BillAlertsEnabled);
+        Assert.True(defaults.TrialAlertsEnabled);
+
+        var update = await client.PutAsJsonAsync(
+            "/v1/economy/notification-preferences",
+            new UpdateEconomyNotificationPreferencesRequest(
+                household.Id.Value,
+                BudgetAlertsEnabled: false,
+                BillAlertsEnabled: true,
+                TrialAlertsEnabled: false));
+        update.EnsureSuccessStatusCode();
+
+        var updated = await update.Content.ReadFromJsonAsync<EconomyNotificationPreferencesResponse>();
+
+        Assert.NotNull(updated);
+        Assert.False(updated.BudgetAlertsEnabled);
+        Assert.True(updated.BillAlertsEnabled);
+        Assert.False(updated.TrialAlertsEnabled);
     }
 
     [Fact]

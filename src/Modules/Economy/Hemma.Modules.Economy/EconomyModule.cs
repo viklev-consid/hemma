@@ -21,6 +21,7 @@ using Hemma.Modules.Economy.Features.ListAccounts;
 using Hemma.Modules.Economy.Features.ListCategories;
 using Hemma.Modules.Economy.Features.ListRecurringBills;
 using Hemma.Modules.Economy.Features.ListTransactions;
+using Hemma.Modules.Economy.Features.NotificationPreferences;
 using Hemma.Modules.Economy.Features.PauseOccurrence;
 using Hemma.Modules.Economy.Features.RecordTransaction;
 using Hemma.Modules.Economy.Features.ResumeOccurrence;
@@ -122,6 +123,7 @@ public static class EconomyModule
         opts.Discovery.IncludeType<CommitImportHandler>();
         opts.Discovery.IncludeType<SubscriptionHandler>();
         opts.Discovery.IncludeType<AnalyticsHandler>();
+        opts.Discovery.IncludeType<EconomyNotificationPreferencesHandler>();
         opts.Discovery.IncludeType<OnHouseholdMemberRemovedHandler>();
         opts.Discovery.IncludeType<OnUserErasureRequestedHandler>();
         opts.Discovery.IncludeType<RunDueBillsHandler>();
@@ -167,6 +169,7 @@ public static class EconomyModule
         SubscriptionEndpoint.Map(app);
         AnalyticsEndpoint.Map(app);
         ExportEconomyGdprEndpoint.Map(app);
+        EconomyNotificationPreferencesEndpoint.Map(app);
 
         return app;
     }
