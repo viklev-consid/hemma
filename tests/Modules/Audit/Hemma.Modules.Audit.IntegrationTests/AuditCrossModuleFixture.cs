@@ -1,13 +1,14 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Hemma.Modules.Audit.Persistence;
-using Hemma.Modules.Notifications.Persistence;
+using Hemma.Modules.Economy.Persistence;
 using Hemma.Modules.Households.Persistence;
+using Hemma.Modules.Notifications.Persistence;
 using Hemma.Modules.Users.Domain;
 using Hemma.Modules.Users.Persistence;
 using Hemma.Shared.Infrastructure.Notifications;
 using Hemma.TestSupport;
 using Hemma.TestSupport.Fakes;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Hemma.Modules.Audit.IntegrationTests;
 
@@ -39,7 +40,8 @@ public sealed class AuditCrossModuleFixture : ApiTestFixture
         await services.GetRequiredService<AuditDbContext>().Database.MigrateAsync();
         await services.GetRequiredService<NotificationsDbContext>().Database.MigrateAsync();
         await services.GetRequiredService<HouseholdsDbContext>().Database.MigrateAsync();
+        await services.GetRequiredService<EconomyDbContext>().Database.MigrateAsync();
     }
 
-    protected override string[] GetSchemasToReset() => ["users", "audit", "notifications", "households"];
+    protected override string[] GetSchemasToReset() => ["users", "audit", "notifications", "households", "economy"];
 }
