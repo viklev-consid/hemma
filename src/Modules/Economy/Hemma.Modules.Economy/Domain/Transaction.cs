@@ -194,6 +194,20 @@ public sealed class Transaction : AggregateRoot<TransactionId>
         return Result.Success;
     }
 
+    public void ClearReceipt()
+    {
+        ReceiptBlobContainer = null;
+        ReceiptBlobKey = null;
+    }
+
+    public void AnonymizePayer(Guid userId)
+    {
+        if (PayerId == userId)
+        {
+            PayerId = null;
+        }
+    }
+
     public ErrorOr<Success> ConfirmPending(Money amount, DateOnly occurredOn)
     {
         if (!IsPending)

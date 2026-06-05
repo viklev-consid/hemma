@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using Hemma.Modules.Economy.Features.AddCategory;
 using Hemma.Modules.Economy.Features.Analytics;
 using Hemma.Modules.Economy.Features.CategorizationRules;
@@ -14,6 +15,7 @@ using Hemma.Modules.Economy.Features.CreateRecurringBill;
 using Hemma.Modules.Economy.Features.CreateTransfer;
 using Hemma.Modules.Economy.Features.GetAccountBalances;
 using Hemma.Modules.Economy.Features.GetBudgetSummary;
+using Hemma.Modules.Economy.Features.Gdpr.Export;
 using Hemma.Modules.Economy.Features.Import.CommitImport;
 using Hemma.Modules.Economy.Features.Import.Contracts;
 using Hemma.Modules.Economy.Features.Import.PreviewImport;
@@ -26,12 +28,16 @@ using Hemma.Modules.Economy.Features.SearchTransactionNote;
 using Hemma.Modules.Economy.Features.Subscriptions;
 using Hemma.Modules.Economy.Features.UpsertBudgetLine;
 using Hemma.Modules.Economy.Jobs;
+using Hemma.Modules.Economy.Persistence;
+using Hemma.Modules.Households.Contracts.Events;
 using Hemma.Modules.Households.Domain;
 using Hemma.Modules.Households.Persistence;
+using Hemma.Modules.Users.Contracts.Events;
 using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Wolverine;
+using Wolverine.Tracking;
 
 namespace Hemma.Modules.Economy.IntegrationTests;
 
@@ -767,6 +773,134 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         Assert.Equal(50, spend.DeltaPercent);
     }
 
+    [Fact]
+    public async Task GdprExport_ReturnsHouseholdEconomyData()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Gdpr Export", "gdpr-export");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 0);
+        var category = await AddBudgetCategoryAsync(client, household.Id.Value, "Groceries");
+
+        await RecordTransactionAsync(
+            client,
+            household.Id.Value,
+            account.AccountId,
+            category.CategoryId,
+            45,
+            new DateOnly(2026, 6, 5),
+            "Market",
+            "Expense",
+            ownerId);
+
+        var response = await client.GetAsync($"/v1/economy/gdpr/export?householdId={household.Id.Value}");
+        var responseBody = await response.Content.ReadAsStringAsync();
+        Assert.True(response.IsSuccessStatusCode, responseBody);
+        var export = await response.Content.ReadFromJsonAsync<ExportEconomyGdprResponse>();
+
+        Assert.NotNull(export);
+        Assert.Equal(household.Id.Value, export.HouseholdId);
+        Assert.True(export.Data.ContainsKey("accounts"));
+        Assert.True(export.Data.ContainsKey("categories"));
+        Assert.True(export.Data.ContainsKey("transactions"));
+    }
+
+    [Fact]
+    public async Task UserErasureRequested_ClearsPayerAndReceipt()
+    {
+        var ownerId = Guid.NewGuid();
+        var erasedUserId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Gdpr Erase", "gdpr-erase");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 0);
+        var transaction = await RecordTransactionAsync(
+            client,
+            household.Id.Value,
+            account.AccountId,
+            null,
+            60,
+            new DateOnly(2026, 6, 5),
+            "Receipt transaction",
+            "Expense",
+            erasedUserId);
+        await AttachReceiptAsync(client, household.Id.Value, transaction.TransactionId);
+
+        await fixture.ApplicationHost.TrackActivity()
+            .Timeout(TimeSpan.FromSeconds(10))
+            .InvokeMessageAndWaitAsync(new UserErasureRequestedV1(erasedUserId, "Removed", Guid.NewGuid()));
+
+        var erased = await fixture.QueryDbAsync<EconomyDbContext, (Guid? PayerId, string? Container, string? Key)>((db, ct) =>
+            db.Transactions
+                .Where(t => t.HouseholdId == household.Id.Value)
+                .Select(t => new { t.Id, t.PayerId, t.ReceiptBlobContainer, t.ReceiptBlobKey })
+                .ToListAsync(ct)
+                .ContinueWith(task =>
+                {
+                    var found = task.Result.Single(t => t.Id.Value == transaction.TransactionId);
+                    return (found.PayerId, found.ReceiptBlobContainer, found.ReceiptBlobKey);
+                }, ct));
+
+        Assert.Null(erased.PayerId);
+        Assert.Null(erased.Container);
+        Assert.Null(erased.Key);
+    }
+
+    [Fact]
+    public async Task HouseholdMemberRemoved_ClearsMemberEconomyDataForThatHouseholdOnly()
+    {
+        var ownerId = Guid.NewGuid();
+        var removedUserId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Removed Member", "removed-member");
+        var otherHousehold = await CreateHouseholdAsync(ownerId, "Other Member", "other-member");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        await CreateSettingsAsync(client, otherHousehold.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 0);
+        var otherAccount = await CreateAccountAsync(client, otherHousehold.Id.Value, "Other", "Spending", 0);
+        var removedTransaction = await RecordTransactionAsync(
+            client,
+            household.Id.Value,
+            account.AccountId,
+            null,
+            20,
+            new DateOnly(2026, 6, 5),
+            "Removed member",
+            "Expense",
+            removedUserId);
+        var retainedTransaction = await RecordTransactionAsync(
+            client,
+            otherHousehold.Id.Value,
+            otherAccount.AccountId,
+            null,
+            30,
+            new DateOnly(2026, 6, 5),
+            "Other household",
+            "Expense",
+            removedUserId);
+
+        await fixture.ApplicationHost.TrackActivity()
+            .Timeout(TimeSpan.FromSeconds(10))
+            .InvokeMessageAndWaitAsync(new HouseholdMemberRemovedV1(
+                household.Id.Value,
+                removedUserId,
+                ownerId,
+                Guid.NewGuid()));
+
+        var states = await fixture.QueryDbAsync<EconomyDbContext, Dictionary<Guid, Guid?>>((db, ct) =>
+            db.Transactions
+                .Where(t => t.PayerId == null || t.PayerId == removedUserId)
+                .Select(t => new { t.Id, t.PayerId })
+                .ToListAsync(ct)
+                .ContinueWith(task => task.Result
+                    .Where(t => t.Id.Value == removedTransaction.TransactionId || t.Id.Value == retainedTransaction.TransactionId)
+                    .ToDictionary(t => t.Id.Value, t => t.PayerId), ct));
+
+        Assert.Null(states[removedTransaction.TransactionId]);
+        Assert.Equal(removedUserId, states[retainedTransaction.TransactionId]);
+    }
+
     private static async Task<CreateEconomySettingsResponse> CreateSettingsAsync(HttpClient client, Guid householdId)
     {
         var response = await client.PostAsJsonAsync(
@@ -890,6 +1024,18 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         DateOnly occurredOn,
         string note,
         string kind)
+        => await RecordTransactionAsync(client, householdId, accountId, categoryId, amount, occurredOn, note, kind, payerId: null);
+
+    private static async Task<TransactionResponse> RecordTransactionAsync(
+        HttpClient client,
+        Guid householdId,
+        Guid accountId,
+        Guid? categoryId,
+        decimal amount,
+        DateOnly occurredOn,
+        string note,
+        string kind,
+        Guid? payerId)
     {
         var response = await client.PostAsJsonAsync(
             "/v1/economy/transactions",
@@ -901,11 +1047,24 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
                 occurredOn,
                 note,
                 kind,
-                null));
+                payerId));
         response.EnsureSuccessStatusCode();
         var transaction = await response.Content.ReadFromJsonAsync<TransactionResponse>();
         Assert.NotNull(transaction);
         return transaction;
+    }
+
+    private static async Task AttachReceiptAsync(HttpClient client, Guid householdId, Guid transactionId)
+    {
+        using var content = new MultipartFormDataContent();
+        content.Add(new StringContent(householdId.ToString()), "householdId");
+
+        var file = new ByteArrayContent(Encoding.UTF8.GetBytes("receipt"));
+        file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+        content.Add(file, "file", "receipt.png");
+
+        var response = await client.PostAsync($"/v1/economy/transactions/{transactionId}/receipt", content);
+        response.EnsureSuccessStatusCode();
     }
 
     private static async Task LinkSubscriptionAsync(HttpClient client, Guid householdId, Guid subscriptionId, Guid transactionId)

@@ -14,6 +14,7 @@ using Hemma.Modules.Economy.Features.CreateRecurringBill;
 using Hemma.Modules.Economy.Features.CreateTransfer;
 using Hemma.Modules.Economy.Features.GetAccountBalances;
 using Hemma.Modules.Economy.Features.GetBudgetSummary;
+using Hemma.Modules.Economy.Features.Gdpr.Export;
 using Hemma.Modules.Economy.Features.Import.CommitImport;
 using Hemma.Modules.Economy.Features.Import.PreviewImport;
 using Hemma.Modules.Economy.Features.ListAccounts;
@@ -29,6 +30,7 @@ using Hemma.Modules.Economy.Features.Subscriptions;
 using Hemma.Modules.Economy.Features.UpdateCycleStartDay;
 using Hemma.Modules.Economy.Features.UpsertBudgetLine;
 using Hemma.Modules.Economy.Gdpr;
+using Hemma.Modules.Economy.Integration.Subscribers;
 using Hemma.Modules.Economy.Jobs;
 using Hemma.Modules.Economy.Persistence;
 using Hemma.Modules.Economy.Seeding;
@@ -71,7 +73,8 @@ public static class EconomyModule
         services.AddValidatorsFromAssemblyContaining<EconomyDbContext>(
             ServiceLifetime.Scoped, includeInternalTypes: true);
 
-        services.AddScoped<IPersonalDataExporter, EconomyPersonalDataExporter>();
+        services.AddScoped<EconomyPersonalDataExporter>();
+        services.AddScoped<IPersonalDataExporter>(sp => sp.GetRequiredService<EconomyPersonalDataExporter>());
         services.AddScoped<EconomyPersonalDataEraser>();
         services.AddScoped<IPersonalDataEraser>(sp => sp.GetRequiredService<EconomyPersonalDataEraser>());
 
@@ -117,6 +120,8 @@ public static class EconomyModule
         opts.Discovery.IncludeType<CommitImportHandler>();
         opts.Discovery.IncludeType<SubscriptionHandler>();
         opts.Discovery.IncludeType<AnalyticsHandler>();
+        opts.Discovery.IncludeType<OnHouseholdMemberRemovedHandler>();
+        opts.Discovery.IncludeType<OnUserErasureRequestedHandler>();
         opts.Discovery.IncludeType<RunDueBillsHandler>();
         opts.Discovery.IncludeType<TrialRenewalReminderHandler>();
         return opts;
@@ -159,6 +164,7 @@ public static class EconomyModule
         CommitImportEndpoint.Map(app);
         SubscriptionEndpoint.Map(app);
         AnalyticsEndpoint.Map(app);
+        ExportEconomyGdprEndpoint.Map(app);
 
         return app;
     }
