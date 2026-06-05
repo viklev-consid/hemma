@@ -41,7 +41,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 2. **Transfers:** *Neutral* → nets to zero everywhere. *Savings-tagged* → excluded from net worth & income-vs-expense (not consumption) but **counted as allocation** in budget-vs-actual & breakdown. A transfer is always two reconciling legs; never double-counted as both expense and income.
 3. **Subscription ↔ transaction link is one-directional evidence:** `Transaction.SubscriptionId?` (nullable FK inside `economy`). Importer auto-matches; user links/unlinks manually. Price history is derived *from* linked transactions.
 4. **Analytics adds no aggregates.** Read-only query slices over existing tables; exclude `Kind = Transfer` except savings-allocation views.
-5. **Receipts** use the existing `IBlobStore` (two-step: reserve → attach). Never store blobs in Postgres.
+5. **Receipts** use the existing `IBlobStore` through a backend-mediated multipart upload endpoint. Never store blobs in Postgres. Direct-to-blob upload reservation is deferred until the blob abstraction supports upload targets.
 
 ### Definition of Done (every task)
 - Slice compiles; domain/value objects have focused unit tests; every slice has ≥1 integration test through the HTTP/API or Wolverine path using real Postgres via the existing harness / Testcontainers.
@@ -145,8 +145,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 | Slice | Type | Notes |
 |---|---|---|
 | `RecordTransaction` | Command | Expense/Income; validates account + optional category |
-| `ReserveReceiptUpload` | Command | step 1: returns blob upload target via `IBlobStore` |
-| `AttachReceipt` | Command | step 2: links `ReceiptBlobId` |
+| `AttachReceipt` | Command | accepts `multipart/form-data`, stores the uploaded file via `IBlobStore`, links `ReceiptBlobId`; delete the blob if DB save fails |
 | `ListTransactions` | Query | filters: category, date range, payer, has-receipt, amount range; paged |
 | `SearchTransactionNote` | Query | free-text (`ILIKE`/trigram) |
 | `CreateTransfer` | Command | `Mode`; both legs atomic |
@@ -168,7 +167,9 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 
 **Decision:** savings transfer defaults come from both account `Type` and transfer tag. Account type pre-selects the likely behavior, and the transfer carries the final category; backend must accept an explicit category on the transfer to allow override.
 
-**API surface published this phase:** `/v1/economy/transactions` (record/list/search), `/v1/economy/transactions/{id}/receipt` (reserve/attach), `/v1/economy/transfers` (create), `/v1/economy/accounts/balances`, `/v1/economy/budget-summary`. Update OpenAPI. **Flag to frontend agent:** transfer create accepts `mode` + optional `categoryId`.
+**Decision:** receipt uploads are backend-mediated for now. The frontend sends the file to `AttachReceipt` as `multipart/form-data`; the backend validates metadata/size, stores the stream with `IBlobStore`, and persists the blob reference on the transaction. A future direct-upload flow can add a reservation endpoint when `IBlobStore` supports upload targets.
+
+**API surface published this phase:** `/v1/economy/transactions` (record/list/search), `/v1/economy/transactions/{id}/receipt` (multipart upload attach), `/v1/economy/transfers` (create), `/v1/economy/accounts/balances`, `/v1/economy/budget-summary`. Update OpenAPI. **Flag to frontend agent:** transfer create accepts `mode` + optional `categoryId`; receipt attach is multipart file upload, not direct-to-blob reservation.
 
 ---
 
