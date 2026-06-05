@@ -3,12 +3,13 @@ using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
 using Hemma.Modules.Economy.Features.Contracts;
 using Hemma.Modules.Economy.Features.Import.Contracts;
+using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.Import.CommitImport;
 
-public sealed class CommitImportHandler(EconomyDbContext db)
+public sealed class CommitImportHandler(EconomyDbContext db, EconomyAuditPublisher audit)
 {
     public async Task<ErrorOr<CommitImportResponse>> Handle(CommitImportCommand cmd, CancellationToken ct)
     {
@@ -113,6 +114,7 @@ public sealed class CommitImportHandler(EconomyDbContext db)
 
         db.Transactions.AddRange(transactions);
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(cmd.HouseholdId, "economy.import.committed", "Account", account.Id.Value, null, ct);
 
         return new CommitImportResponse(
             transactions.Count,

@@ -2,12 +2,13 @@ using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
 using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.ConfirmEstimatedBill;
 
-public sealed class ConfirmEstimatedBillHandler(EconomyDbContext db)
+public sealed class ConfirmEstimatedBillHandler(EconomyDbContext db, EconomyAuditPublisher audit)
 {
     public async Task<ErrorOr<TransactionResponse>> Handle(ConfirmEstimatedBillCommand cmd, CancellationToken ct)
     {
@@ -48,6 +49,7 @@ public sealed class ConfirmEstimatedBillHandler(EconomyDbContext db)
         }
 
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(transaction.HouseholdId, "economy.recurring_bill.estimated_confirmed", "Transaction", transaction.Id.Value, null, ct);
         return TransactionResponse.From(transaction);
     }
 }

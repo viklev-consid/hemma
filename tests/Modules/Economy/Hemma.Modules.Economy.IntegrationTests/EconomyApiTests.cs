@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
+using Hemma.Modules.Audit.Persistence;
 using Hemma.Modules.Economy.Features.AddCategory;
 using Hemma.Modules.Economy.Features.Analytics;
 using Hemma.Modules.Economy.Features.CategorizationRules;
@@ -804,6 +805,38 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         Assert.True(export.Data.ContainsKey("accounts"));
         Assert.True(export.Data.ContainsKey("categories"));
         Assert.True(export.Data.ContainsKey("transactions"));
+    }
+
+    [Fact]
+    public async Task EconomyMutation_CreatesAuditEntry()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Audit Economy", "audit-economy");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+
+        HttpResponseMessage? response = null;
+        Task CreateAccountForAuditAsync(IMessageContext _) =>
+            client.PostAsJsonAsync(
+                    "/v1/economy/accounts",
+                    new CreateAccountRequest(household.Id.Value, "Audit Checking", "Spending", new MoneyRequest(100, "SEK")))
+                .ContinueWith(task => response = task.Result);
+
+        await fixture.ApplicationHost.TrackActivity()
+            .Timeout(TimeSpan.FromSeconds(10))
+            .ExecuteAndWaitAsync(CreateAccountForAuditAsync);
+
+        Assert.NotNull(response);
+        response.EnsureSuccessStatusCode();
+
+        var auditEntry = await fixture.QueryDbAsync<AuditDbContext, string?>((db, ct) =>
+            db.AuditEntries
+                .Where(entry => entry.HouseholdId == household.Id.Value &&
+                    entry.EventType == "economy.account.created")
+                .Select(entry => entry.ResourceType)
+                .SingleOrDefaultAsync(ct));
+
+        Assert.Equal("Account", auditEntry);
     }
 
     [Fact]

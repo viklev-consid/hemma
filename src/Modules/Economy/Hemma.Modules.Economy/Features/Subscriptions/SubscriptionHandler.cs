@@ -2,12 +2,13 @@ using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
 using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.Subscriptions;
 
-public sealed class SubscriptionHandler(EconomyDbContext db)
+public sealed class SubscriptionHandler(EconomyDbContext db, EconomyAuditPublisher audit)
 {
     public async Task<ErrorOr<SubscriptionResponse>> Handle(CreateSubscriptionCommand cmd, CancellationToken ct)
     {
@@ -56,6 +57,7 @@ public sealed class SubscriptionHandler(EconomyDbContext db)
 
         db.Subscriptions.Add(subscription.Value);
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(subscription.Value.HouseholdId, "economy.subscription.created", "Subscription", subscription.Value.Id.Value, null, ct);
 
         return SubscriptionResponse.From(subscription.Value);
     }
@@ -82,6 +84,7 @@ public sealed class SubscriptionHandler(EconomyDbContext db)
         }
 
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(subscription.HouseholdId, "economy.subscription.lifecycle_changed", "Subscription", subscription.Id.Value, null, ct);
         return SubscriptionResponse.From(subscription);
     }
 
@@ -108,6 +111,7 @@ public sealed class SubscriptionHandler(EconomyDbContext db)
         }
 
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(transaction.HouseholdId, "economy.subscription.transaction_linked", "Transaction", transaction.Id.Value, null, ct);
         return TransactionResponse.From(transaction);
     }
 
@@ -128,6 +132,7 @@ public sealed class SubscriptionHandler(EconomyDbContext db)
         }
 
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(transaction.HouseholdId, "economy.subscription.transaction_unlinked", "Transaction", transaction.Id.Value, null, ct);
         return TransactionResponse.From(transaction);
     }
 

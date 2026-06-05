@@ -1,12 +1,13 @@
 using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
+using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.CategorizationRules;
 
-public sealed class CategorizationRuleHandler(EconomyDbContext db)
+public sealed class CategorizationRuleHandler(EconomyDbContext db, EconomyAuditPublisher audit)
 {
     public async Task<ErrorOr<CategorizationRuleResponse>> Handle(CreateCategorizationRuleCommand cmd, CancellationToken ct)
     {
@@ -32,6 +33,7 @@ public sealed class CategorizationRuleHandler(EconomyDbContext db)
 
         db.CategorizationRules.Add(rule.Value);
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(rule.Value.HouseholdId, "economy.categorization_rule.created", "CategorizationRule", rule.Value.Id.Value, null, ct);
         return CategorizationRuleResponse.From(rule.Value);
     }
 
@@ -66,6 +68,7 @@ public sealed class CategorizationRuleHandler(EconomyDbContext db)
         }
 
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(rule.HouseholdId, "economy.categorization_rule.updated", "CategorizationRule", rule.Id.Value, null, ct);
         return CategorizationRuleResponse.From(rule);
     }
 
@@ -81,6 +84,7 @@ public sealed class CategorizationRuleHandler(EconomyDbContext db)
 
         rule.SetEnabled(cmd.Enabled);
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(rule.HouseholdId, "economy.categorization_rule.enabled_changed", "CategorizationRule", rule.Id.Value, null, ct);
         return CategorizationRuleResponse.From(rule);
     }
 
@@ -96,6 +100,7 @@ public sealed class CategorizationRuleHandler(EconomyDbContext db)
 
         db.CategorizationRules.Remove(rule);
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(rule.HouseholdId, "economy.categorization_rule.deleted", "CategorizationRule", rule.Id.Value, null, ct);
         return Result.Deleted;
     }
 

@@ -2,12 +2,13 @@ using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
 using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.ChangeRecurringBillOccurrence;
 
-public sealed class ChangeRecurringBillOccurrenceHandler(EconomyDbContext db)
+public sealed class ChangeRecurringBillOccurrenceHandler(EconomyDbContext db, EconomyAuditPublisher audit)
 {
     public async Task<ErrorOr<RecurringBillResponse>> Handle(ChangeRecurringBillOccurrenceCommand cmd, CancellationToken ct)
     {
@@ -47,6 +48,7 @@ public sealed class ChangeRecurringBillOccurrenceHandler(EconomyDbContext db)
         }
 
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(bill.HouseholdId, $"economy.recurring_bill.occurrence_{cmd.Action.ToString().ToLowerInvariant()}", "RecurringBill", bill.Id.Value, null, ct);
         return RecurringBillResponse.From(bill);
     }
 }
