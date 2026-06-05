@@ -14,6 +14,7 @@ public sealed class EconomyDbContext(DbContextOptions<EconomyDbContext> options)
     public DbSet<Transfer> Transfers => Set<Transfer>();
     public DbSet<RecurringBill> RecurringBills => Set<RecurringBill>();
     public DbSet<CategorizationRule> CategorizationRules => Set<CategorizationRule>();
+    public DbSet<Subscription> Subscriptions => Set<Subscription>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -212,6 +212,28 @@ public sealed class Transaction : AggregateRoot<TransactionId>
         return Result.Success;
     }
 
+    public ErrorOr<Success> LinkToSubscription(Guid subscriptionId)
+    {
+        if (subscriptionId == Guid.Empty)
+        {
+            return EconomyErrors.SubscriptionNotFound;
+        }
+
+        SubscriptionId = subscriptionId;
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> UnlinkSubscription(Guid subscriptionId)
+    {
+        if (SubscriptionId != subscriptionId)
+        {
+            return EconomyErrors.TransactionSubscriptionLinkNotFound;
+        }
+
+        SubscriptionId = null;
+        return Result.Success;
+    }
+
     private static string? NormalizeNote(string? note)
     {
         if (string.IsNullOrWhiteSpace(note))

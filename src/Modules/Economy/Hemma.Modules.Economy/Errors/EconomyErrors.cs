@@ -100,4 +100,22 @@ internal static class EconomyErrors
 
     public static readonly ErrorOr.Error ImportFingerprintMismatch =
         ErrorOr.Error.Conflict("Economy.Import.FingerprintMismatch", "Imported rows do not match the preview fingerprint.");
+
+    public static readonly ErrorOr.Error SubscriptionNotFound =
+        ErrorOr.Error.NotFound("Economy.Subscription.NotFound", "Subscription was not found.");
+
+    public static readonly ErrorOr.Error SubscriptionInvalid =
+        ErrorOr.Error.Validation("Economy.Subscription.Invalid", "Subscription is invalid.");
+
+    public static readonly ErrorOr.Error SubscriptionCadenceInvalid =
+        ErrorOr.Error.Validation("Economy.Subscription.CadenceInvalid", "Subscription cadence must have a valid frequency, interval, and charge day.");
+
+    public static readonly ErrorOr.Error SubscriptionLifecycleStateInvalid =
+        ErrorOr.Error.Validation("Economy.Subscription.LifecycleStateInvalid", "Subscription lifecycle state must be Trial, Active, Paused, or Cancelled.");
+
+    public static readonly ErrorOr.Error SubscriptionTrialEndRequired =
+        ErrorOr.Error.Validation("Economy.Subscription.TrialEndRequired", "Trial subscriptions must include a trial end date.");
+
+    public static readonly ErrorOr.Error TransactionSubscriptionLinkNotFound =
+        ErrorOr.Error.NotFound("Economy.Transaction.SubscriptionLinkNotFound", "Transaction is not linked to the subscription.");
 }
