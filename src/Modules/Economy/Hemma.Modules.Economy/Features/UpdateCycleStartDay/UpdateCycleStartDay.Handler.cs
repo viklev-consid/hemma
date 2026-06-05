@@ -1,11 +1,12 @@
 using ErrorOr;
 using Hemma.Modules.Economy.Errors;
+using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.UpdateCycleStartDay;
 
-public sealed class UpdateCycleStartDayHandler(EconomyDbContext db)
+public sealed class UpdateCycleStartDayHandler(EconomyDbContext db, EconomyAuditPublisher audit)
 {
     public async Task<ErrorOr<UpdateCycleStartDayResponse>> Handle(UpdateCycleStartDayCommand cmd, CancellationToken ct)
     {
@@ -23,6 +24,7 @@ public sealed class UpdateCycleStartDayHandler(EconomyDbContext db)
         }
 
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(settings.HouseholdId, "economy.settings.cycle_start_updated", "EconomySettings", settings.Id.Value, null, ct);
 
         return new UpdateCycleStartDayResponse(settings.Id.Value, settings.HouseholdId, settings.CycleStartDay);
     }

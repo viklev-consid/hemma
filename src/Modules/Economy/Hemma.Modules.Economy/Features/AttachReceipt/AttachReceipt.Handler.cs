@@ -1,13 +1,14 @@
 using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
+using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
 using Hemma.Shared.Infrastructure.Blobs;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.AttachReceipt;
 
-public sealed class AttachReceiptHandler(EconomyDbContext db, IBlobStore blobStore)
+public sealed class AttachReceiptHandler(EconomyDbContext db, IBlobStore blobStore, EconomyAuditPublisher audit)
 {
     private static readonly HashSet<string> allowedContentTypes =
         new(StringComparer.OrdinalIgnoreCase)
@@ -64,6 +65,7 @@ public sealed class AttachReceiptHandler(EconomyDbContext db, IBlobStore blobSto
         {
             await blobStore.DeleteAsync(new BlobRef(previousContainer, previousKey), ct);
         }
+        await audit.PublishAsync(transaction.HouseholdId, "economy.transaction.receipt_attached", "Transaction", transaction.Id.Value, null, ct);
 
         return new AttachReceiptResponse(transaction.Id.Value, blobRef.Container, blobRef.Key);
     }

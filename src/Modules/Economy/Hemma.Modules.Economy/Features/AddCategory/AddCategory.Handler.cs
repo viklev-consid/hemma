@@ -2,12 +2,13 @@ using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
 using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.AddCategory;
 
-public sealed class AddCategoryHandler(EconomyDbContext db)
+public sealed class AddCategoryHandler(EconomyDbContext db, EconomyAuditPublisher audit)
 {
     public async Task<ErrorOr<CategoryResponse>> Handle(AddCategoryCommand cmd, CancellationToken ct)
     {
@@ -36,6 +37,7 @@ public sealed class AddCategoryHandler(EconomyDbContext db)
 
         db.Categories.Add(category.Value);
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(category.Value.HouseholdId, "economy.category.created", "Category", category.Value.Id.Value, null, ct);
 
         return CategoryResponse.From(category.Value);
     }

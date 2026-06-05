@@ -2,12 +2,13 @@ using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
 using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.CreateTransfer;
 
-public sealed class CreateTransferHandler(EconomyDbContext db)
+public sealed class CreateTransferHandler(EconomyDbContext db, EconomyAuditPublisher audit)
 {
     public async Task<ErrorOr<CreateTransferResponse>> Handle(CreateTransferCommand cmd, CancellationToken ct)
     {
@@ -75,6 +76,7 @@ public sealed class CreateTransferHandler(EconomyDbContext db)
 
         db.Transfers.Add(transfer.Value);
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(transfer.Value.HouseholdId, "economy.transfer.created", "Transfer", transfer.Value.Id.Value, null, ct);
 
         return new CreateTransferResponse(
             transfer.Value.Id.Value,

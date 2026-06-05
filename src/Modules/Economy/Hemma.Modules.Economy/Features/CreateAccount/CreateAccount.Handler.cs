@@ -1,12 +1,13 @@
 using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
+using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.CreateAccount;
 
-public sealed class CreateAccountHandler(EconomyDbContext db)
+public sealed class CreateAccountHandler(EconomyDbContext db, EconomyAuditPublisher audit)
 {
     public async Task<ErrorOr<AccountResponse>> Handle(CreateAccountCommand cmd, CancellationToken ct)
     {
@@ -35,6 +36,7 @@ public sealed class CreateAccountHandler(EconomyDbContext db)
 
         db.Accounts.Add(account.Value);
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(account.Value.HouseholdId, "economy.account.created", "Account", account.Value.Id.Value, null, ct);
 
         return AccountResponse.From(account.Value);
     }

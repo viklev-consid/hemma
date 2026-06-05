@@ -80,6 +80,7 @@ public static class AuditModule
         opts.Discovery.IncludeType<OnHouseholdMemberAddedHandler>();
         opts.Discovery.IncludeType<OnHouseholdMemberRemovedHandler>();
         opts.Discovery.IncludeType<OnHouseholdMemberRoleChangedHandler>();
+        opts.Discovery.IncludeType<OnEconomyMutationRecordedHandler>();
         return opts;
     }
 

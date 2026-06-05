@@ -1,13 +1,14 @@
 using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
+using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.CreateEconomySettings;
 
-public sealed class CreateEconomySettingsHandler(EconomyDbContext db, IClock clock)
+public sealed class CreateEconomySettingsHandler(EconomyDbContext db, IClock clock, EconomyAuditPublisher audit)
 {
     private static readonly string[] starterCategories =
     [
@@ -42,6 +43,7 @@ public sealed class CreateEconomySettingsHandler(EconomyDbContext db, IClock clo
         }
 
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(settings.HouseholdId, "economy.settings.created", "EconomySettings", settings.Id.Value, null, ct);
 
         return new CreateEconomySettingsResponse(
             settings.Id.Value,

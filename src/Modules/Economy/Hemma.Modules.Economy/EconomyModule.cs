@@ -30,6 +30,7 @@ using Hemma.Modules.Economy.Features.Subscriptions;
 using Hemma.Modules.Economy.Features.UpdateCycleStartDay;
 using Hemma.Modules.Economy.Features.UpsertBudgetLine;
 using Hemma.Modules.Economy.Gdpr;
+using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Integration.Subscribers;
 using Hemma.Modules.Economy.Jobs;
 using Hemma.Modules.Economy.Persistence;
@@ -77,6 +78,7 @@ public static class EconomyModule
         services.AddScoped<IPersonalDataExporter>(sp => sp.GetRequiredService<EconomyPersonalDataExporter>());
         services.AddScoped<EconomyPersonalDataEraser>();
         services.AddScoped<IPersonalDataEraser>(sp => sp.GetRequiredService<EconomyPersonalDataEraser>());
+        services.AddScoped<EconomyAuditPublisher>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<EconomyDbContext>("economy-db", tags: ["ready"]);

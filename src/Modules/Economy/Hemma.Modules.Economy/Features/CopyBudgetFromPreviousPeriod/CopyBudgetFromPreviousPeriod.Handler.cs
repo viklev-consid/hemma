@@ -2,12 +2,13 @@ using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
 using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.CopyBudgetFromPreviousPeriod;
 
-public sealed class CopyBudgetFromPreviousPeriodHandler(EconomyDbContext db)
+public sealed class CopyBudgetFromPreviousPeriodHandler(EconomyDbContext db, EconomyAuditPublisher audit)
 {
     public async Task<ErrorOr<BudgetResponse>> Handle(CopyBudgetFromPreviousPeriodCommand cmd, CancellationToken ct)
     {
@@ -54,6 +55,7 @@ public sealed class CopyBudgetFromPreviousPeriodHandler(EconomyDbContext db)
         }
 
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(target.HouseholdId, "economy.budget.copied_from_previous", "Budget", target.Id.Value, null, ct);
 
         return BudgetResponse.From(target, GetPaceStartsOn(settings.CreatedOn, targetPeriod));
     }

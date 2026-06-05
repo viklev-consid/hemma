@@ -3,13 +3,14 @@ using Hemma.Modules.Economy.Contracts.Events;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
 using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
 
 namespace Hemma.Modules.Economy.Features.RecordTransaction;
 
-public sealed class RecordTransactionHandler(EconomyDbContext db, IMessageBus bus)
+public sealed class RecordTransactionHandler(EconomyDbContext db, IMessageBus bus, EconomyAuditPublisher audit)
 {
     public async Task<ErrorOr<TransactionResponse>> Handle(RecordTransactionCommand cmd, CancellationToken ct)
     {
@@ -51,6 +52,7 @@ public sealed class RecordTransactionHandler(EconomyDbContext db, IMessageBus bu
 
         db.Transactions.Add(transaction.Value);
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(transaction.Value.HouseholdId, "economy.transaction.recorded", "Transaction", transaction.Value.Id.Value, null, ct);
 
         if (transaction.Value.Kind == TransactionKind.Expense)
         {

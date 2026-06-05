@@ -2,12 +2,13 @@ using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
 using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.UpsertBudgetLine;
 
-public sealed class UpsertBudgetLineHandler(EconomyDbContext db)
+public sealed class UpsertBudgetLineHandler(EconomyDbContext db, EconomyAuditPublisher audit)
 {
     public async Task<ErrorOr<BudgetResponse>> Handle(UpsertBudgetLineCommand cmd, CancellationToken ct)
     {
@@ -53,6 +54,7 @@ public sealed class UpsertBudgetLineHandler(EconomyDbContext db)
         }
 
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(budget.HouseholdId, "economy.budget_line.upserted", "BudgetLine", upsert.Value.Id.Value, null, ct);
 
         var period = new BudgetPeriod(budget.PeriodStartsOn, budget.PeriodEndsOn);
         return BudgetResponse.From(budget, GetPaceStartsOn(settings.CreatedOn, period));

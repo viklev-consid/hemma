@@ -2,12 +2,13 @@ using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
 using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.CreateBudget;
 
-public sealed class CreateBudgetHandler(EconomyDbContext db)
+public sealed class CreateBudgetHandler(EconomyDbContext db, EconomyAuditPublisher audit)
 {
     public async Task<ErrorOr<BudgetResponse>> Handle(CreateBudgetCommand cmd, CancellationToken ct)
     {
@@ -27,6 +28,7 @@ public sealed class CreateBudgetHandler(EconomyDbContext db)
         var budget = Budget.Create(cmd.HouseholdId, period);
         db.Budgets.Add(budget);
         await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(budget.HouseholdId, "economy.budget.created", "Budget", budget.Id.Value, null, ct);
 
         return BudgetResponse.From(budget, GetPaceStartsOn(settings.CreatedOn, period));
     }
