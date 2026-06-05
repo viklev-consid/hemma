@@ -1,6 +1,7 @@
 using FluentValidation;
 using Hemma.Modules.Economy.Contracts.Authorization;
 using Hemma.Modules.Economy.Features.AddCategory;
+using Hemma.Modules.Economy.Features.Analytics;
 using Hemma.Modules.Economy.Features.AttachReceipt;
 using Hemma.Modules.Economy.Features.CategorizationRules;
 using Hemma.Modules.Economy.Features.ChangeRecurringBillOccurrence;
@@ -115,6 +116,7 @@ public static class EconomyModule
         opts.Discovery.IncludeType<PreviewImportHandler>();
         opts.Discovery.IncludeType<CommitImportHandler>();
         opts.Discovery.IncludeType<SubscriptionHandler>();
+        opts.Discovery.IncludeType<AnalyticsHandler>();
         opts.Discovery.IncludeType<RunDueBillsHandler>();
         opts.Discovery.IncludeType<TrialRenewalReminderHandler>();
         return opts;
@@ -156,6 +158,7 @@ public static class EconomyModule
         PreviewImportEndpoint.Map(app);
         CommitImportEndpoint.Map(app);
         SubscriptionEndpoint.Map(app);
+        AnalyticsEndpoint.Map(app);
 
         return app;
     }

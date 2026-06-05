@@ -84,6 +84,7 @@ internal sealed class TransactionConfiguration : IEntityTypeConfiguration<Transa
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(transaction => new { transaction.HouseholdId, transaction.OccurredOn });
+        builder.HasIndex(transaction => new { transaction.HouseholdId, transaction.OccurredOn, transaction.CategoryId, transaction.Kind });
         builder.HasIndex(transaction => transaction.AccountId);
         builder.HasIndex(transaction => transaction.CategoryId);
         builder.HasIndex(transaction => transaction.PayerId);
