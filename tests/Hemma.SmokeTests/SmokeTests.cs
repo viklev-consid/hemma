@@ -144,6 +144,26 @@ public sealed class SmokeTests(SmokeTestFixture fixture) : IAsyncLifetime
             .GetProperty("components")
             .GetProperty("schemas")
             .GetProperty(nameof(LoginResponse));
+        var schemas = doc
+            .GetProperty("components")
+            .GetProperty("schemas");
+
+        AssertEnumSchema(schemas, "HouseholdRole", ["owner", "member"]);
+        AssertEnumSchema(schemas, "PlatformRole", ["admin", "user"]);
+        AssertEnumSchema(schemas, "SubscriptionMatchState", ["actual", "predicted", "suggested"]);
+        AssertEnumSchema(schemas, "Currency", ["SEK"]);
+        Assert.Equal(
+            "#/components/schemas/HouseholdRole",
+            schemas.GetProperty("MyHouseholdItem").GetProperty("properties").GetProperty("role").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/PlatformRole",
+            schemas.GetProperty("GetCurrentUserResponse").GetProperty("properties").GetProperty("role").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/SubscriptionMatchState",
+            schemas.GetProperty("MonthChargeResponse").GetProperty("properties").GetProperty("matchState").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "string",
+            schemas.GetProperty("MoneyResponse").GetProperty("properties").GetProperty("amount").GetProperty("type").GetString());
 
         var loginStatusEnum = loginResponseSchema
             .GetProperty("properties")
@@ -159,6 +179,18 @@ public sealed class SmokeTests(SmokeTestFixture fixture) : IAsyncLifetime
     }
 
     // ── Mailpit API response shapes ───────────────────────────────────────────
+
+    private static void AssertEnumSchema(JsonElement schemas, string schemaName, string[] expected)
+    {
+        var values = schemas
+            .GetProperty(schemaName)
+            .GetProperty("enum")
+            .EnumerateArray()
+            .Select(value => value.GetString()!)
+            .ToArray();
+
+        Assert.Equal(expected, values);
+    }
 
     private sealed record MailpitMessagesResponse(MailpitMessage[]? Messages, int Total);
     private sealed record MailpitMessage(MailpitAddress[]? To, string? Subject);

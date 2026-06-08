@@ -136,6 +136,7 @@ builder.Services.AddFrontendLinks(builder.Configuration);
 builder.Services.AddOpenApi(opts =>
 {
     opts.AddDocumentTransformer<ProductOpenApiDocumentTransformer>();
+    opts.AddDocumentTransformer<ProductContractSchemaTransformer>();
     opts.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
     opts.AddOperationTransformer<AuthorizationOperationTransformer>();
     opts.AddSchemaTransformer<LoginResponseStatusSchemaTransformer>();
