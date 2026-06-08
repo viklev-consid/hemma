@@ -202,14 +202,17 @@ public sealed class Transaction : AggregateRoot<TransactionId>
 
     public void AnonymizePersonalData(Guid userId)
     {
-        if (PayerId == userId)
+        if (!IsPersonalDataFor(userId))
         {
-            PayerId = null;
+            return;
         }
 
+        PayerId = null;
         Note = null;
         ImportFingerprint = null;
     }
+
+    public bool IsPersonalDataFor(Guid userId) => PayerId == userId;
 
     public ErrorOr<Success> ConfirmPending(Money amount, DateOnly occurredOn)
     {

@@ -917,6 +917,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
     {
         var ownerId = Guid.NewGuid();
         var removedUserId = Guid.NewGuid();
+        var retainedUserId = Guid.NewGuid();
         var household = await CreateHouseholdAsync(ownerId, "Removed Member", "removed-member");
         var otherHousehold = await CreateHouseholdAsync(ownerId, "Other Member", "other-member");
         using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
@@ -934,6 +935,18 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
             "Removed member",
             "Expense",
             removedUserId);
+        await AttachReceiptAsync(client, household.Id.Value, removedTransaction.TransactionId);
+        var retainedSameHouseholdTransaction = await RecordTransactionAsync(
+            client,
+            household.Id.Value,
+            account.AccountId,
+            null,
+            25,
+            new DateOnly(2026, 6, 6),
+            "Retained same household",
+            "Expense",
+            retainedUserId);
+        await AttachReceiptAsync(client, household.Id.Value, retainedSameHouseholdTransaction.TransactionId);
         var retainedTransaction = await RecordTransactionAsync(
             client,
             otherHousehold.Id.Value,
@@ -953,17 +966,32 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
                 ownerId,
                 Guid.NewGuid()));
 
-        var states = await fixture.QueryDbAsync<EconomyDbContext, Dictionary<Guid, Guid?>>((db, ct) =>
+        var transactionIds = new[]
+        {
+            removedTransaction.TransactionId,
+            retainedSameHouseholdTransaction.TransactionId,
+            retainedTransaction.TransactionId
+        };
+        var states = await fixture.QueryDbAsync<EconomyDbContext, Dictionary<Guid, (Guid? PayerId, string? Note, bool HasReceipt)>>((db, ct) =>
             db.Transactions
-                .Where(t => t.PayerId == null || t.PayerId == removedUserId)
-                .Select(t => new { t.Id, t.PayerId })
+                .Where(t => t.HouseholdId == household.Id.Value || t.HouseholdId == otherHousehold.Id.Value)
+                .Select(t => new { t.Id, t.PayerId, t.Note, t.ReceiptBlobContainer, t.ReceiptBlobKey })
                 .ToListAsync(ct)
                 .ContinueWith(task => task.Result
-                    .Where(t => t.Id.Value == removedTransaction.TransactionId || t.Id.Value == retainedTransaction.TransactionId)
-                    .ToDictionary(t => t.Id.Value, t => t.PayerId), ct));
+                    .Where(t => transactionIds.Contains(t.Id.Value))
+                    .ToDictionary(
+                        t => t.Id.Value,
+                        t => (t.PayerId, t.Note, t.ReceiptBlobContainer is not null && t.ReceiptBlobKey is not null)),
+                    ct));
 
-        Assert.Null(states[removedTransaction.TransactionId]);
-        Assert.Equal(removedUserId, states[retainedTransaction.TransactionId]);
+        Assert.Null(states[removedTransaction.TransactionId].PayerId);
+        Assert.Null(states[removedTransaction.TransactionId].Note);
+        Assert.False(states[removedTransaction.TransactionId].HasReceipt);
+        Assert.Equal(retainedUserId, states[retainedSameHouseholdTransaction.TransactionId].PayerId);
+        Assert.Equal("Retained same household", states[retainedSameHouseholdTransaction.TransactionId].Note);
+        Assert.True(states[retainedSameHouseholdTransaction.TransactionId].HasReceipt);
+        Assert.Equal(removedUserId, states[retainedTransaction.TransactionId].PayerId);
+        Assert.Equal("Other household", states[retainedTransaction.TransactionId].Note);
     }
 
     private static async Task<CreateEconomySettingsResponse> CreateSettingsAsync(HttpClient client, Guid householdId)

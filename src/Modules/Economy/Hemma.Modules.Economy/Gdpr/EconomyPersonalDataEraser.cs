@@ -20,14 +20,15 @@ public sealed class EconomyPersonalDataEraser(EconomyDbContext db, IBlobStore bl
     private async Task<int> EraseUserReferencesAsync(Guid userId, Guid? householdId, CancellationToken ct)
     {
         var transactions = await db.Transactions
-            .Where(transaction => householdId.HasValue
-                ? transaction.HouseholdId == householdId.Value
-                : transaction.PayerId == userId)
+            .Where(transaction => transaction.PayerId == userId &&
+                (!householdId.HasValue || transaction.HouseholdId == householdId.Value))
             .ToListAsync(ct);
 
         foreach (var transaction in transactions)
         {
-            if (transaction.ReceiptBlobContainer is not null && transaction.ReceiptBlobKey is not null)
+            if (transaction.IsPersonalDataFor(userId) &&
+                transaction.ReceiptBlobContainer is not null &&
+                transaction.ReceiptBlobKey is not null)
             {
                 await blobStore.DeleteAsync(
                     new BlobRef(transaction.ReceiptBlobContainer, transaction.ReceiptBlobKey),
