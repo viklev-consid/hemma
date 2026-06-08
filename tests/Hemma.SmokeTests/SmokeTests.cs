@@ -120,6 +120,8 @@ public sealed class SmokeTests(SmokeTestFixture fixture) : IAsyncLifetime
 
         var json = await response.Content.ReadAsStringAsync();
         Assert.DoesNotContain("organizations", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("TickerQ", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("ticker", json, StringComparison.OrdinalIgnoreCase);
 
         var doc = JsonSerializer.Deserialize<JsonElement>(json);
         Assert.Equal("3.1.1", doc.GetProperty("openapi").GetString());
@@ -134,6 +136,8 @@ public sealed class SmokeTests(SmokeTestFixture fixture) : IAsyncLifetime
 
         var pathNames = paths.EnumerateObject().Select(path => path.Name).ToArray();
         Assert.DoesNotContain(pathNames, path => path.StartsWith("/admin/jobs", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(pathNames, path => path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(pathNames, path => path.StartsWith("/v1/admin/", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(pathNames, path => path.StartsWith("/v1/organizations", StringComparison.OrdinalIgnoreCase));
 
         var loginResponseSchema = doc

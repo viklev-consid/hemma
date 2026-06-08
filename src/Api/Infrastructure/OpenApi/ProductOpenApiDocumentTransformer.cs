@@ -12,7 +12,9 @@ internal sealed class ProductOpenApiDocumentTransformer : IOpenApiDocumentTransf
 {
     private static readonly string[] OperationalPathPrefixes =
     [
-        "/admin/jobs"
+        "/admin/jobs",
+        "/api/",
+        "/v1/admin/"
     ];
 
     public Task TransformAsync(
@@ -34,6 +36,27 @@ internal sealed class ProductOpenApiDocumentTransformer : IOpenApiDocumentTransf
         foreach (var path in operationalPaths)
         {
             document.Paths.Remove(path);
+        }
+
+        if (document.Tags is not null)
+        {
+            document.Tags = document.Tags
+                .Where(tag => tag.Name is null ||
+                    !tag.Name.Contains("Ticker", StringComparison.OrdinalIgnoreCase))
+                .ToHashSet();
+        }
+
+        if (document.Components?.Schemas is not null)
+        {
+            var operationalSchemas = document.Components.Schemas
+                .Keys
+                .Where(name => name.Contains("Ticker", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+            foreach (var schemaName in operationalSchemas)
+            {
+                document.Components.Schemas.Remove(schemaName);
+            }
         }
 
         return Task.CompletedTask;
