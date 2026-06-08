@@ -63,6 +63,11 @@ public sealed class Subscription : AggregateRoot<SubscriptionId>
             return EconomyErrors.SubscriptionTrialEndRequired;
         }
 
+        if (lifecycleState == SubscriptionLifecycleState.Cancelled)
+        {
+            return EconomyErrors.SubscriptionLifecycleStateInvalid;
+        }
+
         return new Subscription(
             SubscriptionId.New(),
             householdId,
@@ -77,6 +82,11 @@ public sealed class Subscription : AggregateRoot<SubscriptionId>
 
     public ErrorOr<Success> ChangeLifecycleState(SubscriptionLifecycleState state, DateOnly? trialEndsOn)
     {
+        if (LifecycleState == SubscriptionLifecycleState.Cancelled)
+        {
+            return EconomyErrors.SubscriptionLifecycleStateInvalid;
+        }
+
         if (state == SubscriptionLifecycleState.Trial && trialEndsOn is null)
         {
             return EconomyErrors.SubscriptionTrialEndRequired;

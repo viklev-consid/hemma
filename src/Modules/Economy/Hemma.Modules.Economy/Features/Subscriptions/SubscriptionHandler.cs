@@ -117,6 +117,12 @@ public sealed class SubscriptionHandler(EconomyDbContext db, EconomyAuditPublish
 
     public async Task<ErrorOr<TransactionResponse>> Handle(UnlinkTransactionCommand cmd, CancellationToken ct)
     {
+        var subscriptionId = new SubscriptionId(cmd.SubscriptionId);
+        if (!await db.Subscriptions.AnyAsync(x => x.HouseholdId == cmd.HouseholdId && x.Id == subscriptionId, ct))
+        {
+            return EconomyErrors.SubscriptionNotFound;
+        }
+
         var transaction = await db.Transactions.SingleOrDefaultAsync(
             x => x.HouseholdId == cmd.HouseholdId && x.Id == new TransactionId(cmd.TransactionId),
             ct);

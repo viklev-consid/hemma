@@ -41,5 +41,9 @@ public sealed record RecurringBillCadence
         return candidate;
     }
 
-    public DateOnly NextAfter(DateOnly occurrence) => occurrence.AddMonths(Interval);
+    public DateOnly NextAfter(DateOnly occurrence)
+    {
+        var next = occurrence.AddMonths(Interval);
+        return new DateOnly(next.Year, next.Month, DayOfMonth);
+    }
 }

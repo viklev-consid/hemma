@@ -21,16 +21,16 @@ public sealed class MoneyTests
 
         var sum = left.Add(right);
 
-        Assert.Equal(12.75m, sum.Amount);
-        Assert.Equal("SEK", sum.Currency);
+        Assert.False(sum.IsError);
+        Assert.Equal(12.75m, sum.Value.Amount);
+        Assert.Equal("SEK", sum.Value.Currency);
     }
 
     [Fact]
-    public void Add_WhenCurrencyDiffers_Throws()
+    public void Create_WhenCurrencyIsNotSek_ReturnsError()
     {
-        var sek = Money.Create(10, "SEK").Value;
-        var eur = Money.Create(10, "EUR").Value;
+        var eur = Money.Create(10, "EUR");
 
-        Assert.Throws<InvalidOperationException>(() => sek.Add(eur));
+        Assert.True(eur.IsError);
     }
 }

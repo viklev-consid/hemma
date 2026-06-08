@@ -94,7 +94,7 @@ public sealed class RecurringBill : AggregateRoot<RecurringBillId>
 
     public ErrorOr<RecurringBillOccurrence> MarkSkipped(DateOnly dueOn)
     {
-        if (dueOn < NextDueOn || HasOccurrence(dueOn))
+        if (dueOn != NextDueOn || HasOccurrence(dueOn))
         {
             return EconomyErrors.RecurringBillOccurrenceInvalid;
         }
@@ -107,7 +107,7 @@ public sealed class RecurringBill : AggregateRoot<RecurringBillId>
 
     public ErrorOr<RecurringBillOccurrence> MarkPaused(DateOnly dueOn)
     {
-        if (dueOn < NextDueOn || HasOccurrence(dueOn))
+        if (dueOn != NextDueOn || HasOccurrence(dueOn))
         {
             return EconomyErrors.RecurringBillOccurrenceInvalid;
         }
@@ -127,6 +127,7 @@ public sealed class RecurringBill : AggregateRoot<RecurringBillId>
         }
 
         occurrence.Resume();
+        NextDueOn = dueOn;
         return Result.Success;
     }
 

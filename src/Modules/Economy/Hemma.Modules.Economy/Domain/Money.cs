@@ -5,6 +5,8 @@ namespace Hemma.Modules.Economy.Domain;
 
 public sealed record Money
 {
+    public const string SupportedCurrency = "SEK";
+
     private Money(decimal amount, string currency)
     {
         Amount = amount;
@@ -22,7 +24,7 @@ public sealed record Money
         }
 
         var normalizedCurrency = currency.Trim().ToUpperInvariant();
-        if (normalizedCurrency.Length != 3 || normalizedCurrency.Any(c => c is < 'A' or > 'Z'))
+        if (!string.Equals(normalizedCurrency, SupportedCurrency, StringComparison.Ordinal))
         {
             return EconomyErrors.CurrencyInvalid;
         }
@@ -30,13 +32,13 @@ public sealed record Money
         return new Money(decimal.Round(amount, 2, MidpointRounding.AwayFromZero), normalizedCurrency);
     }
 
-    public Money Add(Money other)
+    public ErrorOr<Money> Add(Money other)
     {
         if (!string.Equals(Currency, other.Currency, StringComparison.Ordinal))
         {
-            throw new InvalidOperationException("Cannot add money values with different currencies.");
+            return EconomyErrors.CurrencyMismatch;
         }
 
-        return new Money(Amount + other.Amount, Currency);
+        return Create(Amount + other.Amount, Currency);
     }
 }

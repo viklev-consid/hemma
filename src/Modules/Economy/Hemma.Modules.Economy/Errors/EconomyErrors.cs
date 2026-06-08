@@ -12,7 +12,7 @@ internal static class EconomyErrors
         ErrorOr.Error.Validation("Economy.Settings.CycleStartDayInvalid", "Cycle start day must be between 1 and 28.");
 
     public static readonly ErrorOr.Error CurrencyInvalid =
-        ErrorOr.Error.Validation("Economy.Money.CurrencyInvalid", "Currency must be a three-letter ISO code.");
+        ErrorOr.Error.Validation("Economy.Money.CurrencyInvalid", "Currency must be SEK.");
 
     public static readonly ErrorOr.Error AmountNegative =
         ErrorOr.Error.Validation("Economy.Money.AmountNegative", "Money amount cannot be negative.");

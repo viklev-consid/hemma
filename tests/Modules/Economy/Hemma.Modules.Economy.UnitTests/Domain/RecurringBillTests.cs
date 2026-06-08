@@ -75,4 +75,52 @@ public sealed class RecurringBillTests
         Assert.True(pending.Value.IsPending);
         Assert.Equal(new DateOnly(2026, 7, 15), bill.NextDueOn);
     }
+
+    [Fact]
+    public void SkipOccurrence_WhenFutureDateIsNotNextDueOn_ReturnsValidationFailure()
+    {
+        var householdId = Guid.NewGuid();
+        var account = Account.Create(householdId, "Checking", AccountType.Spending, Money.Create(0, "SEK").Value).Value;
+        var bill = RecurringBill.Create(
+            householdId,
+            "Rent",
+            account,
+            null,
+            Money.Create(119, "SEK").Value,
+            RecurringBillCadence.Create("Monthly", 1, 15).Value,
+            RecurringBillType.Fixed,
+            RecurringBillDirection.Expense,
+            new DateOnly(2026, 6, 1),
+            null).Value;
+
+        var skipped = bill.MarkSkipped(new DateOnly(2026, 8, 15));
+
+        Assert.True(skipped.IsError);
+        Assert.Equal(new DateOnly(2026, 6, 15), bill.NextDueOn);
+    }
+
+    [Fact]
+    public void Resume_PausedOccurrence_RestoresNextDueOn()
+    {
+        var householdId = Guid.NewGuid();
+        var account = Account.Create(householdId, "Checking", AccountType.Spending, Money.Create(0, "SEK").Value).Value;
+        var bill = RecurringBill.Create(
+            householdId,
+            "Rent",
+            account,
+            null,
+            Money.Create(119, "SEK").Value,
+            RecurringBillCadence.Create("Monthly", 1, 15).Value,
+            RecurringBillType.Fixed,
+            RecurringBillDirection.Expense,
+            new DateOnly(2026, 6, 1),
+            null).Value;
+
+        var paused = bill.MarkPaused(new DateOnly(2026, 6, 15));
+        var resumed = bill.Resume(new DateOnly(2026, 6, 15));
+
+        Assert.False(paused.IsError);
+        Assert.False(resumed.IsError);
+        Assert.Equal(new DateOnly(2026, 6, 15), bill.NextDueOn);
+    }
 }
