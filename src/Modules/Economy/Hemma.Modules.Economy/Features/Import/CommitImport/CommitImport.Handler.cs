@@ -5,6 +5,7 @@ using Hemma.Modules.Economy.Features.Contracts;
 using Hemma.Modules.Economy.Features.Import.Contracts;
 using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
+using Hemma.Shared.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.Import.CommitImport;
@@ -113,7 +114,17 @@ public sealed class CommitImportHandler(EconomyDbContext db, EconomyAuditPublish
         }
 
         db.Transactions.AddRange(transactions);
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+        {
+            db.ChangeTracker.Clear();
+            duplicateCount += transactions.Count;
+            transactions.Clear();
+        }
+
         await audit.PublishAsync(cmd.HouseholdId, "economy.import.committed", "Account", account.Id.Value, null, ct);
 
         return new CommitImportResponse(
