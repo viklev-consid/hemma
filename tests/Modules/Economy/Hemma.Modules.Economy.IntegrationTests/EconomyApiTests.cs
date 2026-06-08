@@ -830,14 +830,15 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         Assert.NotNull(response);
         response.EnsureSuccessStatusCode();
 
-        var auditEntry = await fixture.QueryDbAsync<AuditDbContext, string?>((db, ct) =>
+        var auditEntry = await fixture.QueryDbAsync<AuditDbContext, (string? ResourceType, Guid? ActorId)>((db, ct) =>
             db.AuditEntries
                 .Where(entry => entry.HouseholdId == household.Id.Value &&
                     entry.EventType == "economy.account.created")
-                .Select(entry => entry.ResourceType)
-                .SingleOrDefaultAsync(ct));
+                .Select(entry => new ValueTuple<string?, Guid?>(entry.ResourceType, entry.ActorId))
+                .SingleAsync(ct));
 
-        Assert.Equal("Account", auditEntry);
+        Assert.Equal("Account", auditEntry.ResourceType);
+        Assert.Equal(ownerId, auditEntry.ActorId);
     }
 
     [Fact]

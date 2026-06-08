@@ -1,9 +1,10 @@
 using Hemma.Modules.Economy.Contracts.Events;
+using Hemma.Shared.Kernel.Interfaces;
 using Wolverine;
 
 namespace Hemma.Modules.Economy.Integration;
 
-public sealed class EconomyAuditPublisher(IMessageBus bus)
+public sealed class EconomyAuditPublisher(IMessageBus bus, ICurrentUser currentUser)
 {
     public ValueTask PublishAsync(
         Guid householdId,
@@ -17,6 +18,9 @@ public sealed class EconomyAuditPublisher(IMessageBus bus)
             action,
             resourceType,
             resourceId,
-            actorId,
+            actorId ?? GetCurrentUserId(),
             Guid.NewGuid()));
+
+    private Guid? GetCurrentUserId() =>
+        Guid.TryParse(currentUser.Id, out var userId) ? userId : null;
 }
