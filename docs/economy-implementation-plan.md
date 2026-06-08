@@ -325,19 +325,19 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 
 ## Phase 7 — Cross-cutting & privacy (backend portion)
 
-**Goal:** Audit, GDPR, Notifications prefs. Tier-2 field encryption is explicitly deferred until a household key-wrap design is agreed.
+**Goal:** Audit, GDPR, Notifications prefs. Application-level field encryption for sensitive Economy free-text/name fields is a pre-production requirement; per-household key wrap is deferred until crypto-erasure is explicitly required.
 
 ### Tasks
 1. **GDPR:** export + erase for Economy data; subscribe to `GdprErasureRequestedV1`, `HouseholdMemberRemovedV1`. Erasure cascades to receipt blobs.
 2. **Audit:** subscribe write slices to the Audit module.
 3. **Notifications:** per-household preferences for budget/bill/trial alerts.
-4. **Encryption (Tier 2):** deferred. Do not implement field encryption or per-household key wrap in this phase.
+4. **Encryption (Tier 2):** protect sensitive Economy free-text/name fields from raw database disclosure before production. Per-household key wrap is deferred; use application-level field encryption unless an ADR accepts plaintext with compensating controls.
 
-**DataProtection note:** ADR-0021 warns not to use DataProtection for arbitrary configuration secrets. Economy field encryption may still use DataProtection later for deliberate field protection, consistent with the existing Users module's TOTP-secret protection pattern, but only after the per-household key-wrap design is documented.
+**DataProtection note:** ADR-0021 warns not to use DataProtection for arbitrary configuration secrets. Economy field encryption may use DataProtection for deliberate field protection, consistent with the existing Users module's TOTP-secret protection pattern. Do not include `HouseholdId` in the DataProtection purpose string unless a per-household key-wrap/envelope design is documented.
 
 **Acceptance:**
 - GDPR export returns all of a member's Economy data; erase cascades to receipt blobs per agreed rule.
-- Tier-2 field encryption remains out of scope for this phase.
+- Sensitive Economy free-text/name fields are unreadable in a raw database dump before production, or an explicit ADR records why plaintext is accepted.
 - Audit entries for every mutating Economy slice.
 
 **API surface published this phase:** `/v1/economy/gdpr/export`, notification-preference endpoints (verify if owned here or by Notifications module). Update OpenAPI.
