@@ -9,8 +9,15 @@ namespace Hemma.Modules.Economy.Features.CategorizationRules;
 
 public sealed class CategorizationRuleHandler(EconomyDbContext db, EconomyAuditPublisher audit)
 {
+    private const int maxEnabledRulesPerHousehold = 100;
+
     public async Task<ErrorOr<CategorizationRuleResponse>> Handle(CreateCategorizationRuleCommand cmd, CancellationToken ct)
     {
+        if (await CountEnabledRulesAsync(cmd.HouseholdId, ct) >= maxEnabledRulesPerHousehold)
+        {
+            return EconomyErrors.CategorizationRuleLimitExceeded;
+        }
+
         var category = await db.Categories.SingleOrDefaultAsync(
             x => x.HouseholdId == cmd.HouseholdId && x.Id == new CategoryId(cmd.TargetCategoryId),
             ct);
@@ -82,6 +89,13 @@ public sealed class CategorizationRuleHandler(EconomyDbContext db, EconomyAuditP
             return EconomyErrors.CategorizationRuleNotFound;
         }
 
+        if (cmd.Enabled &&
+            !rule.Enabled &&
+            await CountEnabledRulesAsync(cmd.HouseholdId, ct) >= maxEnabledRulesPerHousehold)
+        {
+            return EconomyErrors.CategorizationRuleLimitExceeded;
+        }
+
         rule.SetEnabled(cmd.Enabled);
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(rule.HouseholdId, "economy.categorization_rule.enabled_changed", "CategorizationRule", rule.Id.Value, null, ct);
@@ -115,4 +129,7 @@ public sealed class CategorizationRuleHandler(EconomyDbContext db, EconomyAuditP
 
         return new ListCategorizationRulesResponse(rules);
     }
+
+    private Task<int> CountEnabledRulesAsync(Guid householdId, CancellationToken ct) =>
+        db.CategorizationRules.CountAsync(x => x.HouseholdId == householdId && x.Enabled, ct);
 }

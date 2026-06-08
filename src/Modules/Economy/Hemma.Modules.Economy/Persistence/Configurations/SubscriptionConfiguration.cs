@@ -57,6 +57,7 @@ internal sealed class SubscriptionConfiguration : IEntityTypeConfiguration<Subsc
             .IsRequired();
 
         builder.Property(subscription => subscription.TrialEndsOn);
+        builder.Property(subscription => subscription.TrialReminderSentForTrialEndsOn);
 
         builder.Property(subscription => subscription.AccountId)
             .HasConversion(

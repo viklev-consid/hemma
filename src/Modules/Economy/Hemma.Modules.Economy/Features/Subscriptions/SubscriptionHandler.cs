@@ -150,11 +150,23 @@ public sealed class SubscriptionHandler(EconomyDbContext db, EconomyAuditPublish
             return EconomyErrors.SubscriptionNotFound;
         }
 
-        var charges = await db.Transactions
+        var page = Math.Max(query.Page, 1);
+        var pageSize = Math.Clamp(query.PageSize, 1, 100);
+        var skip = (page - 1) * pageSize;
+
+        var queryableCharges = db.Transactions
             .AsNoTracking()
-            .Where(x => x.HouseholdId == query.HouseholdId && x.SubscriptionId == query.SubscriptionId)
+            .Where(x => x.HouseholdId == query.HouseholdId && x.SubscriptionId == query.SubscriptionId);
+
+        var total = await queryableCharges.CountAsync(ct);
+        var includePrevious = skip > 0;
+        var windowSkip = includePrevious ? skip - 1 : skip;
+        var windowTake = pageSize + (includePrevious ? 1 : 0);
+        var window = await queryableCharges
             .OrderBy(x => x.OccurredOn)
             .ThenBy(x => x.Id)
+            .Skip(windowSkip)
+            .Take(windowTake)
             .Select(x => new ChargeHistoryItemResponse(
                 x.Id.Value,
                 x.OccurredOn,
@@ -163,14 +175,17 @@ public sealed class SubscriptionHandler(EconomyDbContext db, EconomyAuditPublish
                 "actual"))
             .ToListAsync(ct);
 
-        var priceChanges = charges
-            .Zip(charges.Skip(1))
+        var charges = includePrevious ? window.Skip(1).ToList() : window;
+        var comparisons = includePrevious
+            ? window.Zip(window.Skip(1))
+            : charges.Zip(charges.Skip(1));
+        var priceChanges = comparisons
             .Where(pair => pair.First.Amount.Amount != pair.Second.Amount.Amount ||
                            !string.Equals(pair.First.Amount.Currency, pair.Second.Amount.Currency, StringComparison.OrdinalIgnoreCase))
             .Select(pair => new PriceChangeResponse(pair.Second.OccurredOn, pair.First.Amount, pair.Second.Amount))
             .ToList();
 
-        return new ChargeHistoryResponse(query.SubscriptionId, charges, priceChanges);
+        return new ChargeHistoryResponse(query.SubscriptionId, charges, priceChanges, page, pageSize, total);
     }
 
     public async Task<ErrorOr<PaymentScheduleResponse>> Handle(GetPaymentScheduleQuery query, CancellationToken ct)

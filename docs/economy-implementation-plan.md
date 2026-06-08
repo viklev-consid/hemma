@@ -32,7 +32,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 
 ### Naming
 - Root namespace: `Hemma.Modules.Economy`.
-- **Money is always the `Money` value object** (amount + currency). Never raw `decimal` for money in domain or cross-module contracts. v1 currency = SEK, but model it.
+- **Money is always the `Money` value object** (amount + currency). Never raw `decimal` for money in domain or cross-module contracts. v1 is SEK-only; DTOs keep currency explicit for contract stability, and non-SEK write paths must be rejected.
 - HTTP DTOs represent money with the stable JSON shape `{ "amount": 119.00, "currency": "SEK" }`.
 - Code identifiers are English; Swedish domain terms (Mat, Boende, Sparande) live only in seed data / user-facing strings.
 
@@ -189,7 +189,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 | `ConfirmEstimatedBill` | Command | real amount → posts actual transaction; clears pending |
 | `SkipOccurrence` | Command | single instance |
 | `PauseOccurrence` / `Resume` | Command | single instance |
-| `ListRecurringBills` | Query | next due + pending-confirm inbox |
+| `ListRecurringBills` | Query | next due + pending-confirm inbox; must not eager-load historical occurrences |
 | `RunDueBills` | Scheduled (TickerQ) | Fixed → auto-post; Estimated → pending + notify |
 
 ### Invariant enforcement
@@ -203,6 +203,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 - Fixed monthly 119 → exactly one transaction per cycle on the configured day.
 - Estimated shows pending, doesn't affect actuals until confirmed.
 - Skipping one occurrence doesn't affect later ones.
+- Due-bill processing is per bill and idempotent on `(RecurringBillId, DueOn)` overlap; a bad bill does not abort the batch.
 
 **API surface published this phase:** `/v1/economy/recurring-bills` (create/list/confirm/skip/pause/resume). Update OpenAPI.
 
@@ -217,6 +218,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 ### Domain
 - `CategorizationRule`: `Match ∈ {Contains, Regex}`, `Pattern`, `TargetCategoryId`, `Enabled`, household-wide scope.
 - Import working state is transient until commit; committed rows become `Transaction`s.
+- Enabled categorization rules are capped at 100 per household. Regex matching uses a timeout and timeout failures must not abort an import.
 
 ### Contract
 - Backend accepts normalized import rows, not bank-specific CSV files.
@@ -244,6 +246,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 - Re-importing the same file flags every row as duplicate; none double-committed.
 - `Contains "ICA"` rule auto-assigns Mat on import.
 - Hand-categorizing during preview offers a persistable rule on commit.
+- Rule count and normalized row field lengths are bounded so a 1000-row import cannot trigger unbounded CPU or memory work.
 - Import scoped to exactly one account.
 
 **Decisions:** CSV parsing and field mapping are frontend responsibilities; categorization rules are household-wide; each import is scoped to exactly one account.
@@ -283,6 +286,8 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 - Month calendar marks a day *actual* when a matched transaction exists, else *predicted*.
 
 **Events published:** `TrialRenewalDueV1` (→ Notifications).
+
+**Idempotency:** `TrialRenewalReminder` records the trial end date it has reminded for and publishes at most once per subscription trial end window.
 
 **Acceptance:**
 - Creating/charging a subscription posts **zero** transactions on its own.
@@ -336,7 +341,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 **DataProtection note:** ADR-0021 warns not to use DataProtection for arbitrary configuration secrets. Economy field encryption may use DataProtection for deliberate field protection, consistent with the existing Users module's TOTP-secret protection pattern. Do not include `HouseholdId` in the DataProtection purpose string unless a per-household key-wrap/envelope design is documented.
 
 **Acceptance:**
-- GDPR export returns all of a member's Economy data; erase cascades to receipt blobs per agreed rule.
+- GDPR HTTP export is self-scoped to the authenticated data subject. Erasure clears only records attributable to that user; household-member removal must not clear other members' notes, import fingerprints, or receipt blobs.
 - Sensitive Economy free-text/name fields are unreadable in a raw database dump before production, or an explicit ADR records why plaintext is accepted.
 - Audit entries for every mutating Economy slice.
 
@@ -362,7 +367,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 - API base paths `/v1/economy/...` and `/v1/households/...`.
 - Existing Postgres integration-test harness — reuse it.
 - `IBlobStore`, TickerQ, HybridCache, Notifications/Audit/GDPR modules available and unchanged.
-- SEK-only v1, but `Money` carries currency.
+- SEK-only v1. `Money` carries currency for API stability, but non-SEK writes are rejected until analytics and account/transaction invariants are redesigned for multi-currency.
 
 ## Hand-off to the frontend agent
 After each phase, the **"API surface published this phase"** list + the regenerated OpenAPI document is the contract. The frontend agent never reads this repo's code — only the OpenAPI spec and the behavioral flags noted (transfer `mode`+`categoryId`, import multi-step `isDuplicate`/`suggestedCategoryId`, subscription `matchState`, analytics series shapes).

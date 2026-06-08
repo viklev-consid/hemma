@@ -83,4 +83,25 @@ public sealed class SubscriptionTests
         Assert.True(reactivated.IsError);
         Assert.Equal(SubscriptionLifecycleState.Cancelled, subscription.LifecycleState);
     }
+
+    [Fact]
+    public void TrialReminder_WhenMarkedForTrialEnd_DoesNotSendAgain()
+    {
+        var householdId = Guid.NewGuid();
+        var subscription = Subscription.Create(
+            householdId,
+            "Trial",
+            SubscriptionCadence.Create("Monthly", 1, 15).Value,
+            Money.Create(119, "SEK").Value,
+            SubscriptionLifecycleState.Trial,
+            new DateOnly(2026, 6, 10),
+            account: null,
+            new DateOnly(2026, 6, 1)).Value;
+
+        Assert.True(subscription.ShouldSendTrialReminder());
+
+        subscription.MarkTrialReminderSent();
+
+        Assert.False(subscription.ShouldSendTrialReminder());
+    }
 }

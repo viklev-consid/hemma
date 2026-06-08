@@ -95,6 +95,9 @@ internal static class EconomyErrors
     public static readonly ErrorOr.Error CategorizationRulePatternInvalid =
         ErrorOr.Error.Validation("Economy.CategorizationRule.PatternInvalid", "Categorization rule pattern is required, must be at most 200 characters, and must be valid for regex rules.");
 
+    public static readonly ErrorOr.Error CategorizationRuleLimitExceeded =
+        ErrorOr.Error.Conflict("Economy.CategorizationRule.LimitExceeded", "A household can have at most 100 enabled categorization rules.");
+
     public static readonly ErrorOr.Error ImportFingerprintInvalid =
         ErrorOr.Error.Validation("Economy.Import.FingerprintInvalid", "Import preview fingerprint is invalid.");
 

@@ -103,6 +103,36 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task MoneyEndpoints_RejectNonSekCurrency()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "SEK Only", "sek-only");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+
+        var accountResponse = await client.PostAsJsonAsync(
+            "/v1/economy/accounts",
+            new CreateAccountRequest(household.Id.Value, "Euro", "Spending", new MoneyRequest(100, "EUR")));
+
+        Assert.False(accountResponse.IsSuccessStatusCode);
+
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 0);
+        var transactionResponse = await client.PostAsJsonAsync(
+            "/v1/economy/transactions",
+            new RecordTransactionRequest(
+                household.Id.Value,
+                account.AccountId,
+                CategoryId: null,
+                new MoneyRequest(100, "EUR"),
+                new DateOnly(2026, 6, 5),
+                "Euro transaction",
+                "Expense",
+                ownerId));
+
+        Assert.False(transactionResponse.IsSuccessStatusCode);
+    }
+
+    [Fact]
     public async Task AddingThirdLevelCategory_ReturnsValidationFailure()
     {
         var ownerId = Guid.NewGuid();

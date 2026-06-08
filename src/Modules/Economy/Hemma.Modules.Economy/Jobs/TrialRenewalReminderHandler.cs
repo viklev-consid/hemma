@@ -15,27 +15,29 @@ public sealed class TrialRenewalReminderHandler(EconomyDbContext db, IClock cloc
         var through = today.AddDays(command.DaysAhead);
 
         var trials = await db.Subscriptions
-            .AsNoTracking()
             .Where(subscription =>
                 subscription.LifecycleState == SubscriptionLifecycleState.Trial &&
                 subscription.TrialEndsOn >= today &&
-                subscription.TrialEndsOn <= through)
-            .Select(subscription => new
-            {
-                subscription.Id,
-                subscription.HouseholdId,
-                subscription.TrialEndsOn
-            })
+                subscription.TrialEndsOn <= through &&
+                subscription.TrialReminderSentForTrialEndsOn != subscription.TrialEndsOn)
             .ToListAsync(ct);
 
         foreach (var trial in trials)
         {
+            if (!trial.ShouldSendTrialReminder())
+            {
+                continue;
+            }
+
             await bus.PublishAsync(
                 new TrialRenewalDueV1(
                     trial.Id.Value,
                     trial.HouseholdId,
                     trial.TrialEndsOn!.Value,
                     Guid.NewGuid()));
+            trial.MarkTrialReminderSent();
         }
+
+        await db.SaveChangesAsync(ct);
     }
 }

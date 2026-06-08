@@ -396,6 +396,10 @@ namespace Hemma.Modules.Economy.Persistence.Migrations
                         .HasColumnType("date")
                         .HasColumnName("trial_ends_on");
 
+                    b.Property<DateOnly?>("TrialReminderSentForTrialEndsOn")
+                        .HasColumnType("date")
+                        .HasColumnName("trial_reminder_sent_for_trial_ends_on");
+
                     b.HasKey("Id")
                         .HasName("pk_subscriptions");
 

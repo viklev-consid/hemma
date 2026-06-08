@@ -107,6 +107,8 @@ internal static class SubscriptionEndpoint
             async (
                 Guid subscriptionId,
                 Guid householdId,
+                int? page,
+                int? pageSize,
                 IScopedAuthorizationService<HouseholdScope> authorization,
                 ICurrentUser currentUser,
                 IMessageBus bus,
@@ -124,7 +126,7 @@ internal static class SubscriptionEndpoint
                 }
 
                 var result = await bus.InvokeAsync<ErrorOr.ErrorOr<ChargeHistoryResponse>>(
-                    new GetChargeHistoryQuery(householdId, subscriptionId),
+                    new GetChargeHistoryQuery(householdId, subscriptionId, page ?? 1, pageSize ?? 50),
                     ct);
 
                 return result.ToProblemDetailsOr(Results.Ok);

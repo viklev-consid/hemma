@@ -11,7 +11,9 @@ public sealed class ListRecurringBillsHandler(EconomyDbContext db)
     {
         var bills = await db.RecurringBills
             .AsNoTracking()
-            .Include(x => x.Occurrences)
+            .Include(x => x.Occurrences
+                .Where(occurrence => occurrence.State == Domain.RecurringBillOccurrenceState.Pending)
+                .OrderBy(occurrence => occurrence.DueOn))
             .Where(x => x.HouseholdId == query.HouseholdId)
             .OrderBy(x => x.NextDueOn)
             .ThenBy(x => x.Name)

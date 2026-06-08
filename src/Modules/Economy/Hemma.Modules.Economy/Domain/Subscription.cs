@@ -35,6 +35,7 @@ public sealed class Subscription : AggregateRoot<SubscriptionId>
     public Money ExpectedAmount { get; private set; } = null!;
     public SubscriptionLifecycleState LifecycleState { get; private set; } = null!;
     public DateOnly? TrialEndsOn { get; private set; }
+    public DateOnly? TrialReminderSentForTrialEndsOn { get; private set; }
     public AccountId? AccountId { get; private set; }
     public DateOnly StartsOn { get; private set; }
 
@@ -94,6 +95,14 @@ public sealed class Subscription : AggregateRoot<SubscriptionId>
 
         LifecycleState = state;
         TrialEndsOn = state == SubscriptionLifecycleState.Trial ? trialEndsOn : null;
+        TrialReminderSentForTrialEndsOn = state == SubscriptionLifecycleState.Trial ? TrialReminderSentForTrialEndsOn : null;
         return Result.Success;
     }
+
+    public bool ShouldSendTrialReminder() =>
+        LifecycleState == SubscriptionLifecycleState.Trial &&
+        TrialEndsOn is not null &&
+        TrialReminderSentForTrialEndsOn != TrialEndsOn;
+
+    public void MarkTrialReminderSent() => TrialReminderSentForTrialEndsOn = TrialEndsOn;
 }
