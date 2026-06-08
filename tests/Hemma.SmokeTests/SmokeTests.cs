@@ -118,15 +118,23 @@ public sealed class SmokeTests(SmokeTestFixture fixture) : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var json = await response.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("organizations", json, StringComparison.OrdinalIgnoreCase);
+
+        var doc = JsonSerializer.Deserialize<JsonElement>(json);
         Assert.Equal("3.1.1", doc.GetProperty("openapi").GetString());
         Assert.True(doc.TryGetProperty("paths", out var paths), "OpenAPI document should contain paths.");
+        Assert.True(paths.TryGetProperty("/v1/households/my", out _));
         Assert.True(paths.TryGetProperty("/v1/economy/analytics/category-trend", out _));
         Assert.True(paths.TryGetProperty("/v1/economy/analytics/spend-breakdown", out _));
         Assert.True(paths.TryGetProperty("/v1/economy/analytics/period-comparison", out _));
         Assert.True(paths.TryGetProperty("/v1/economy/analytics/income-vs-expense", out _));
         Assert.True(paths.TryGetProperty("/v1/economy/analytics/variance-history", out _));
         Assert.True(paths.TryGetProperty("/v1/economy/analytics/top-transactions", out _));
+
+        var pathNames = paths.EnumerateObject().Select(path => path.Name).ToArray();
+        Assert.DoesNotContain(pathNames, path => path.StartsWith("/admin/jobs", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(pathNames, path => path.StartsWith("/v1/organizations", StringComparison.OrdinalIgnoreCase));
 
         var loginResponseSchema = doc
             .GetProperty("components")

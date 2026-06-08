@@ -135,6 +135,7 @@ builder.Services.AddFrontendLinks(builder.Configuration);
 // 6. OpenAPI + Scalar
 builder.Services.AddOpenApi(opts =>
 {
+    opts.AddDocumentTransformer<ProductOpenApiDocumentTransformer>();
     opts.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
     opts.AddOperationTransformer<AuthorizationOperationTransformer>();
     opts.AddSchemaTransformer<LoginResponseStatusSchemaTransformer>();
