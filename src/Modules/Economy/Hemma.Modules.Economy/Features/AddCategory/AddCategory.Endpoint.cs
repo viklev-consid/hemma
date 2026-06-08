@@ -31,7 +31,7 @@ internal static class AddCategoryEndpoint
 
                 var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
                     request.HouseholdId,
-                    HouseholdsPermissions.HouseholdsWrite,
+                    HouseholdsPermissions.HouseholdsRead,
                     authorization,
                     currentUser,
                     ct);

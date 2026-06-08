@@ -31,7 +31,7 @@ internal static class UpdateCycleStartDayEndpoint
 
                 var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
                     request.HouseholdId,
-                    HouseholdsPermissions.HouseholdsWrite,
+                    HouseholdsPermissions.HouseholdsRead,
                     authorization,
                     currentUser,
                     ct);

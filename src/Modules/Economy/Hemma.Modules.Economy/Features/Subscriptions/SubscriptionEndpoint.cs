@@ -32,7 +32,7 @@ internal static class SubscriptionEndpoint
 
                 var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
                     request.HouseholdId,
-                    HouseholdsPermissions.HouseholdsWrite,
+                    HouseholdsPermissions.HouseholdsRead,
                     authorization,
                     currentUser,
                     ct);
@@ -82,7 +82,7 @@ internal static class SubscriptionEndpoint
 
                 var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
                     request.HouseholdId,
-                    HouseholdsPermissions.HouseholdsWrite,
+                    HouseholdsPermissions.HouseholdsRead,
                     authorization,
                     currentUser,
                     ct);
@@ -152,7 +152,7 @@ internal static class SubscriptionEndpoint
 
                 var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
                     request.HouseholdId,
-                    HouseholdsPermissions.HouseholdsWrite,
+                    HouseholdsPermissions.HouseholdsRead,
                     authorization,
                     currentUser,
                     ct);
@@ -191,7 +191,7 @@ internal static class SubscriptionEndpoint
 
                 var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
                     request.HouseholdId,
-                    HouseholdsPermissions.HouseholdsWrite,
+                    HouseholdsPermissions.HouseholdsRead,
                     authorization,
                     currentUser,
                     ct);

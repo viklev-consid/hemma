@@ -32,7 +32,7 @@ internal static class ConfirmEstimatedBillEndpoint
 
                 var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
                     request.HouseholdId,
-                    HouseholdsPermissions.HouseholdsWrite,
+                    HouseholdsPermissions.HouseholdsRead,
                     authorization,
                     currentUser,
                     ct);

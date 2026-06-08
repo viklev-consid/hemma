@@ -52,7 +52,7 @@ internal static class CategorizationRuleEndpoint
                     return Results.ValidationProblem(validation.ToDictionary(), statusCode: StatusCodes.Status422UnprocessableEntity);
                 }
 
-                var forbidden = await AuthorizeAsync(request.HouseholdId, HouseholdsPermissions.HouseholdsWrite, authorization, currentUser, ct);
+                var forbidden = await AuthorizeAsync(request.HouseholdId, HouseholdsPermissions.HouseholdsRead, authorization, currentUser, ct);
                 if (forbidden is not null)
                 {
                     return forbidden;
@@ -85,7 +85,7 @@ internal static class CategorizationRuleEndpoint
                     return Results.ValidationProblem(validation.ToDictionary(), statusCode: StatusCodes.Status422UnprocessableEntity);
                 }
 
-                var forbidden = await AuthorizeAsync(request.HouseholdId, HouseholdsPermissions.HouseholdsWrite, authorization, currentUser, ct);
+                var forbidden = await AuthorizeAsync(request.HouseholdId, HouseholdsPermissions.HouseholdsRead, authorization, currentUser, ct);
                 if (forbidden is not null)
                 {
                     return forbidden;
@@ -118,7 +118,7 @@ internal static class CategorizationRuleEndpoint
                     return Results.ValidationProblem(validation.ToDictionary(), statusCode: StatusCodes.Status422UnprocessableEntity);
                 }
 
-                var forbidden = await AuthorizeAsync(request.HouseholdId, HouseholdsPermissions.HouseholdsWrite, authorization, currentUser, ct);
+                var forbidden = await AuthorizeAsync(request.HouseholdId, HouseholdsPermissions.HouseholdsRead, authorization, currentUser, ct);
                 if (forbidden is not null)
                 {
                     return forbidden;
@@ -144,7 +144,7 @@ internal static class CategorizationRuleEndpoint
                 IMessageBus bus,
                 CancellationToken ct) =>
             {
-                var forbidden = await AuthorizeAsync(householdId, HouseholdsPermissions.HouseholdsWrite, authorization, currentUser, ct);
+                var forbidden = await AuthorizeAsync(householdId, HouseholdsPermissions.HouseholdsRead, authorization, currentUser, ct);
                 if (forbidden is not null)
                 {
                     return forbidden;
