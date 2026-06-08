@@ -13,7 +13,7 @@ namespace Hemma.Modules.Economy.Features.AttachReceipt;
 
 internal static class AttachReceiptEndpoint
 {
-    private const long MaxReceiptBytes = 10 * 1024 * 1024;
+    private const long maxReceiptBytes = 10 * 1024 * 1024;
 
     public static void Map(IEndpointRouteBuilder app) =>
         app.MapPost($"{EconomyRoutes.Prefix}/transactions/{{transactionId:guid}}/receipt",
@@ -31,7 +31,7 @@ internal static class AttachReceiptEndpoint
                     return InvalidFile("Receipt file is required.");
                 }
 
-                if (file.Length > MaxReceiptBytes)
+                if (file.Length > maxReceiptBytes)
                 {
                     return InvalidFile("Receipt file cannot exceed 10 MB.");
                 }

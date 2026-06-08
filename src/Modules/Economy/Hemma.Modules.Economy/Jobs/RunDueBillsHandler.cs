@@ -11,7 +11,7 @@ namespace Hemma.Modules.Economy.Jobs;
 
 public sealed partial class RunDueBillsHandler(EconomyDbContext db, IClock clock, IMessageBus bus, ILogger<RunDueBillsHandler> logger)
 {
-    private const int BatchSize = 100;
+    private const int batchSize = 100;
 
     public async Task Handle(RunDueBills command, CancellationToken ct)
     {
@@ -24,7 +24,7 @@ public sealed partial class RunDueBillsHandler(EconomyDbContext db, IClock clock
                 .Include(x => x.Occurrences)
                 .Where(x => x.NextDueOn <= dueOn && !processed.Contains(x.Id))
                 .OrderBy(x => x.NextDueOn)
-                .Take(BatchSize)
+                .Take(batchSize)
                 .ToListAsync(ct);
 
             if (bills.Count == 0)

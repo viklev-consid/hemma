@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text;
 using Hemma.Modules.Audit.Persistence;
 using Hemma.Modules.Economy.Features.AddCategory;
 using Hemma.Modules.Economy.Features.Analytics;
@@ -209,7 +208,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
 
         using var form = new MultipartFormDataContent();
         form.Add(new StringContent(household.Id.Value.ToString()), "householdId");
-        var file = new ByteArrayContent([1, 2, 3]);
+        var file = new ByteArrayContent("%PDF"u8.ToArray());
         file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
         form.Add(file, "file", "receipt.pdf");
         var attached = await client.PostAsync($"/v1/economy/transactions/{transaction.TransactionId}/receipt", form);
@@ -803,8 +802,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
 
         Assert.NotNull(export);
         Assert.Equal(household.Id.Value, export.HouseholdId);
-        Assert.True(export.Data.ContainsKey("accounts"));
-        Assert.True(export.Data.ContainsKey("categories"));
+        Assert.True(export.Data.ContainsKey("households"));
         Assert.True(export.Data.ContainsKey("transactions"));
     }
 
@@ -1126,7 +1124,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         using var content = new MultipartFormDataContent();
         content.Add(new StringContent(householdId.ToString()), "householdId");
 
-        var file = new ByteArrayContent(Encoding.UTF8.GetBytes("receipt"));
+        var file = new ByteArrayContent([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
         file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
         content.Add(file, "file", "receipt.png");
 
