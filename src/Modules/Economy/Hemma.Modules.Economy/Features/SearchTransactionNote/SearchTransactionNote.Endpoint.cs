@@ -31,6 +31,13 @@ internal static class SearchTransactionNoteEndpoint
                         statusCode: StatusCodes.Status422UnprocessableEntity);
                 }
 
+                if (search.Trim().Length > 100)
+                {
+                    return Results.ValidationProblem(
+                        new Dictionary<string, string[]>(StringComparer.Ordinal) { ["search"] = ["Search text cannot exceed 100 characters."] },
+                        statusCode: StatusCodes.Status422UnprocessableEntity);
+                }
+
                 var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
                     householdId,
                     HouseholdsPermissions.HouseholdsRead,

@@ -2,6 +2,7 @@ using Hemma.Modules.Economy.Features.Contracts;
 using Hemma.Modules.Economy.Gdpr;
 using Hemma.Modules.Households.Contracts.Authorization;
 using Hemma.Shared.Infrastructure.Authorization;
+using Hemma.Shared.Kernel.Gdpr;
 using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -33,11 +34,17 @@ internal static class ExportEconomyGdprEndpoint
                     return forbidden;
                 }
 
-                var data = await exporter.ExportHouseholdAsync(householdId, ct);
+                if (!Guid.TryParse(currentUser.Id, out var userId))
+                {
+                    return Results.Forbid();
+                }
+
+                var export = await exporter.ExportAsync(new UserRef(userId), ct);
+                var data = export.Data;
                 return Results.Ok(new ExportEconomyGdprResponse(householdId, clock.UtcNow, data));
             })
         .WithName("ExportEconomyGdpr")
-        .WithSummary("Export household economy data for GDPR access requests.")
+        .WithSummary("Export the caller's economy personal data for GDPR access requests.")
         .Produces<ExportEconomyGdprResponse>()
         .RequireAuthorization();
 }

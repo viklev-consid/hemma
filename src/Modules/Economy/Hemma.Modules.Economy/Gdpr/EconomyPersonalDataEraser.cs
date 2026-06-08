@@ -20,8 +20,9 @@ public sealed class EconomyPersonalDataEraser(EconomyDbContext db, IBlobStore bl
     private async Task<int> EraseUserReferencesAsync(Guid userId, Guid? householdId, CancellationToken ct)
     {
         var transactions = await db.Transactions
-            .Where(transaction => transaction.PayerId == userId &&
-                (!householdId.HasValue || transaction.HouseholdId == householdId.Value))
+            .Where(transaction => householdId.HasValue
+                ? transaction.HouseholdId == householdId.Value
+                : transaction.PayerId == userId)
             .ToListAsync(ct);
 
         foreach (var transaction in transactions)
@@ -34,7 +35,7 @@ public sealed class EconomyPersonalDataEraser(EconomyDbContext db, IBlobStore bl
                 transaction.ClearReceipt();
             }
 
-            transaction.AnonymizePayer(userId);
+            transaction.AnonymizePersonalData(userId);
         }
 
         await db.SaveChangesAsync(ct);

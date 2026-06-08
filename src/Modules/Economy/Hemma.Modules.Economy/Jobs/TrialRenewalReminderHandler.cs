@@ -24,7 +24,6 @@ public sealed class TrialRenewalReminderHandler(EconomyDbContext db, IClock cloc
             {
                 subscription.Id,
                 subscription.HouseholdId,
-                subscription.Name,
                 subscription.TrialEndsOn
             })
             .ToListAsync(ct);
@@ -35,7 +34,6 @@ public sealed class TrialRenewalReminderHandler(EconomyDbContext db, IClock cloc
                 new TrialRenewalDueV1(
                     trial.Id.Value,
                     trial.HouseholdId,
-                    trial.Name,
                     trial.TrialEndsOn!.Value,
                     Guid.NewGuid()));
         }

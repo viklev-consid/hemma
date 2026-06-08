@@ -94,9 +94,19 @@ public sealed class CategorizationRule : AggregateRoot<CategorizationRuleId>
             return false;
         }
 
-        return Match == CategorizationRuleMatch.Contains
-            ? description.Contains(Pattern, StringComparison.OrdinalIgnoreCase)
-            : Regex.IsMatch(description, Pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+        if (Match == CategorizationRuleMatch.Contains)
+        {
+            return description.Contains(Pattern, StringComparison.OrdinalIgnoreCase);
+        }
+
+        try
+        {
+            return Regex.IsMatch(description, Pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return false;
+        }
     }
 
     private static string? NormalizePattern(string pattern)

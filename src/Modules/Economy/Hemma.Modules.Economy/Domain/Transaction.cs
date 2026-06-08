@@ -200,12 +200,15 @@ public sealed class Transaction : AggregateRoot<TransactionId>
         ReceiptBlobKey = null;
     }
 
-    public void AnonymizePayer(Guid userId)
+    public void AnonymizePersonalData(Guid userId)
     {
         if (PayerId == userId)
         {
             PayerId = null;
         }
+
+        Note = null;
+        ImportFingerprint = null;
     }
 
     public ErrorOr<Success> ConfirmPending(Money amount, DateOnly occurredOn)

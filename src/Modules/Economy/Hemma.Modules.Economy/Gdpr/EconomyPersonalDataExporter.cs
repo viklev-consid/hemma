@@ -46,12 +46,6 @@ public sealed class EconomyPersonalDataExporter(EconomyDbContext db) : IPersonal
         return new PersonalDataExport(user.UserId, "Economy", data);
     }
 
-    public async Task<IReadOnlyDictionary<string, object?>> ExportHouseholdAsync(Guid householdId, CancellationToken ct)
-    {
-        var householdIds = new[] { householdId };
-        return await ExportHouseholdsAsync(householdIds, ct);
-    }
-
     private async Task<IReadOnlyDictionary<string, object?>> ExportHouseholdsAsync(
         IReadOnlyCollection<Guid> householdIds,
         CancellationToken ct)

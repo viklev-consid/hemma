@@ -13,6 +13,8 @@ namespace Hemma.Modules.Economy.Features.AttachReceipt;
 
 internal static class AttachReceiptEndpoint
 {
+    private const long MaxReceiptBytes = 10 * 1024 * 1024;
+
     public static void Map(IEndpointRouteBuilder app) =>
         app.MapPost($"{EconomyRoutes.Prefix}/transactions/{{transactionId:guid}}/receipt",
             async (
@@ -26,9 +28,12 @@ internal static class AttachReceiptEndpoint
             {
                 if (file.Length == 0)
                 {
-                    return Results.ValidationProblem(
-                        new Dictionary<string, string[]>(StringComparer.Ordinal) { ["file"] = ["Receipt file is required."] },
-                        statusCode: StatusCodes.Status422UnprocessableEntity);
+                    return InvalidFile("Receipt file is required.");
+                }
+
+                if (file.Length > MaxReceiptBytes)
+                {
+                    return InvalidFile("Receipt file cannot exceed 10 MB.");
                 }
 
                 var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
@@ -43,6 +48,17 @@ internal static class AttachReceiptEndpoint
                 }
 
                 await using var stream = file.OpenReadStream();
+                if (!await IsSupportedReceiptAsync(stream, ct))
+                {
+                    return InvalidFile("Receipt file must be a PDF, PNG, or JPEG.");
+                }
+
+                if (!stream.CanSeek)
+                {
+                    return InvalidFile("Receipt stream must be seekable.");
+                }
+
+                stream.Position = 0;
                 using var memory = new MemoryStream();
                 await stream.CopyToAsync(memory, ct);
 
@@ -58,4 +74,41 @@ internal static class AttachReceiptEndpoint
         .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
         .DisableAntiforgery()
         .RequireAuthorization();
+
+    private static IResult InvalidFile(string message) =>
+        Results.ValidationProblem(
+            new Dictionary<string, string[]>(StringComparer.Ordinal) { ["file"] = [message] },
+            statusCode: StatusCodes.Status422UnprocessableEntity);
+
+    private static async Task<bool> IsSupportedReceiptAsync(Stream stream, CancellationToken ct)
+    {
+        var header = new byte[8];
+        var read = await stream.ReadAsync(header, ct);
+
+        return IsPdf(header, read) || IsPng(header, read) || IsJpeg(header, read);
+    }
+
+    private static bool IsPdf(byte[] header, int read) =>
+        read >= 4 &&
+        header[0] == 0x25 &&
+        header[1] == 0x50 &&
+        header[2] == 0x44 &&
+        header[3] == 0x46;
+
+    private static bool IsPng(byte[] header, int read) =>
+        read >= 8 &&
+        header[0] == 0x89 &&
+        header[1] == 0x50 &&
+        header[2] == 0x4E &&
+        header[3] == 0x47 &&
+        header[4] == 0x0D &&
+        header[5] == 0x0A &&
+        header[6] == 0x1A &&
+        header[7] == 0x0A;
+
+    private static bool IsJpeg(byte[] header, int read) =>
+        read >= 3 &&
+        header[0] == 0xFF &&
+        header[1] == 0xD8 &&
+        header[2] == 0xFF;
 }
