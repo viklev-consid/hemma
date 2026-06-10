@@ -239,6 +239,16 @@ public sealed class Transaction : AggregateRoot<TransactionId>
             return EconomyErrors.SubscriptionNotFound;
         }
 
+        if (SubscriptionId == subscriptionId)
+        {
+            return Result.Success;
+        }
+
+        if (SubscriptionId is not null)
+        {
+            return EconomyErrors.TransactionAlreadyLinked;
+        }
+
         SubscriptionId = subscriptionId;
         return Result.Success;
     }

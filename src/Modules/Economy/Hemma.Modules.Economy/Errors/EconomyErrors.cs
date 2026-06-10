@@ -121,4 +121,7 @@ internal static class EconomyErrors
 
     public static readonly ErrorOr.Error TransactionSubscriptionLinkNotFound =
         ErrorOr.Error.NotFound("Economy.Transaction.SubscriptionLinkNotFound", "Transaction is not linked to the subscription.");
+
+    public static readonly ErrorOr.Error TransactionAlreadyLinked =
+        ErrorOr.Error.Conflict("Economy.Transaction.AlreadyLinked", "Transaction is already linked to another subscription. Unlink it first.");
 }

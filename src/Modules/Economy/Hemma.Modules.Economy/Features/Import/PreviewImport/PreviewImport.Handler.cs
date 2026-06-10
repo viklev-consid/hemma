@@ -124,20 +124,14 @@ public sealed class PreviewImportHandler(EconomyDbContext db)
         string description)
     {
         return subscriptions
-            .Where(subscription => subscription.Cadence.ChargesInMonth(subscription.StartsOn, occurredOn.Year, occurredOn.Month))
             .Select(subscription => new
             {
                 Subscription = subscription,
-                DescriptionMatch = description.Contains(subscription.Name, StringComparison.OrdinalIgnoreCase),
-                AmountDelta = Math.Abs(subscription.ExpectedAmount.Amount - amount),
-                DayDelta = Math.Abs(subscription.Cadence.ChargeDay - occurredOn.Day)
+                Match = SubscriptionChargeMatcher.Match(subscription, occurredOn, amount, description)
             })
-            .Where(candidate =>
-                candidate.DescriptionMatch &&
-                candidate.DayDelta <= 3 &&
-                candidate.AmountDelta <= Math.Max(5m, candidate.Subscription.ExpectedAmount.Amount * 0.10m))
-            .OrderBy(candidate => candidate.DayDelta)
-            .ThenBy(candidate => candidate.AmountDelta)
+            .Where(candidate => candidate.Match is not null)
+            .OrderBy(candidate => candidate.Match!.DayDelta)
+            .ThenBy(candidate => candidate.Match!.AmountDelta)
             .Take(3)
             .Select(candidate => new SubscriptionMatchSuggestionResponse(
                 candidate.Subscription.Id.Value,

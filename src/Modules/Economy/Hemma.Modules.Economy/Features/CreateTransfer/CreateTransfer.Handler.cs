@@ -95,7 +95,8 @@ public sealed class CreateTransferHandler(EconomyDbContext db, EconomyAuditPubli
 
         return await db.Categories
             .Where(category => category.HouseholdId == householdId && category.Budgetable && category.ParentCategoryId == null)
-            .OrderByDescending(category => category.Name == "Savings")
+            .OrderByDescending(category => category.Name == "Sparande")
+            .ThenByDescending(category => category.Name == "Savings")
             .ThenBy(category => category.Name)
             .FirstOrDefaultAsync(ct);
     }

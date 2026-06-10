@@ -13,7 +13,8 @@ public sealed record TransactionResponse(
     string Kind,
     bool IsPending,
     bool HasReceipt,
-    Guid? PayerId)
+    Guid? PayerId,
+    Guid? SubscriptionId)
 {
     public static TransactionResponse From(Transaction transaction) =>
         new(
@@ -27,5 +28,6 @@ public sealed record TransactionResponse(
             transaction.Kind.Name,
             transaction.IsPending,
             transaction.HasReceipt,
-            transaction.PayerId);
+            transaction.PayerId,
+            transaction.SubscriptionId);
 }

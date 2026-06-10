@@ -45,6 +45,25 @@ public sealed class SubscriptionTests
     }
 
     [Fact]
+    public void Create_NonTrialSubscriptionWithTrialEnd_DiscardsTrialEnd()
+    {
+        var householdId = Guid.NewGuid();
+
+        var subscription = Subscription.Create(
+            householdId,
+            "Spotify",
+            SubscriptionCadence.Create("Monthly", 1, 15).Value,
+            Money.Create(119, "SEK").Value,
+            SubscriptionLifecycleState.Active,
+            new DateOnly(2026, 6, 30),
+            account: null,
+            new DateOnly(2026, 1, 15));
+
+        Assert.False(subscription.IsError);
+        Assert.Null(subscription.Value.TrialEndsOn);
+    }
+
+    [Fact]
     public void Create_CancelledSubscription_ReturnsValidationFailure()
     {
         var householdId = Guid.NewGuid();
@@ -76,12 +95,33 @@ public sealed class SubscriptionTests
             account: null,
             new DateOnly(2026, 1, 15)).Value;
 
-        var cancelled = subscription.ChangeLifecycleState(SubscriptionLifecycleState.Cancelled, trialEndsOn: null);
-        var reactivated = subscription.ChangeLifecycleState(SubscriptionLifecycleState.Active, trialEndsOn: null);
+        var cancelled = subscription.ChangeLifecycleState(SubscriptionLifecycleState.Cancelled, trialEndsOn: null, new DateOnly(2026, 3, 1));
+        var reactivated = subscription.ChangeLifecycleState(SubscriptionLifecycleState.Active, trialEndsOn: null, new DateOnly(2026, 3, 2));
 
         Assert.False(cancelled.IsError);
         Assert.True(reactivated.IsError);
         Assert.Equal(SubscriptionLifecycleState.Cancelled, subscription.LifecycleState);
+        Assert.Equal(new DateOnly(2026, 3, 1), subscription.CancelledOn);
+    }
+
+    [Fact]
+    public void ChangeLifecycleState_WhenNotCancelling_DoesNotSetCancelledOn()
+    {
+        var householdId = Guid.NewGuid();
+        var subscription = Subscription.Create(
+            householdId,
+            "Spotify",
+            SubscriptionCadence.Create("Monthly", 1, 15).Value,
+            Money.Create(119, "SEK").Value,
+            SubscriptionLifecycleState.Active,
+            trialEndsOn: null,
+            account: null,
+            new DateOnly(2026, 1, 15)).Value;
+
+        var paused = subscription.ChangeLifecycleState(SubscriptionLifecycleState.Paused, trialEndsOn: null, new DateOnly(2026, 3, 1));
+
+        Assert.False(paused.IsError);
+        Assert.Null(subscription.CancelledOn);
     }
 
     [Fact]

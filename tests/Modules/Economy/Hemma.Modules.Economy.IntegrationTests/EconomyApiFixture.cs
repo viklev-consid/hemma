@@ -3,6 +3,7 @@ using Hemma.Modules.Economy.Persistence;
 using Hemma.Modules.Households.Persistence;
 using Hemma.Modules.Notifications.Persistence;
 using Hemma.Modules.Users.Persistence;
+using Hemma.Shared.Kernel.Interfaces;
 using Hemma.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +15,13 @@ public sealed class EconomyModuleCollection : ICollectionFixture<EconomyApiFixtu
 
 public sealed class EconomyApiFixture : ApiTestFixture
 {
+    public TestClock Clock { get; } = new();
+
+    protected override void ConfigureTestServices(IServiceCollection services)
+    {
+        services.AddSingleton<IClock>(Clock);
+    }
+
     protected override async Task MigrateAsync(IServiceProvider services)
     {
         await services.GetRequiredService<UsersDbContext>().Database.MigrateAsync();

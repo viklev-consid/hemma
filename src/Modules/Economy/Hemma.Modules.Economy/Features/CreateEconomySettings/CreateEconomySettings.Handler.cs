@@ -12,11 +12,11 @@ public sealed class CreateEconomySettingsHandler(EconomyDbContext db, IClock clo
 {
     private static readonly string[] starterCategories =
     [
-        "Food",
-        "Housing",
+        "Mat",
+        "Boende",
         "Transport",
-        "Savings",
-        "Personal"
+        "Sparande",
+        "Personligt"
     ];
 
     public async Task<ErrorOr<CreateEconomySettingsResponse>> Handle(CreateEconomySettingsCommand cmd, CancellationToken ct)

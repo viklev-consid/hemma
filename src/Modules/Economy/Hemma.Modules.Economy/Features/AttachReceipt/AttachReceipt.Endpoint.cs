@@ -38,7 +38,7 @@ internal static class AttachReceiptEndpoint
 
                 var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
                     householdId,
-                    HouseholdsPermissions.HouseholdsRead,
+                    HouseholdsPermissions.HouseholdsWrite,
                     authorization,
                     currentUser,
                     ct);

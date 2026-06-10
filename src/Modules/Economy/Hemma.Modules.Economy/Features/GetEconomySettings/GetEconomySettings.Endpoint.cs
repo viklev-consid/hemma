@@ -1,26 +1,24 @@
 using Hemma.Modules.Economy.Features.Contracts;
-using Hemma.Modules.Economy.Gdpr;
 using Hemma.Modules.Households.Contracts.Authorization;
 using Hemma.Shared.Infrastructure.Authorization;
-using Hemma.Shared.Kernel.Gdpr;
+using Hemma.Shared.Infrastructure.Http;
 using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Wolverine;
 
-namespace Hemma.Modules.Economy.Features.Gdpr.Export;
+namespace Hemma.Modules.Economy.Features.GetEconomySettings;
 
-internal static class ExportEconomyGdprEndpoint
+internal static class GetEconomySettingsEndpoint
 {
     public static void Map(IEndpointRouteBuilder app) =>
-        app.MapGet($"{EconomyRoutes.Prefix}/gdpr/export",
+        app.MapGet($"{EconomyRoutes.Prefix}/settings",
             async (
                 Guid householdId,
                 IScopedAuthorizationService<HouseholdScope> authorization,
                 ICurrentUser currentUser,
-                [FromServices] EconomyPersonalDataExporter exporter,
-                IClock clock,
+                IMessageBus bus,
                 CancellationToken ct) =>
             {
                 var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
@@ -34,17 +32,14 @@ internal static class ExportEconomyGdprEndpoint
                     return forbidden;
                 }
 
-                if (!Guid.TryParse(currentUser.Id, out var userId))
-                {
-                    return Results.Forbid();
-                }
-
-                var export = await exporter.ExportAsync(new UserRef(userId), householdId, ct);
-                var data = export.Data;
-                return Results.Ok(new ExportEconomyGdprResponse(householdId, clock.UtcNow, data));
+                var result = await bus.InvokeAsync<ErrorOr.ErrorOr<GetEconomySettingsResponse>>(
+                    new GetEconomySettingsQuery(householdId),
+                    ct);
+                return result.ToProblemDetailsOr(Results.Ok);
             })
-        .WithName("ExportEconomyGdpr")
-        .WithSummary("Export the caller's economy personal data for GDPR access requests.")
-        .Produces<ExportEconomyGdprResponse>()
+        .WithName("GetEconomySettings")
+        .WithSummary("Get economy settings for a household.")
+        .Produces<GetEconomySettingsResponse>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
         .RequireAuthorization();
 }

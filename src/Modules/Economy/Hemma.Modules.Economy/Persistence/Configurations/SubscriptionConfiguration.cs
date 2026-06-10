@@ -67,6 +67,8 @@ internal sealed class SubscriptionConfiguration : IEntityTypeConfiguration<Subsc
         builder.Property(subscription => subscription.StartsOn)
             .IsRequired();
 
+        builder.Property(subscription => subscription.CancelledOn);
+
         builder.HasOne<Account>()
             .WithMany()
             .HasForeignKey(subscription => subscription.AccountId)

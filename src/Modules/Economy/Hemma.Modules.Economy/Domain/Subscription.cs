@@ -38,6 +38,7 @@ public sealed class Subscription : AggregateRoot<SubscriptionId>
     public DateOnly? TrialReminderSentForTrialEndsOn { get; private set; }
     public AccountId? AccountId { get; private set; }
     public DateOnly StartsOn { get; private set; }
+    public DateOnly? CancelledOn { get; private set; }
 
     public static ErrorOr<Subscription> Create(
         Guid householdId,
@@ -76,12 +77,12 @@ public sealed class Subscription : AggregateRoot<SubscriptionId>
             cadence,
             expectedAmount,
             lifecycleState,
-            trialEndsOn,
+            lifecycleState == SubscriptionLifecycleState.Trial ? trialEndsOn : null,
             account?.Id,
             startsOn);
     }
 
-    public ErrorOr<Success> ChangeLifecycleState(SubscriptionLifecycleState state, DateOnly? trialEndsOn)
+    public ErrorOr<Success> ChangeLifecycleState(SubscriptionLifecycleState state, DateOnly? trialEndsOn, DateOnly today)
     {
         if (LifecycleState == SubscriptionLifecycleState.Cancelled)
         {
@@ -96,6 +97,7 @@ public sealed class Subscription : AggregateRoot<SubscriptionId>
         LifecycleState = state;
         TrialEndsOn = state == SubscriptionLifecycleState.Trial ? trialEndsOn : null;
         TrialReminderSentForTrialEndsOn = state == SubscriptionLifecycleState.Trial ? TrialReminderSentForTrialEndsOn : null;
+        CancelledOn = state == SubscriptionLifecycleState.Cancelled ? today : null;
         return Result.Success;
     }
 

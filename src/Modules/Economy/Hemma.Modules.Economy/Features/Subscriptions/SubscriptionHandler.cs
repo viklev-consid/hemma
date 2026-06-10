@@ -4,11 +4,12 @@ using Hemma.Modules.Economy.Errors;
 using Hemma.Modules.Economy.Features.Contracts;
 using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
+using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.Subscriptions;
 
-public sealed class SubscriptionHandler(EconomyDbContext db, EconomyAuditPublisher audit)
+public sealed class SubscriptionHandler(EconomyDbContext db, EconomyAuditPublisher audit, IClock clock)
 {
     public async Task<ErrorOr<SubscriptionResponse>> Handle(CreateSubscriptionCommand cmd, CancellationToken ct)
     {
@@ -77,7 +78,7 @@ public sealed class SubscriptionHandler(EconomyDbContext db, EconomyAuditPublish
             return state.Errors;
         }
 
-        var changed = subscription.ChangeLifecycleState(state.Value, cmd.TrialEndsOn);
+        var changed = subscription.ChangeLifecycleState(state.Value, cmd.TrialEndsOn, DateOnly.FromDateTime(clock.UtcNow.UtcDateTime));
         if (changed.IsError)
         {
             return changed.Errors;
@@ -140,6 +141,83 @@ public sealed class SubscriptionHandler(EconomyDbContext db, EconomyAuditPublish
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(transaction.HouseholdId, "economy.subscription.transaction_unlinked", "Transaction", transaction.Id.Value, null, ct);
         return TransactionResponse.From(transaction);
+    }
+
+    public async Task<ErrorOr<ListSubscriptionsResponse>> Handle(ListSubscriptionsQuery query, CancellationToken ct)
+    {
+        var subscriptions = await db.Subscriptions
+            .AsNoTracking()
+            .Where(x => x.HouseholdId == query.HouseholdId)
+            .OrderBy(x => x.Name)
+            .ToListAsync(ct);
+
+        return new ListSubscriptionsResponse(subscriptions.Select(SubscriptionResponse.From).ToList());
+    }
+
+    public async Task<ErrorOr<SubscriptionResponse>> Handle(GetSubscriptionQuery query, CancellationToken ct)
+    {
+        var subscriptionId = new SubscriptionId(query.SubscriptionId);
+        var subscription = await db.Subscriptions
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.HouseholdId == query.HouseholdId && x.Id == subscriptionId, ct);
+
+        return subscription is null
+            ? EconomyErrors.SubscriptionNotFound
+            : SubscriptionResponse.From(subscription);
+    }
+
+    public async Task<ErrorOr<LinkCandidatesResponse>> Handle(GetLinkCandidatesQuery query, CancellationToken ct)
+    {
+        var subscriptionId = new SubscriptionId(query.SubscriptionId);
+        var subscription = await db.Subscriptions
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.HouseholdId == query.HouseholdId && x.Id == subscriptionId, ct);
+        if (subscription is null)
+        {
+            return EconomyErrors.SubscriptionNotFound;
+        }
+
+        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        var windowStart = today.AddMonths(-12);
+        if (windowStart < subscription.StartsOn)
+        {
+            windowStart = subscription.StartsOn;
+        }
+
+        var transactions = await db.Transactions
+            .AsNoTracking()
+            .Where(x => x.HouseholdId == query.HouseholdId &&
+                        x.SubscriptionId == null &&
+                        x.OccurredOn >= windowStart)
+            .Select(x => new
+            {
+                x.Id,
+                x.OccurredOn,
+                Amount = x.Amount.Amount,
+                Currency = x.Amount.Currency,
+                x.Note
+            })
+            .ToListAsync(ct);
+
+        var candidates = transactions
+            .Select(x => new
+            {
+                Transaction = x,
+                Match = SubscriptionChargeMatcher.Match(subscription, x.OccurredOn, x.Amount, x.Note)
+            })
+            .Where(x => x.Match is not null)
+            .OrderByDescending(x => x.Transaction.OccurredOn)
+            .ThenBy(x => x.Match!.DayDelta)
+            .ThenBy(x => x.Match!.AmountDelta)
+            .Take(10)
+            .Select(x => new LinkCandidateResponse(
+                x.Transaction.Id.Value,
+                x.Transaction.OccurredOn,
+                new MoneyResponse(x.Transaction.Amount, x.Transaction.Currency),
+                x.Transaction.Note))
+            .ToList();
+
+        return new LinkCandidatesResponse(query.SubscriptionId, candidates);
     }
 
     public async Task<ErrorOr<ChargeHistoryResponse>> Handle(GetChargeHistoryQuery query, CancellationToken ct)
@@ -215,11 +293,9 @@ public sealed class SubscriptionHandler(EconomyDbContext db, EconomyAuditPublish
 
         var subscriptions = await db.Subscriptions
             .AsNoTracking()
-            .Where(x => x.HouseholdId == query.HouseholdId && x.LifecycleState != SubscriptionLifecycleState.Cancelled)
+            .Where(x => x.HouseholdId == query.HouseholdId)
             .ToListAsync(ct);
-        subscriptions = subscriptions
-            .Where(x => x.Cadence.ChargesInMonth(x.StartsOn, month.Year, month.Month))
-            .ToList();
+        var subscriptionsById = subscriptions.ToDictionary(x => x.Id.Value);
 
         var actuals = await db.Transactions
             .AsNoTracking()
@@ -236,28 +312,56 @@ public sealed class SubscriptionHandler(EconomyDbContext db, EconomyAuditPublish
                 Currency = x.Amount.Currency
             })
             .ToListAsync(ct);
+        actuals = actuals.Where(x => subscriptionsById.ContainsKey(x.SubscriptionId!.Value)).ToList();
+
+        var subscriptionIdsWithActuals = actuals.Select(x => x.SubscriptionId!.Value).ToHashSet();
+        var predictedSubscriptions = subscriptions
+            .Where(x => x.LifecycleState != SubscriptionLifecycleState.Cancelled &&
+                        x.Cadence.ChargesInMonth(x.StartsOn, month.Year, month.Month) &&
+                        x.ExpectedAmount.Amount > 0 &&
+                        !subscriptionIdsWithActuals.Contains(x.Id.Value))
+            .ToList();
 
         var days = Enumerable.Range(1, lastDay.Day)
             .Select(day =>
             {
                 var date = new DateOnly(month.Year, month.Month, day);
-                var charges = subscriptions
-                    .Where(subscription => subscription.Cadence.ChargeDay == day)
-                    .Select(subscription =>
-                    {
-                        var actual = actuals.FirstOrDefault(x => x.SubscriptionId == subscription.Id.Value);
-                        return actual is null
-                            ? new MonthChargeResponse(subscription.Id.Value, subscription.Name, MoneyResponse.From(subscription.ExpectedAmount), "predicted", null)
-                            : new MonthChargeResponse(subscription.Id.Value, subscription.Name, new MoneyResponse(actual.Amount, actual.Currency), "actual", actual.Id.Value);
-                    })
-                    .Where(x => string.Equals(x.MatchState, "actual", StringComparison.Ordinal) || x.Amount.Amount > 0)
-                    .ToList();
+                var actualCharges = actuals
+                    .Where(x => x.OccurredOn == date)
+                    .Select(x => new MonthChargeResponse(
+                        x.SubscriptionId!.Value,
+                        subscriptionsById[x.SubscriptionId!.Value].Name,
+                        new MoneyResponse(x.Amount, x.Currency),
+                        "actual",
+                        x.Id.Value));
+                var predictedCharges = predictedSubscriptions
+                    .Where(x => x.Cadence.ChargeDay == day)
+                    .Select(x => new MonthChargeResponse(x.Id.Value, x.Name, MoneyResponse.From(x.ExpectedAmount), "predicted", null));
 
-                return new MonthChargeDayResponse(date, charges);
+                return new MonthChargeDayResponse(date, actualCharges.Concat(predictedCharges).ToList());
             })
             .Where(day => day.Charges.Count > 0)
             .ToList();
 
-        return new MonthChargeCalendarResponse(month, days);
+        var charges = days.SelectMany(day => day.Charges).ToList();
+        var currency = charges.FirstOrDefault()?.Amount.Currency
+            ?? await db.EconomySettings
+                .AsNoTracking()
+                .Where(x => x.HouseholdId == query.HouseholdId)
+                .Select(x => x.DefaultCurrency)
+                .SingleOrDefaultAsync(ct)
+            ?? "SEK";
+        var actualTotal = charges
+            .Where(x => string.Equals(x.MatchState, "actual", StringComparison.Ordinal))
+            .Sum(x => x.Amount.Amount);
+        var predictedTotal = charges
+            .Where(x => string.Equals(x.MatchState, "predicted", StringComparison.Ordinal))
+            .Sum(x => x.Amount.Amount);
+
+        return new MonthChargeCalendarResponse(
+            month,
+            days,
+            new MoneyResponse(actualTotal, currency),
+            new MoneyResponse(predictedTotal, currency));
     }
 }

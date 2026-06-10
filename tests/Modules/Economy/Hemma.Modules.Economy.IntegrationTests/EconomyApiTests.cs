@@ -16,6 +16,7 @@ using Hemma.Modules.Economy.Features.CreateTransfer;
 using Hemma.Modules.Economy.Features.Gdpr.Export;
 using Hemma.Modules.Economy.Features.GetAccountBalances;
 using Hemma.Modules.Economy.Features.GetBudgetSummary;
+using Hemma.Modules.Economy.Features.GetEconomySettings;
 using Hemma.Modules.Economy.Features.Import.CommitImport;
 using Hemma.Modules.Economy.Features.Import.Contracts;
 using Hemma.Modules.Economy.Features.Import.PreviewImport;
@@ -50,6 +51,29 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
+    public async Task SettingsRead_ReturnsNotFoundBeforeSetupAndSettingsAfterSetup()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+
+        var missing = await client.GetAsync($"/v1/economy/settings?householdId={household.Id.Value}");
+
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+
+        await CreateSettingsAsync(client, household.Id.Value);
+
+        var response = await client.GetAsync($"/v1/economy/settings?householdId={household.Id.Value}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var settings = await response.Content.ReadFromJsonAsync<GetEconomySettingsResponse>();
+        Assert.NotNull(settings);
+        Assert.Equal(household.Id.Value, settings.HouseholdId);
+        Assert.Equal(1, settings.CycleStartDay);
+        Assert.Equal("SEK", settings.DefaultCurrency);
+    }
+
+    [Fact]
     public async Task SettingsCreation_SeedsCategoriesAndRejectsInvalidCycleDay()
     {
         var ownerId = Guid.NewGuid();
@@ -74,8 +98,8 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
             $"/v1/economy/categories?householdId={household.Id.Value}");
 
         Assert.NotNull(categories);
-        Assert.Contains(categories.Categories, category => string.Equals(category.Name, "Food", StringComparison.Ordinal));
-        Assert.Contains(categories.Categories, category => string.Equals(category.Name, "Savings", StringComparison.Ordinal));
+        Assert.Contains(categories.Categories, category => string.Equals(category.Name, "Mat", StringComparison.Ordinal));
+        Assert.Contains(categories.Categories, category => string.Equals(category.Name, "Sparande", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -627,6 +651,166 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ListSubscriptions_ReturnsHouseholdSubscriptionsIncludingCancelled()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var spotify = await CreateSubscriptionAsync(client, household.Id.Value, account.AccountId, "Spotify", 119, 15, new DateOnly(2026, 1, 15));
+        var netflix = await CreateSubscriptionAsync(client, household.Id.Value, account.AccountId, "Netflix", 139, 5, new DateOnly(2026, 1, 5));
+
+        fixture.Clock.Set(new DateTimeOffset(2026, 6, 10, 12, 0, 0, TimeSpan.Zero));
+        var cancel = await client.PutAsJsonAsync(
+            $"/v1/economy/subscriptions/{netflix.SubscriptionId}/state",
+            new ChangeLifecycleStateRequest(household.Id.Value, "Cancelled", null));
+        cancel.EnsureSuccessStatusCode();
+        var cancelledBody = await cancel.Content.ReadFromJsonAsync<SubscriptionResponse>();
+        Assert.NotNull(cancelledBody);
+        Assert.Equal(new DateOnly(2026, 6, 10), cancelledBody.CancelledOn);
+
+        var list = await client.GetFromJsonAsync<ListSubscriptionsResponse>(
+            $"/v1/economy/subscriptions?householdId={household.Id.Value}");
+
+        Assert.NotNull(list);
+        Assert.Equal(2, list.Subscriptions.Count);
+        var cancelled = list.Subscriptions.Single(x => x.SubscriptionId == netflix.SubscriptionId);
+        Assert.Equal("Cancelled", cancelled.LifecycleState);
+        Assert.Equal(new DateOnly(2026, 6, 10), cancelled.CancelledOn);
+        var active = list.Subscriptions.Single(x => x.SubscriptionId == spotify.SubscriptionId);
+        Assert.Equal("Active", active.LifecycleState);
+        Assert.Null(active.CancelledOn);
+    }
+
+    [Fact]
+    public async Task SubscriptionLinkCandidates_ReturnsUnlinkedMatchingTransactionsOnly()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var subscription = await CreateSubscriptionAsync(client, household.Id.Value, account.AccountId, "Spotify", 119, 15, new DateOnly(2026, 1, 15));
+
+        var match = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 119, new DateOnly(2026, 3, 13), "Spotify AB");
+        await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 119, new DateOnly(2026, 3, 15), "Groceries");
+        var alreadyLinked = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 119, new DateOnly(2026, 4, 15), "Spotify AB");
+        await LinkSubscriptionAsync(client, household.Id.Value, subscription.SubscriptionId, alreadyLinked.TransactionId);
+
+        fixture.Clock.Set(new DateTimeOffset(2026, 6, 10, 12, 0, 0, TimeSpan.Zero));
+        var response = await client.GetFromJsonAsync<LinkCandidatesResponse>(
+            $"/v1/economy/subscriptions/{subscription.SubscriptionId}/link-candidates?householdId={household.Id.Value}");
+
+        Assert.NotNull(response);
+        var candidate = Assert.Single(response.Candidates);
+        Assert.Equal(match.TransactionId, candidate.TransactionId);
+        Assert.Equal(new DateOnly(2026, 3, 13), candidate.OccurredOn);
+        Assert.Equal(119, candidate.Amount.Amount);
+    }
+
+    [Fact]
+    public async Task LinkTransaction_WhenAlreadyLinkedToAnotherSubscription_ReturnsConflict()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var spotify = await CreateSubscriptionAsync(client, household.Id.Value, account.AccountId, "Spotify", 119, 15, new DateOnly(2026, 1, 15));
+        var netflix = await CreateSubscriptionAsync(client, household.Id.Value, account.AccountId, "Netflix", 139, 5, new DateOnly(2026, 1, 5));
+        var transaction = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 119, new DateOnly(2026, 3, 15), "Spotify");
+
+        var linked = await client.PostAsJsonAsync(
+            $"/v1/economy/subscriptions/{spotify.SubscriptionId}/link",
+            new LinkTransactionRequest(household.Id.Value, transaction.TransactionId));
+        linked.EnsureSuccessStatusCode();
+        var linkedBody = await linked.Content.ReadFromJsonAsync<TransactionResponse>();
+        Assert.NotNull(linkedBody);
+        Assert.Equal(spotify.SubscriptionId, linkedBody.SubscriptionId);
+
+        var conflict = await client.PostAsJsonAsync(
+            $"/v1/economy/subscriptions/{netflix.SubscriptionId}/link",
+            new LinkTransactionRequest(household.Id.Value, transaction.TransactionId));
+        Assert.Equal(HttpStatusCode.Conflict, conflict.StatusCode);
+
+        var idempotent = await client.PostAsJsonAsync(
+            $"/v1/economy/subscriptions/{spotify.SubscriptionId}/link",
+            new LinkTransactionRequest(household.Id.Value, transaction.TransactionId));
+        Assert.Equal(HttpStatusCode.OK, idempotent.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetSubscription_ReturnsSubscriptionAndNotFoundForUnknownId()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var created = await CreateSubscriptionAsync(client, household.Id.Value, account.AccountId, "Spotify", 119, 15, new DateOnly(2026, 1, 15));
+
+        var fetched = await client.GetFromJsonAsync<SubscriptionResponse>(
+            $"/v1/economy/subscriptions/{created.SubscriptionId}?householdId={household.Id.Value}");
+        Assert.NotNull(fetched);
+        Assert.Equal(created.SubscriptionId, fetched.SubscriptionId);
+        Assert.Equal("Spotify", fetched.Name);
+        Assert.Equal(119, fetched.ExpectedAmount.Amount);
+
+        var missing = await client.GetAsync(
+            $"/v1/economy/subscriptions/{Guid.NewGuid()}?householdId={household.Id.Value}");
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+    }
+
+    [Fact]
+    public async Task SubscriptionMonthCalendar_ShowsEarlyActualChargeOnItsActualDay()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var subscription = await CreateSubscriptionAsync(client, household.Id.Value, account.AccountId, "Spotify", 119, 15, new DateOnly(2026, 1, 15));
+        var transaction = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 119, new DateOnly(2026, 3, 13), "Spotify");
+        await LinkSubscriptionAsync(client, household.Id.Value, subscription.SubscriptionId, transaction.TransactionId);
+
+        var march = await client.GetFromJsonAsync<MonthChargeCalendarResponse>(
+            $"/v1/economy/subscriptions/month-calendar?householdId={household.Id.Value}&month=2026-03-01");
+
+        Assert.NotNull(march);
+        var day = Assert.Single(march.Days);
+        Assert.Equal(new DateOnly(2026, 3, 13), day.Date);
+        var charge = Assert.Single(day.Charges);
+        Assert.Equal("actual", charge.MatchState);
+        Assert.Equal(transaction.TransactionId, charge.TransactionId);
+        Assert.Equal(119, march.ActualTotal.Amount);
+        Assert.Equal(0, march.PredictedTotal.Amount);
+    }
+
+    [Fact]
+    public async Task SubscriptionMonthCalendar_ReturnsActualAndPredictedTotals()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var spotify = await CreateSubscriptionAsync(client, household.Id.Value, account.AccountId, "Spotify", 119, 15, new DateOnly(2026, 1, 15));
+        await CreateSubscriptionAsync(client, household.Id.Value, account.AccountId, "Netflix", 139, 5, new DateOnly(2026, 1, 5));
+        var transaction = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 119, new DateOnly(2026, 3, 15), "Spotify");
+        await LinkSubscriptionAsync(client, household.Id.Value, spotify.SubscriptionId, transaction.TransactionId);
+
+        var march = await client.GetFromJsonAsync<MonthChargeCalendarResponse>(
+            $"/v1/economy/subscriptions/month-calendar?householdId={household.Id.Value}&month=2026-03-01");
+
+        Assert.NotNull(march);
+        Assert.Equal(119, march.ActualTotal.Amount);
+        Assert.Equal("SEK", march.ActualTotal.Currency);
+        Assert.Equal(139, march.PredictedTotal.Amount);
+        Assert.Equal("SEK", march.PredictedTotal.Currency);
+    }
+
+    [Fact]
     public async Task ImportPreview_SuggestsSubscriptionMatchWithoutLinking()
     {
         var ownerId = Guid.NewGuid();
@@ -805,10 +989,12 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GdprExport_ReturnsHouseholdEconomyData()
+    public async Task GdprExport_ReturnsOnlyCallerPersonalEconomyData()
     {
         var ownerId = Guid.NewGuid();
+        var memberId = Guid.NewGuid();
         var household = await CreateHouseholdAsync(ownerId, "Gdpr Export", "gdpr-export");
+        await AddHouseholdMemberAsync(household.Id, memberId);
         using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
         await CreateSettingsAsync(client, household.Id.Value);
         var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 0);
@@ -824,6 +1010,16 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
             "Market",
             "Expense",
             ownerId);
+        await RecordTransactionAsync(
+            client,
+            household.Id.Value,
+            account.AccountId,
+            category.CategoryId,
+            95,
+            new DateOnly(2026, 6, 6),
+            "Other member private note",
+            "Expense",
+            memberId);
 
         var response = await client.GetAsync($"/v1/economy/gdpr/export?householdId={household.Id.Value}");
         var responseBody = await response.Content.ReadAsStringAsync();
@@ -832,8 +1028,31 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
 
         Assert.NotNull(export);
         Assert.Equal(household.Id.Value, export.HouseholdId);
-        Assert.True(export.Data.ContainsKey("households"));
         Assert.True(export.Data.ContainsKey("transactions"));
+        Assert.Contains("Market", responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain("Other member private note", responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(memberId.ToString(), responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain("households", responseBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task EconomyMember_CanReadButCannotMutateHouseholdEconomy()
+    {
+        var ownerId = Guid.NewGuid();
+        var memberId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Readonly Economy", "readonly-economy");
+        await AddHouseholdMemberAsync(household.Id, memberId);
+        using var ownerClient = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        using var memberClient = fixture.CreateAuthenticatedClient(memberId, "member@example.com", "Member");
+        await CreateSettingsAsync(ownerClient, household.Id.Value);
+
+        var read = await memberClient.GetAsync($"/v1/economy/settings?householdId={household.Id.Value}");
+        var write = await memberClient.PostAsJsonAsync(
+            "/v1/economy/accounts",
+            new CreateAccountRequest(household.Id.Value, "Member Checking", "Spending", new MoneyRequest(100, "SEK")));
+
+        Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, write.StatusCode);
     }
 
     [Fact]
@@ -1215,5 +1434,19 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
                 .SingleAsync(ct));
 
         return (householdId, slug);
+    }
+
+    private async Task AddHouseholdMemberAsync(HouseholdId householdId, Guid userId)
+    {
+        await fixture.ExecuteDbAsync<HouseholdsDbContext>(async (db, ct) =>
+        {
+            var clock = fixture.Services.GetRequiredService<IClock>();
+            var household = await db.Households
+                .Include(household => household.Memberships)
+                .SingleAsync(household => household.Id == householdId, ct);
+            var result = household.AddMember(userId, HouseholdRole.Member, clock);
+            Assert.False(result.IsError);
+            await db.SaveChangesAsync(ct);
+        });
     }
 }

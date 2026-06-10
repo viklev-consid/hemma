@@ -31,7 +31,7 @@ internal static class CreateAccountEndpoint
 
                 var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
                     request.HouseholdId,
-                    HouseholdsPermissions.HouseholdsRead,
+                    HouseholdsPermissions.HouseholdsWrite,
                     authorization,
                     currentUser,
                     ct);

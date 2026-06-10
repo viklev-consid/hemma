@@ -13,7 +13,8 @@ public sealed record SubscriptionResponse(
     string LifecycleState,
     DateOnly? TrialEndsOn,
     Guid? AccountId,
-    DateOnly StartsOn)
+    DateOnly StartsOn,
+    DateOnly? CancelledOn)
 {
     public static SubscriptionResponse From(Subscription subscription) =>
         new(
@@ -27,5 +28,6 @@ public sealed record SubscriptionResponse(
             subscription.LifecycleState.Name,
             subscription.TrialEndsOn,
             subscription.AccountId?.Value,
-            subscription.StartsOn);
+            subscription.StartsOn,
+            subscription.CancelledOn);
 }

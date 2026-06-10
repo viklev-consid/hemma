@@ -32,7 +32,7 @@ internal static class SubscriptionEndpoint
 
                 var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
                     request.HouseholdId,
-                    HouseholdsPermissions.HouseholdsRead,
+                    HouseholdsPermissions.HouseholdsWrite,
                     authorization,
                     currentUser,
                     ct);
@@ -64,6 +64,67 @@ internal static class SubscriptionEndpoint
         .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
         .RequireAuthorization();
 
+        app.MapGet($"{EconomyRoutes.Prefix}/subscriptions",
+            async (
+                Guid householdId,
+                IScopedAuthorizationService<HouseholdScope> authorization,
+                ICurrentUser currentUser,
+                IMessageBus bus,
+                CancellationToken ct) =>
+            {
+                var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
+                    householdId,
+                    HouseholdsPermissions.HouseholdsRead,
+                    authorization,
+                    currentUser,
+                    ct);
+                if (forbidden is not null)
+                {
+                    return forbidden;
+                }
+
+                var result = await bus.InvokeAsync<ErrorOr.ErrorOr<ListSubscriptionsResponse>>(
+                    new ListSubscriptionsQuery(householdId),
+                    ct);
+
+                return result.ToProblemDetailsOr(Results.Ok);
+            })
+        .WithName("ListEconomySubscriptions")
+        .WithSummary("List economy subscriptions for a household.")
+        .Produces<ListSubscriptionsResponse>(StatusCodes.Status200OK)
+        .RequireAuthorization();
+
+        app.MapGet($"{EconomyRoutes.Prefix}/subscriptions/{{subscriptionId:guid}}",
+            async (
+                Guid subscriptionId,
+                Guid householdId,
+                IScopedAuthorizationService<HouseholdScope> authorization,
+                ICurrentUser currentUser,
+                IMessageBus bus,
+                CancellationToken ct) =>
+            {
+                var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
+                    householdId,
+                    HouseholdsPermissions.HouseholdsRead,
+                    authorization,
+                    currentUser,
+                    ct);
+                if (forbidden is not null)
+                {
+                    return forbidden;
+                }
+
+                var result = await bus.InvokeAsync<ErrorOr.ErrorOr<SubscriptionResponse>>(
+                    new GetSubscriptionQuery(householdId, subscriptionId),
+                    ct);
+
+                return result.ToProblemDetailsOr(Results.Ok);
+            })
+        .WithName("GetEconomySubscription")
+        .WithSummary("Get a single economy subscription.")
+        .Produces<SubscriptionResponse>(StatusCodes.Status200OK)
+        .RequireAuthorization();
+
         app.MapPut($"{EconomyRoutes.Prefix}/subscriptions/{{subscriptionId:guid}}/state",
             async (
                 Guid subscriptionId,
@@ -82,7 +143,7 @@ internal static class SubscriptionEndpoint
 
                 var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
                     request.HouseholdId,
-                    HouseholdsPermissions.HouseholdsRead,
+                    HouseholdsPermissions.HouseholdsWrite,
                     authorization,
                     currentUser,
                     ct);
@@ -136,6 +197,37 @@ internal static class SubscriptionEndpoint
         .Produces<ChargeHistoryResponse>(StatusCodes.Status200OK)
         .RequireAuthorization();
 
+        app.MapGet($"{EconomyRoutes.Prefix}/subscriptions/{{subscriptionId:guid}}/link-candidates",
+            async (
+                Guid subscriptionId,
+                Guid householdId,
+                IScopedAuthorizationService<HouseholdScope> authorization,
+                ICurrentUser currentUser,
+                IMessageBus bus,
+                CancellationToken ct) =>
+            {
+                var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
+                    householdId,
+                    HouseholdsPermissions.HouseholdsRead,
+                    authorization,
+                    currentUser,
+                    ct);
+                if (forbidden is not null)
+                {
+                    return forbidden;
+                }
+
+                var result = await bus.InvokeAsync<ErrorOr.ErrorOr<LinkCandidatesResponse>>(
+                    new GetLinkCandidatesQuery(householdId, subscriptionId),
+                    ct);
+
+                return result.ToProblemDetailsOr(Results.Ok);
+            })
+        .WithName("GetEconomySubscriptionLinkCandidates")
+        .WithSummary("Get unlinked transactions that likely belong to an economy subscription.")
+        .Produces<LinkCandidatesResponse>(StatusCodes.Status200OK)
+        .RequireAuthorization();
+
         app.MapPost($"{EconomyRoutes.Prefix}/subscriptions/{{subscriptionId:guid}}/link",
             async (
                 Guid subscriptionId,
@@ -154,7 +246,7 @@ internal static class SubscriptionEndpoint
 
                 var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
                     request.HouseholdId,
-                    HouseholdsPermissions.HouseholdsRead,
+                    HouseholdsPermissions.HouseholdsWrite,
                     authorization,
                     currentUser,
                     ct);
@@ -193,7 +285,7 @@ internal static class SubscriptionEndpoint
 
                 var forbidden = await EconomyEndpointAuthorization.AuthorizeHouseholdAsync(
                     request.HouseholdId,
-                    HouseholdsPermissions.HouseholdsRead,
+                    HouseholdsPermissions.HouseholdsWrite,
                     authorization,
                     currentUser,
                     ct);

@@ -15,6 +15,7 @@ using Hemma.Modules.Economy.Features.CreateTransfer;
 using Hemma.Modules.Economy.Features.Gdpr.Export;
 using Hemma.Modules.Economy.Features.GetAccountBalances;
 using Hemma.Modules.Economy.Features.GetBudgetSummary;
+using Hemma.Modules.Economy.Features.GetEconomySettings;
 using Hemma.Modules.Economy.Features.Import.CommitImport;
 using Hemma.Modules.Economy.Features.Import.PreviewImport;
 using Hemma.Modules.Economy.Features.ListAccounts;
@@ -99,6 +100,7 @@ public static class EconomyModule
     public static WolverineOptions AddEconomyHandlers(this WolverineOptions opts)
     {
         opts.Discovery.IncludeType<CreateEconomySettingsHandler>();
+        opts.Discovery.IncludeType<GetEconomySettingsHandler>();
         opts.Discovery.IncludeType<UpdateCycleStartDayHandler>();
         opts.Discovery.IncludeType<CreateAccountHandler>();
         opts.Discovery.IncludeType<ListAccountsHandler>();
@@ -142,6 +144,7 @@ public static class EconomyModule
     public static IEndpointRouteBuilder MapEconomyEndpoints(this IEndpointRouteBuilder app)
     {
         CreateEconomySettingsEndpoint.Map(app);
+        GetEconomySettingsEndpoint.Map(app);
         UpdateCycleStartDayEndpoint.Map(app);
         CreateAccountEndpoint.Map(app);
         ListAccountsEndpoint.Map(app);
