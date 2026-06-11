@@ -100,7 +100,7 @@ Hemma.sln
 ### The reference rules
 
 - `Api` references all modules' internal projects (to compose the application) and `ServiceDefaults`.
-- A module's internal project references `Shared.Kernel`, `Shared.Infrastructure`, its own `.Contracts`, and other modules' `.Contracts` (only when it subscribes to their events).
+- A module's internal project references `Shared.Kernel`, `Shared.Infrastructure`, its own `.Contracts`, and other modules' `.Contracts` (only when it subscribes to their events or invokes their commands/queries — e.g. Property references `Economy.Contracts` to invoke the project-spend query, and Economy references `Property.Contracts` to subscribe to `ProjectDeletedV1`).
 - A module's `.Contracts` project references only `Shared.Kernel` and `Shared.Contracts`.
 - `Shared.Kernel` references nothing.
 - Tests reference the module they test, `TestSupport`, and test libraries.

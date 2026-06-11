@@ -91,6 +91,12 @@ and `c9f06e8` (`test: cover property project api`).
 
 ## Phase 2 — Economy coupling
 
+**Status:** Completed in `e8dcdd0` (`feat: link economy transactions to property projects`)
+and `b4183d6` (`feat: expose property project budget from economy spend`).
+
+> **Task breakdown:** `docs/property-phase-2-tasks.md` sequenced this phase and locked the
+> Contracts-placement and spend-aggregation micro-decisions.
+
 Changes in **both** the `Property` and `Economy` modules. Dependency directions: **Property references `Economy.Contracts`** to invoke the spend queries; **Economy references `Property.Contracts`** only to subscribe to `ProjectDeletedV1`. Neither references the other's internal project.
 
 **In `Economy`:** (new query/command contract types live in `Economy.Contracts`)

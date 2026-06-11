@@ -1,7 +1,9 @@
 # Property — Phase 2 Task Checklist
 
 > Companion to `docs/property-implementation-plan.md` (the design spec). This is the **sequenced task breakdown** for Phase 2 (Economy coupling), generated at phase kickoff. It orders the work, names the files, and lists the tests, and locks the micro-decisions the master plan left implicit.
->
+
+**Status:** Completed in `e8dcdd0` (Economy side) and `b4183d6` (Property side). All work items below are done; migrations applied, audit emitted on the assign mutation, and integration tests cover assign/clear, spend aggregation, project-deleted unlink, and budget combination.
+
 > **Before starting:** Phase 1 must be merged. Phase 2 changes **both** the `Economy` and `Property` modules. Dependency directions: **Property (internal) references `Economy.Contracts`** to invoke the spend query; **Economy (internal) references `Property.Contracts`** to subscribe to `ProjectDeletedV1`. Neither module's `.Contracts` references the other's (enforced by `ModuleBoundaryTests`).
 
 ---
@@ -20,26 +22,26 @@
 ## Work items (in order)
 
 ### Economy — persistence
-- [ ] `Transaction.ProjectId` (`Guid?`) + `AssignToProject(Guid?)` method.
-- [ ] `TransactionConfiguration`: map `ProjectId`, add index `(HouseholdId, ProjectId)`.
-- [ ] Migration `Phase2ProjectLinking` (EconomyDbContext).
+- [x] `Transaction.ProjectId` (`Guid?`) + `AssignToProject(Guid?)` method.
+- [x] `TransactionConfiguration`: map `ProjectId`, add index `(HouseholdId, ProjectId)`.
+- [x] Migration `Phase2ProjectLinking` (EconomyDbContext).
 
 ### Economy — slices
-- [ ] `Features/AssignTransactionToProject/` (Request/Command/Handler/Validator/Endpoint) — `POST /v1/economy/transactions/{transactionId}/project`, write-permission, publishes mutation audit `economy.transaction.project_assigned`.
-- [ ] `Features/ListTransactionsForProject/` (Query/Response/Handler/Endpoint) — `GET /v1/economy/projects/{projectId}/transactions`, read-permission, paged, reuses `TransactionResponse`.
-- [ ] `Economy.Contracts/Queries/GetProjectSpendSummary.cs` — `GetProjectSpendSummaryQuery`, `ProjectSpendSummary`, `GetProjectSpendSummaryResult`.
-- [ ] `Features/GetProjectSpendSummary/` handler (internal) returning `GetProjectSpendSummaryResult`.
+- [x] `Features/AssignTransactionToProject/` (Request/Command/Handler/Validator/Endpoint) — `POST /v1/economy/transactions/{transactionId}/project`, write-permission, publishes mutation audit `economy.transaction.project_assigned`.
+- [x] `Features/ListTransactionsForProject/` (Query/Response/Handler/Endpoint) — `GET /v1/economy/projects/{projectId}/transactions`, read-permission, paged, reuses `TransactionResponse`.
+- [x] `Economy.Contracts/Queries/GetProjectSpendSummary.cs` — `GetProjectSpendSummaryQuery`, `ProjectSpendSummary`, `GetProjectSpendSummaryResult`.
+- [x] `Features/GetProjectSpendSummary/` handler (internal) returning `GetProjectSpendSummaryResult`.
 
 ### Economy — subscriber
-- [ ] `Economy.csproj` references `Property.Contracts`.
-- [ ] `Integration/Subscribers/OnProjectDeletedHandler.cs` — nulls `ProjectId` on matching transactions.
-- [ ] Register the three handlers in `AddEconomyHandlers`; map the two endpoints in `MapEconomyEndpoints`.
+- [x] `Economy.csproj` references `Property.Contracts`.
+- [x] `Integration/Subscribers/OnProjectDeletedHandler.cs` — nulls `ProjectId` on matching transactions.
+- [x] Register the three handlers in `AddEconomyHandlers`; map the two endpoints in `MapEconomyEndpoints`.
 
 ### Property — budget
-- [ ] `Property.csproj` references `Economy.Contracts`.
-- [ ] `GetProjectBudgetQuery` + `GetProjectBudgetResponse` (Projects slice).
-- [ ] `ProjectHandler.Handle(GetProjectBudgetQuery)` — load project (household-scoped) for the estimate, invoke `GetProjectSpendSummaryQuery` cross-module, combine.
-- [ ] Endpoint `GET /v1/property/projects/{projectId}/budget`, read-permission.
+- [x] `Property.csproj` references `Economy.Contracts`.
+- [x] `GetProjectBudgetQuery` + `GetProjectBudgetResponse` (Projects slice).
+- [x] `ProjectHandler.Handle(GetProjectBudgetQuery)` — load project (household-scoped) for the estimate, invoke `GetProjectSpendSummaryQuery` cross-module, combine.
+- [x] Endpoint `GET /v1/property/projects/{projectId}/budget`, read-permission.
 
 ### Tests
 - **Economy (integration):** assign+clear round-trip; spend summary aggregates linked totals/counts; list-for-project paging; `ProjectDeletedV1` nulls links.
