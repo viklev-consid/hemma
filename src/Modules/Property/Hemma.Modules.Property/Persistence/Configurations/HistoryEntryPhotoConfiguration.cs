@@ -16,11 +16,11 @@ internal sealed class HistoryEntryPhotoConfiguration : IEntityTypeConfiguration<
             .HasConversion(id => id.Value, value => new HistoryEntryId(value));
 
         builder.Property(photo => photo.BlobContainer)
-            .HasMaxLength(100)
+            .HasMaxLength(ProjectAttachmentRules.MaxBlobContainerLength)
             .IsRequired();
 
         builder.Property(photo => photo.BlobKey)
-            .HasMaxLength(512)
+            .HasMaxLength(ProjectAttachmentRules.MaxBlobKeyLength)
             .IsRequired();
 
         builder.Property(photo => photo.FileName)

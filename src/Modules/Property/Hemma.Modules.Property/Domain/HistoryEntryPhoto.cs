@@ -38,7 +38,7 @@ public sealed class HistoryEntryPhoto
         string contentType,
         long size)
     {
-        if (string.IsNullOrWhiteSpace(blobContainer) || string.IsNullOrWhiteSpace(blobKey))
+        if (!ProjectAttachmentRules.IsValidBlobReference(blobContainer, blobKey))
         {
             return PropertyErrors.HistoryPhotoBlobInvalid;
         }

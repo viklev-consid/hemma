@@ -138,6 +138,47 @@ public sealed class LogbookApiTests(PropertyApiFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task CreatingHistoryEntryWithAnotherHouseholdsPhotoRef_ReturnsNotFound()
+    {
+        var sourceOwnerId = Guid.NewGuid();
+        var targetOwnerId = Guid.NewGuid();
+        var sourceHousehold = await CreateHouseholdAsync(sourceOwnerId, "Source", "source");
+        var targetHousehold = await CreateHouseholdAsync(targetOwnerId, "Target", "target");
+        using var sourceClient = fixture.CreateAuthenticatedClient(sourceOwnerId, "source@example.com", "Source");
+        using var targetClient = fixture.CreateAuthenticatedClient(targetOwnerId, "target@example.com", "Target");
+
+        var project = await CreateProjectAsync(sourceClient, sourceHousehold.Id.Value);
+        await UploadAttachmentAsync(sourceClient, sourceHousehold.Id.Value, project.ProjectId, [0x89, 0x50, 0x4E, 0x47]);
+
+        fixture.Clock.Set(new DateTimeOffset(2026, 8, 2, 10, 0, 0, TimeSpan.Zero));
+        var completed = await sourceClient.PostAsJsonAsync(
+            $"/v1/property/projects/{project.ProjectId}/status",
+            new ChangeProjectStatusRequest(sourceHousehold.Id.Value, "Done"));
+        completed.EnsureSuccessStatusCode();
+
+        var completion = await completed.Content.ReadFromJsonAsync<ChangeProjectStatusResponse>();
+        Assert.NotNull(completion);
+        Assert.NotNull(completion.SuggestedHistoryEntry);
+        Assert.Single(completion.SuggestedHistoryEntry.PhotoRefs);
+        var leakedRef = completion.SuggestedHistoryEntry.PhotoRefs[0];
+
+        var response = await targetClient.PostAsJsonAsync(
+            "/v1/property/history",
+            new HistoryEntryRequest(
+                targetHousehold.Id.Value,
+                new DateOnly(2026, 8, 3),
+                "Copied photo",
+                "Kitchen",
+                null,
+                "Manual",
+                null,
+                null,
+                [new HistoryPhotoRefRequest(leakedRef.Container, leakedRef.Key)]));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
     public async Task CrossHouseholdHistoryRead_ReturnsForbidden()
     {
         var ownerId = Guid.NewGuid();

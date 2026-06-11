@@ -20,11 +20,11 @@ internal sealed class ProjectAttachmentConfiguration : IEntityTypeConfiguration<
             .IsRequired();
 
         builder.Property(attachment => attachment.BlobContainer)
-            .HasMaxLength(100)
+            .HasMaxLength(ProjectAttachmentRules.MaxBlobContainerLength)
             .IsRequired();
 
         builder.Property(attachment => attachment.BlobKey)
-            .HasMaxLength(200)
+            .HasMaxLength(ProjectAttachmentRules.MaxBlobKeyLength)
             .IsRequired();
 
         builder.Property(attachment => attachment.FileName)

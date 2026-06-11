@@ -1,4 +1,5 @@
 using FluentValidation;
+using Hemma.Modules.Property.Domain;
 
 namespace Hemma.Modules.Property.Features.Logbook;
 
@@ -13,8 +14,8 @@ internal sealed class HistoryEntryRequestValidator : AbstractValidator<HistoryEn
         RuleFor(x => x.Type).NotEmpty().Must(type => Enum.TryParse<Domain.HistoryEntryType>(type, ignoreCase: true, out _));
         RuleForEach(x => x.PhotoRefs).ChildRules(photo =>
         {
-            photo.RuleFor(x => x.Container).NotEmpty().MaximumLength(100);
-            photo.RuleFor(x => x.Key).NotEmpty().MaximumLength(512);
+            photo.RuleFor(x => x.Container).NotEmpty().MaximumLength(ProjectAttachmentRules.MaxBlobContainerLength);
+            photo.RuleFor(x => x.Key).NotEmpty().MaximumLength(ProjectAttachmentRules.MaxBlobKeyLength);
         });
     }
 }

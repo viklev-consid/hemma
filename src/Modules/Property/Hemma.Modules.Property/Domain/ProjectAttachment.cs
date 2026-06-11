@@ -40,7 +40,7 @@ public sealed class ProjectAttachment : Entity<ProjectAttachmentId>
         string contentType,
         long size)
     {
-        if (string.IsNullOrWhiteSpace(blobContainer) || string.IsNullOrWhiteSpace(blobKey))
+        if (!ProjectAttachmentRules.IsValidBlobReference(blobContainer, blobKey))
         {
             return PropertyErrors.AttachmentBlobInvalid;
         }

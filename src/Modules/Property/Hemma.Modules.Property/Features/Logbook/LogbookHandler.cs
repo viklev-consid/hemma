@@ -43,15 +43,21 @@ public sealed class LogbookHandler(PropertyDbContext db, IBlobStore blobStore, P
         var copiedBlobs = new List<BlobRef>();
         foreach (var photoRef in cmd.PhotoRefs)
         {
-            var copied = await CopyPhotoAsync(photoRef, ct);
-            copiedBlobs.Add(copied.Reference);
+            var copied = await CopyPhotoAsync(cmd.HouseholdId, photoRef, ct);
+            if (copied.IsError)
+            {
+                await DeleteBlobsAsync(copiedBlobs, ct);
+                return copied.Errors;
+            }
+
+            copiedBlobs.Add(copied.Value.Reference);
 
             var added = entry.Value.AddPhoto(
-                copied.Reference.Container,
-                copied.Reference.Key,
-                copied.Metadata.FileName ?? "photo",
-                copied.Metadata.ContentType,
-                copied.Metadata.Length);
+                copied.Value.Reference.Container,
+                copied.Value.Reference.Key,
+                copied.Value.Metadata.FileName ?? "photo",
+                copied.Value.Metadata.ContentType,
+                copied.Value.Metadata.Length);
             if (added.IsError)
             {
                 await DeleteBlobsAsync(copiedBlobs, ct);
@@ -186,14 +192,46 @@ public sealed class LogbookHandler(PropertyDbContext db, IBlobStore blobStore, P
         return new HistoryPhotoContentResponse(content.Stream, photo.ContentType, photo.FileName);
     }
 
-    private async Task<CopiedPhoto> CopyPhotoAsync(HistoryPhotoRefRequest source, CancellationToken ct)
+    private async Task<ErrorOr<CopiedPhoto>> CopyPhotoAsync(Guid householdId, HistoryPhotoRefRequest source, CancellationToken ct)
     {
-        var content = await blobStore.GetAsync(new BlobRef(source.Container, source.Key), ct);
+        var authorizedSource = await ResolveOwnedPhotoSourceAsync(householdId, source, ct);
+        if (authorizedSource is null)
+        {
+            return PropertyErrors.AttachmentNotFound;
+        }
+
+        var content = await blobStore.GetAsync(new BlobRef(authorizedSource.Container, authorizedSource.Key), ct);
         await using (content.Stream.ConfigureAwait(false))
         {
             var copied = await blobStore.PutAsync(content.Stream, content.Metadata, ct);
             return new CopiedPhoto(copied, content.Metadata);
         }
+    }
+
+    private async Task<PhotoSource?> ResolveOwnedPhotoSourceAsync(Guid householdId, HistoryPhotoRefRequest source, CancellationToken ct)
+    {
+        var normalizedContainer = source.Container.Trim();
+        var normalizedKey = source.Key.Trim();
+
+        var projectAttachment = await db.Projects
+            .AsNoTracking()
+            .Where(project => project.HouseholdId == householdId)
+            .SelectMany(project => project.Attachments)
+            .Where(attachment => attachment.BlobContainer == normalizedContainer && attachment.BlobKey == normalizedKey)
+            .Select(attachment => new PhotoSource(attachment.BlobContainer, attachment.BlobKey))
+            .FirstOrDefaultAsync(ct);
+        if (projectAttachment is not null)
+        {
+            return projectAttachment;
+        }
+
+        return await db.HistoryEntries
+            .AsNoTracking()
+            .Where(entry => entry.HouseholdId == householdId)
+            .SelectMany(entry => entry.Photos)
+            .Where(photo => photo.BlobContainer == normalizedContainer && photo.BlobKey == normalizedKey)
+            .Select(photo => new PhotoSource(photo.BlobContainer, photo.BlobKey))
+            .FirstOrDefaultAsync(ct);
     }
 
     private async Task<HistoryEntry?> LoadEntryAsync(Guid householdId, Guid historyEntryId, CancellationToken ct) =>
@@ -225,5 +263,6 @@ public sealed class LogbookHandler(PropertyDbContext db, IBlobStore blobStore, P
     }
 
     private sealed record CopiedPhoto(BlobRef Reference, BlobMetadata Metadata);
+    private sealed record PhotoSource(string Container, string Key);
     private sealed record OptionalMoney(Money? Value);
 }

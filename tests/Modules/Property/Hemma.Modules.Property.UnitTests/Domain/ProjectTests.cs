@@ -93,6 +93,28 @@ public sealed class ProjectTests
     }
 
     [Fact]
+    public void AddAttachment_WhenBlobKeyIsTooLong_ReturnsValidationFailure()
+    {
+        var project = CreateProject();
+        var key = new string('a', ProjectAttachmentRules.MaxBlobKeyLength + 1);
+
+        var result = project.AddAttachment("property", key, "receipt.pdf", "application/pdf", 128);
+
+        Assert.True(result.IsError);
+    }
+
+    [Fact]
+    public void AddAttachment_WhenBlobContainerIsTooLong_ReturnsValidationFailure()
+    {
+        var project = CreateProject();
+        var container = new string('a', ProjectAttachmentRules.MaxBlobContainerLength + 1);
+
+        var result = project.AddAttachment(container, "key", "receipt.pdf", "application/pdf", 128);
+
+        Assert.True(result.IsError);
+    }
+
+    [Fact]
     public void AddLink_WhenUrlUsesScriptScheme_ReturnsValidationFailure()
     {
         var project = CreateProject();

@@ -212,6 +212,43 @@ public sealed class MaintenanceApiTests(PropertyApiFixture fixture) : IAsyncLife
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
+    [Fact]
+    public async Task CrossHouseholdOccurrenceWrites_ReturnNotFound()
+    {
+        var ownerId = Guid.NewGuid();
+        var sourceHousehold = await CreateHouseholdAsync(ownerId, "OccurrenceSource", "occurrence-source");
+        var targetHousehold = await CreateHouseholdAsync(ownerId, "OccurrenceTarget", "occurrence-target");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        fixture.Clock.Set(new DateTimeOffset(2026, 6, 11, 8, 0, 0, TimeSpan.Zero));
+
+        var completePlan = await CreatePlanAsync(client, sourceHousehold.Id.Value, "Month", 1, new DateOnly(2026, 6, 1));
+        var complete = await client.PostAsJsonAsync(
+            $"/v1/property/maintenance/occurrences/{completePlan.NextOccurrence!.OccurrenceId}/complete",
+            new CompleteOccurrenceRequest(targetHousehold.Id.Value, "Wrong household"));
+        Assert.Equal(HttpStatusCode.NotFound, complete.StatusCode);
+
+        var skipPlan = await CreatePlanAsync(client, sourceHousehold.Id.Value, "Month", 1, new DateOnly(2026, 7, 1));
+        var skip = await client.PostAsJsonAsync(
+            $"/v1/property/maintenance/occurrences/{skipPlan.NextOccurrence!.OccurrenceId}/skip",
+            new SkipOccurrenceRequest(targetHousehold.Id.Value, "Wrong household"));
+        Assert.Equal(HttpStatusCode.NotFound, skip.StatusCode);
+
+        var promotePlan = await CreatePlanAsync(client, sourceHousehold.Id.Value, "Year", 1, new DateOnly(2026, 6, 1));
+        var promote = await client.PostAsJsonAsync(
+            $"/v1/property/maintenance/occurrences/{promotePlan.NextOccurrence!.OccurrenceId}/promote",
+            new PromoteOccurrenceRequest(
+                targetHousehold.Id.Value,
+                "Wrong household project",
+                null,
+                "Planning",
+                "Exterior",
+                null,
+                null,
+                null,
+                null));
+        Assert.Equal(HttpStatusCode.NotFound, promote.StatusCode);
+    }
+
     private static async Task<GetMaintenancePlanResponse> CreatePlanAsync(
         HttpClient client,
         Guid householdId,
