@@ -1,7 +1,7 @@
 using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
-using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Shared.Contracts;
 using Hemma.Modules.Economy.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -58,8 +58,8 @@ public sealed class GetBudgetSummaryHandler(EconomyDbContext db)
                 var pacePercent = line.Amount.Amount == 0 ? 0 : decimal.Round(actual / line.Amount.Amount * 100, 2);
                 return new BudgetSummaryLineResponse(
                     line.CategoryId.Value,
-                    MoneyResponse.From(line.Amount),
-                    new MoneyResponse(actual, line.Amount.Currency),
+                    MoneyContract.From(line.Amount),
+                    new MoneyDto(actual, line.Amount.Currency),
                     pacePercent,
                     pacePercent > elapsedPercent);
             })

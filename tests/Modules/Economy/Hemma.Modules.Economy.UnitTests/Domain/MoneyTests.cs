@@ -1,3 +1,4 @@
+using Hemma.Shared.Kernel.Domain;
 using Hemma.Modules.Economy.Domain;
 
 namespace Hemma.Modules.Economy.UnitTests.Domain;

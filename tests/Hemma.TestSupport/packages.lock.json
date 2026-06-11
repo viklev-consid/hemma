@@ -1785,6 +1785,7 @@
           "Hemma.Modules.Economy.Contracts": "[1.0.0, )",
           "Hemma.Modules.Households.Contracts": "[1.0.0, )",
           "Hemma.Modules.Users.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Contracts": "[1.0.0, )",
           "Hemma.Shared.Infrastructure": "[1.0.0, )",
           "Hemma.Shared.Kernel": "[1.0.0, )",
           "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "[10.0.8, )",

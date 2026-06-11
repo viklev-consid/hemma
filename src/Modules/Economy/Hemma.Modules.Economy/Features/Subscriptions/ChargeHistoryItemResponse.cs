@@ -1,5 +1,5 @@
-using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Shared.Contracts;
 
 namespace Hemma.Modules.Economy.Features.Subscriptions;
 
-public sealed record ChargeHistoryItemResponse(Guid TransactionId, DateOnly OccurredOn, MoneyResponse Amount, string? Note, string MatchState);
+public sealed record ChargeHistoryItemResponse(Guid TransactionId, DateOnly OccurredOn, MoneyDto Amount, string? Note, string MatchState);

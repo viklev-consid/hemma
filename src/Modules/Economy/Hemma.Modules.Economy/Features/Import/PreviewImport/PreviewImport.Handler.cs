@@ -1,7 +1,7 @@
 using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
-using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Shared.Contracts;
 using Hemma.Modules.Economy.Features.Import.Contracts;
 using Hemma.Modules.Economy.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -66,8 +66,8 @@ public sealed class PreviewImportHandler(EconomyDbContext db)
         var description = row.Description?.Trim();
         string rowFingerprint = string.Empty;
         string duplicateState = "None";
-        MoneyResponse? amount = null;
-        MoneyResponse? balanceAfter = null;
+        MoneyDto? amount = null;
+        MoneyDto? balanceAfter = null;
 
         if (row.OccurredOn is not null && row.Amount is not null && !string.IsNullOrWhiteSpace(description))
         {
@@ -81,12 +81,12 @@ public sealed class PreviewImportHandler(EconomyDbContext db)
                 duplicateState = "Possible";
             }
 
-            amount = new MoneyResponse(Math.Abs(decimal.Round(row.Amount.Value, 2, MidpointRounding.AwayFromZero)), NormalizeCurrency(row.Currency));
+            amount = new MoneyDto(Math.Abs(decimal.Round(row.Amount.Value, 2, MidpointRounding.AwayFromZero)), NormalizeCurrency(row.Currency));
         }
 
         if (row.BalanceAfter is not null)
         {
-            balanceAfter = new MoneyResponse(row.BalanceAfter.Amount, row.BalanceAfter.Currency);
+            balanceAfter = new MoneyDto(row.BalanceAfter.Amount, row.BalanceAfter.Currency);
         }
 
         var suggestedCategoryId = row.CategoryId;
@@ -137,7 +137,7 @@ public sealed class PreviewImportHandler(EconomyDbContext db)
                 candidate.Subscription.Id.Value,
                 candidate.Subscription.Name,
                 "suggested",
-                MoneyResponse.From(candidate.Subscription.ExpectedAmount)))
+                MoneyContract.From(candidate.Subscription.ExpectedAmount)))
             .ToList();
     }
 

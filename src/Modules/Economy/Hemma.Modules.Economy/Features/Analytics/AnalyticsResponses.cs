@@ -1,14 +1,14 @@
-using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Shared.Contracts;
 
 namespace Hemma.Modules.Economy.Features.Analytics;
 
-public sealed record MoneySeriesPointResponse(string Label, MoneyResponse Value);
+public sealed record MoneySeriesPointResponse(string Label, MoneyDto Value);
 
 public sealed record MoneyCategorySeriesPointResponse(
     string Label,
     Guid CategoryId,
     string CategoryName,
-    MoneyResponse Value);
+    MoneyDto Value);
 
 public sealed record CategoryTrendSeriesResponse(
     Guid CategoryId,
@@ -21,16 +21,16 @@ public sealed record SpendBreakdownSliceResponse(
     string Label,
     Guid CategoryId,
     string CategoryName,
-    MoneyResponse Value,
+    MoneyDto Value,
     decimal SharePercent);
 
 public sealed record GetSpendBreakdownResponse(IReadOnlyCollection<SpendBreakdownSliceResponse> Slices);
 
 public sealed record PeriodComparisonItemResponse(
     string Label,
-    MoneyResponse Current,
-    MoneyResponse Previous,
-    MoneyResponse Delta,
+    MoneyDto Current,
+    MoneyDto Previous,
+    MoneyDto Delta,
     decimal DeltaPercent);
 
 public sealed record GetPeriodComparisonResponse(
@@ -42,17 +42,17 @@ public sealed record GetPeriodComparisonResponse(
 
 public sealed record IncomeVsExpensePointResponse(
     string Label,
-    MoneyResponse Income,
-    MoneyResponse Expense,
-    MoneyResponse Net);
+    MoneyDto Income,
+    MoneyDto Expense,
+    MoneyDto Net);
 
 public sealed record GetIncomeVsExpenseResponse(IReadOnlyCollection<IncomeVsExpensePointResponse> Series);
 
 public sealed record VarianceHistoryPointResponse(
     string Label,
-    MoneyResponse Planned,
-    MoneyResponse Actual,
-    MoneyResponse Variance);
+    MoneyDto Planned,
+    MoneyDto Actual,
+    MoneyDto Variance);
 
 public sealed record GetVarianceHistoryResponse(IReadOnlyCollection<VarianceHistoryPointResponse> Series);
 
@@ -61,7 +61,7 @@ public sealed record TopTransactionResponse(
     DateOnly OccurredOn,
     Guid? CategoryId,
     string? CategoryName,
-    MoneyResponse Amount,
+    MoneyDto Amount,
     string Kind,
     string? Note);
 

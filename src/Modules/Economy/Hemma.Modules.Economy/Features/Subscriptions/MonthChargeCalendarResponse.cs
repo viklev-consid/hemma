@@ -1,9 +1,9 @@
-using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Shared.Contracts;
 
 namespace Hemma.Modules.Economy.Features.Subscriptions;
 
 public sealed record MonthChargeCalendarResponse(
     DateOnly Month,
     IReadOnlyList<MonthChargeDayResponse> Days,
-    MoneyResponse ActualTotal,
-    MoneyResponse PredictedTotal);
+    MoneyDto ActualTotal,
+    MoneyDto PredictedTotal);

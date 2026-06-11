@@ -1,4 +1,4 @@
-using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Shared.Contracts;
 
 namespace Hemma.Modules.Economy.Features.Import.Contracts;
 
@@ -6,4 +6,4 @@ public sealed record SubscriptionMatchSuggestionResponse(
     Guid SubscriptionId,
     string Name,
     string MatchState,
-    MoneyResponse ExpectedAmount);
+    MoneyDto ExpectedAmount);

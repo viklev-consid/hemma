@@ -1,4 +1,4 @@
-using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Shared.Contracts;
 using Hemma.Modules.Economy.Features.Import.Contracts;
 
 namespace Hemma.Modules.Economy.Features.Import.CommitImport;

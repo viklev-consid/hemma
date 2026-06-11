@@ -1,5 +1,5 @@
-using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Shared.Contracts;
 
 namespace Hemma.Modules.Economy.Features.CreateAccount;
 
-public sealed record CreateAccountRequest(Guid HouseholdId, string Name, string Type, MoneyRequest OpeningBalance);
+public sealed record CreateAccountRequest(Guid HouseholdId, string Name, string Type, MoneyDto OpeningBalance);

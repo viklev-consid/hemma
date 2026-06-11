@@ -1,5 +1,5 @@
 using Hemma.Modules.Economy.Domain;
-using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Shared.Contracts;
 using Hemma.Modules.Households.Contracts.Authorization;
 using Hemma.Shared.Infrastructure.Authorization;
 using Hemma.Shared.Infrastructure.Http;

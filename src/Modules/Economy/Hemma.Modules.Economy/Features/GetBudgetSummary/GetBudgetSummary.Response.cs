@@ -1,11 +1,11 @@
-using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Shared.Contracts;
 
 namespace Hemma.Modules.Economy.Features.GetBudgetSummary;
 
 public sealed record BudgetSummaryLineResponse(
     Guid CategoryId,
-    MoneyResponse Planned,
-    MoneyResponse Actual,
+    MoneyDto Planned,
+    MoneyDto Actual,
     decimal PacePercent,
     bool IsOverPace);
 

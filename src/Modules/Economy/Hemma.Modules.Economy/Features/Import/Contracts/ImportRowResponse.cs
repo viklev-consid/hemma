@@ -1,16 +1,16 @@
-using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Shared.Contracts;
 
 namespace Hemma.Modules.Economy.Features.Import.Contracts;
 
 public sealed record ImportRowResponse(
     int RowNumber,
     DateOnly? OccurredOn,
-    MoneyResponse? Amount,
+    MoneyDto? Amount,
     string? Description,
     string? Currency,
     string? Counterparty,
     string? Reference,
-    MoneyResponse? BalanceAfter,
+    MoneyDto? BalanceAfter,
     string? RawDescription,
     Guid? SuggestedCategoryId,
     Guid? SelectedCategoryId,

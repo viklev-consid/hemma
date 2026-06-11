@@ -1,2 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- CA1716: 'Shared' is a VB keyword; suppressed because this project is C#-only and not a public NuGet library. -->
+    <NoWarn>$(NoWarn);CA1716</NoWarn>
+  </PropertyGroup>
+
 </Project>

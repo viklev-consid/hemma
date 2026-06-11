@@ -6,7 +6,7 @@ using Hemma.Modules.Economy.Features.Analytics;
 using Hemma.Modules.Economy.Features.CategorizationRules;
 using Hemma.Modules.Economy.Features.ChangeRecurringBillOccurrence;
 using Hemma.Modules.Economy.Features.ConfirmEstimatedBill;
-using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Shared.Contracts;
 using Hemma.Modules.Economy.Features.CopyBudgetFromPreviousPeriod;
 using Hemma.Modules.Economy.Features.CreateAccount;
 using Hemma.Modules.Economy.Features.CreateBudget;
@@ -112,7 +112,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
 
         var created = await client.PostAsJsonAsync(
             "/v1/economy/accounts",
-            new CreateAccountRequest(household.Id.Value, "Checking", "Spending", new MoneyRequest(100, "SEK")));
+            new CreateAccountRequest(household.Id.Value, "Checking", "Spending", new MoneyDto(100, "SEK")));
 
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
 
@@ -136,7 +136,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
 
         var accountResponse = await client.PostAsJsonAsync(
             "/v1/economy/accounts",
-            new CreateAccountRequest(household.Id.Value, "Euro", "Spending", new MoneyRequest(100, "EUR")));
+            new CreateAccountRequest(household.Id.Value, "Euro", "Spending", new MoneyDto(100, "EUR")));
 
         Assert.False(accountResponse.IsSuccessStatusCode);
 
@@ -147,7 +147,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
                 household.Id.Value,
                 account.AccountId,
                 CategoryId: null,
-                new MoneyRequest(100, "EUR"),
+                new MoneyDto(100, "EUR"),
                 new DateOnly(2026, 6, 5),
                 "Euro transaction",
                 "Expense",
@@ -252,7 +252,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
                 household.Id.Value,
                 priorBudget.BudgetId,
                 category.CategoryId,
-                new MoneyRequest(1200, settings.DefaultCurrency)));
+                new MoneyDto(1200, settings.DefaultCurrency)));
         upsert.EnsureSuccessStatusCode();
 
         var copied = await client.PostAsJsonAsync(
@@ -283,7 +283,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
                 household.Id.Value,
                 account.AccountId,
                 category.CategoryId,
-                new MoneyRequest(125, "SEK"),
+                new MoneyDto(125, "SEK"),
                 new DateOnly(2026, 6, 5),
                 "ICA receipt",
                 "Expense",
@@ -325,7 +325,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         var budget = await CreateBudgetAsync(client, household.Id.Value, new DateOnly(2026, 6, 5));
         var budgetLine = await client.PutAsJsonAsync(
             "/v1/economy/budgets/lines",
-            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, category.CategoryId, new MoneyRequest(500, "SEK")));
+            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, category.CategoryId, new MoneyDto(500, "SEK")));
         budgetLine.EnsureSuccessStatusCode();
 
         var transfer = await client.PostAsJsonAsync(
@@ -334,7 +334,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
                 household.Id.Value,
                 checking.AccountId,
                 savings.AccountId,
-                new MoneyRequest(250, "SEK"),
+                new MoneyDto(250, "SEK"),
                 new DateOnly(2026, 6, 5),
                 "Move money",
                 "Neutral",
@@ -369,7 +369,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         var budget = await CreateBudgetAsync(client, household.Id.Value, new DateOnly(2026, 6, 5));
         var budgetLine = await client.PutAsJsonAsync(
             "/v1/economy/budgets/lines",
-            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, category.CategoryId, new MoneyRequest(6000, "SEK")));
+            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, category.CategoryId, new MoneyDto(6000, "SEK")));
         budgetLine.EnsureSuccessStatusCode();
 
         var transfer = await client.PostAsJsonAsync(
@@ -378,7 +378,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
                 household.Id.Value,
                 checking.AccountId,
                 savings.AccountId,
-                new MoneyRequest(5000, "SEK"),
+                new MoneyDto(5000, "SEK"),
                 new DateOnly(2026, 6, 18),
                 "Savings allocation",
                 "Savings",
@@ -474,7 +474,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
             new ConfirmEstimatedBillRequest(
                 household.Id.Value,
                 pending.TransactionId.Value,
-                new MoneyRequest(650, "SEK"),
+                new MoneyDto(650, "SEK"),
                 new DateOnly(2026, 6, 6)));
         confirmed.EnsureSuccessStatusCode();
         var transaction = await confirmed.Content.ReadFromJsonAsync<TransactionResponse>();
@@ -920,11 +920,11 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         var budget = await CreateBudgetAsync(client, household.Id.Value, new DateOnly(2026, 6, 5));
         var groceryLine = await client.PutAsJsonAsync(
             "/v1/economy/budgets/lines",
-            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, groceries.CategoryId, new MoneyRequest(1000, "SEK")));
+            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, groceries.CategoryId, new MoneyDto(1000, "SEK")));
         groceryLine.EnsureSuccessStatusCode();
         var savingsLine = await client.PutAsJsonAsync(
             "/v1/economy/budgets/lines",
-            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, savingsCategory.CategoryId, new MoneyRequest(5000, "SEK")));
+            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, savingsCategory.CategoryId, new MoneyDto(5000, "SEK")));
         savingsLine.EnsureSuccessStatusCode();
 
         await RecordTransactionAsync(client, household.Id.Value, checking.AccountId, groceries.CategoryId, 300, new DateOnly(2026, 6, 5), "ICA", "Expense");
@@ -935,7 +935,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
                 household.Id.Value,
                 checking.AccountId,
                 savings.AccountId,
-                new MoneyRequest(1000, "SEK"),
+                new MoneyDto(1000, "SEK"),
                 new DateOnly(2026, 6, 10),
                 "Neutral transfer",
                 "Neutral",
@@ -948,7 +948,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
                 household.Id.Value,
                 checking.AccountId,
                 savings.AccountId,
-                new MoneyRequest(5000, "SEK"),
+                new MoneyDto(5000, "SEK"),
                 new DateOnly(2026, 6, 18),
                 "Savings transfer",
                 "Savings",
@@ -1010,11 +1010,11 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
 
         var electricityLine = await client.PutAsJsonAsync(
             "/v1/economy/budgets/lines",
-            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, electricity.CategoryId, new MoneyRequest(1200, "SEK")));
+            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, electricity.CategoryId, new MoneyDto(1200, "SEK")));
         electricityLine.EnsureSuccessStatusCode();
         var groceryLine = await client.PutAsJsonAsync(
             "/v1/economy/budgets/lines",
-            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, groceries.CategoryId, new MoneyRequest(3000, "SEK")));
+            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, groceries.CategoryId, new MoneyDto(3000, "SEK")));
         groceryLine.EnsureSuccessStatusCode();
 
         await RecordTransactionAsync(client, household.Id.Value, checking.AccountId, electricity.CategoryId, 1500, new DateOnly(2026, 6, 10), "Power company", "Expense");
@@ -1123,7 +1123,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         var read = await memberClient.GetAsync($"/v1/economy/settings?householdId={household.Id.Value}");
         var write = await memberClient.PostAsJsonAsync(
             "/v1/economy/accounts",
-            new CreateAccountRequest(household.Id.Value, "Member Checking", "Spending", new MoneyRequest(100, "SEK")));
+            new CreateAccountRequest(household.Id.Value, "Member Checking", "Spending", new MoneyDto(100, "SEK")));
 
         Assert.Equal(HttpStatusCode.OK, read.StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, write.StatusCode);
@@ -1141,7 +1141,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         Task CreateAccountForAuditAsync(IMessageContext _) =>
             client.PostAsJsonAsync(
                     "/v1/economy/accounts",
-                    new CreateAccountRequest(household.Id.Value, "Audit Checking", "Spending", new MoneyRequest(100, "SEK")))
+                    new CreateAccountRequest(household.Id.Value, "Audit Checking", "Spending", new MoneyDto(100, "SEK")))
                 .ContinueWith(task => response = task.Result);
 
         await fixture.ApplicationHost.TrackActivity()
@@ -1343,7 +1343,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
     {
         var response = await client.PostAsJsonAsync(
             "/v1/economy/accounts",
-            new CreateAccountRequest(householdId, name, type, new MoneyRequest(openingBalance, "SEK")));
+            new CreateAccountRequest(householdId, name, type, new MoneyDto(openingBalance, "SEK")));
         response.EnsureSuccessStatusCode();
         var account = await response.Content.ReadFromJsonAsync<AccountResponse>();
         Assert.NotNull(account);
@@ -1380,7 +1380,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
                 name,
                 accountId,
                 categoryId,
-                new MoneyRequest(amount, "SEK"),
+                new MoneyDto(amount, "SEK"),
                 type,
                 direction,
                 "Monthly",
@@ -1411,7 +1411,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
                 "Monthly",
                 1,
                 chargeDay,
-                new MoneyRequest(expectedAmount, "SEK"),
+                new MoneyDto(expectedAmount, "SEK"),
                 "Active",
                 null,
                 accountId,
@@ -1459,7 +1459,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
                 householdId,
                 accountId,
                 categoryId,
-                new MoneyRequest(amount, "SEK"),
+                new MoneyDto(amount, "SEK"),
                 occurredOn,
                 note,
                 kind,

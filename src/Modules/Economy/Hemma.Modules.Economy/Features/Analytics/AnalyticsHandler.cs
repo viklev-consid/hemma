@@ -1,7 +1,7 @@
 using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
-using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Shared.Contracts;
 using Hemma.Modules.Economy.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -40,7 +40,7 @@ public sealed class AnalyticsHandler(EconomyDbContext db)
                     .ThenBy(row => row.Month)
                     .Select(row => new MoneySeriesPointResponse(
                         PeriodLabel(row.Year, row.Month),
-                        new MoneyResponse(row.Amount, row.Currency)))
+                        new MoneyDto(row.Amount, row.Currency)))
                     .ToArray()))
             .OrderBy(item => item.CategoryName, StringComparer.Ordinal)
             .ToArray();
@@ -80,7 +80,7 @@ public sealed class AnalyticsHandler(EconomyDbContext db)
                     name,
                     group.Key.Value,
                     name,
-                    new MoneyResponse(value, group.Select(transaction => transaction.Amount.Currency).First()),
+                    new MoneyDto(value, group.Select(transaction => transaction.Amount.Currency).First()),
                     total == 0 ? 0 : decimal.Round(value / total * 100, 2));
             })
             .OrderByDescending(slice => slice.Value.Amount)
@@ -112,9 +112,9 @@ public sealed class AnalyticsHandler(EconomyDbContext db)
             [
                 new PeriodComparisonItemResponse(
                     "spend",
-                    new MoneyResponse(currentTotal, currency),
-                    new MoneyResponse(previousTotal, currency),
-                    new MoneyResponse(currentTotal - previousTotal, currency),
+                    new MoneyDto(currentTotal, currency),
+                    new MoneyDto(previousTotal, currency),
+                    new MoneyDto(currentTotal - previousTotal, currency),
                     previousTotal == 0 ? 0 : decimal.Round((currentTotal - previousTotal) / previousTotal * 100, 2)),
             ]);
     }
@@ -150,9 +150,9 @@ public sealed class AnalyticsHandler(EconomyDbContext db)
                 var expense = group.Where(row => string.Equals(row.Kind, TransactionKind.Expense.Name, StringComparison.Ordinal)).Sum(row => row.Amount);
                 return new IncomeVsExpensePointResponse(
                     PeriodLabel(group.Key.Year, group.Key.Month),
-                    new MoneyResponse(income, currency),
-                    new MoneyResponse(expense, currency),
-                    new MoneyResponse(income - expense, currency));
+                    new MoneyDto(income, currency),
+                    new MoneyDto(expense, currency),
+                    new MoneyDto(income - expense, currency));
             })
             .ToArray();
 
@@ -206,9 +206,9 @@ public sealed class AnalyticsHandler(EconomyDbContext db)
 
             series.Add(new VarianceHistoryPointResponse(
                 PeriodLabel(budget.PeriodStartsOn),
-                new MoneyResponse(planned, currency),
-                new MoneyResponse(actual, currency),
-                new MoneyResponse(planned - actual, currency)));
+                new MoneyDto(planned, currency),
+                new MoneyDto(actual, currency),
+                new MoneyDto(planned - actual, currency)));
         }
 
         return new GetVarianceHistoryResponse(series);
@@ -230,7 +230,7 @@ public sealed class AnalyticsHandler(EconomyDbContext db)
             transaction.OccurredOn,
             transaction.CategoryId?.Value,
             transaction.CategoryId is null ? null : categories.GetValueOrDefault(transaction.CategoryId, "Uncategorized"),
-            MoneyResponse.From(transaction.Amount),
+            MoneyContract.From(transaction.Amount),
             transaction.Kind.Name,
             transaction.Note)).ToArray());
     }
