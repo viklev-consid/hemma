@@ -7,6 +7,8 @@ namespace Hemma.Modules.Property.Persistence;
 public sealed class PropertyDbContext(DbContextOptions<PropertyDbContext> options) : ModuleDbContext(options)
 {
     public DbSet<Project> Projects => Set<Project>();
+    public DbSet<MaintenancePlan> MaintenancePlans => Set<MaintenancePlan>();
+    public DbSet<MaintenanceOccurrence> MaintenanceOccurrences => Set<MaintenanceOccurrence>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
