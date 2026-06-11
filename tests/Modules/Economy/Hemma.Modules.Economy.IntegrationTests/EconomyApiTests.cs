@@ -204,6 +204,39 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task BudgetCreation_WhenPeriodAlreadyExists_ReturnsExistingBudget()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+
+        var created = await client.PostAsJsonAsync(
+            "/v1/economy/budgets",
+            new CreateBudgetRequest(household.Id.Value, new DateOnly(2026, 6, 5)));
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var createdBudget = await created.Content.ReadFromJsonAsync<BudgetResponse>();
+        Assert.NotNull(createdBudget);
+
+        var existing = await client.PostAsJsonAsync(
+            "/v1/economy/budgets",
+            new CreateBudgetRequest(household.Id.Value, new DateOnly(2026, 6, 20)));
+
+        Assert.Equal(HttpStatusCode.OK, existing.StatusCode);
+        var existingBudget = await existing.Content.ReadFromJsonAsync<BudgetResponse>();
+        Assert.NotNull(existingBudget);
+        Assert.Equal(createdBudget.BudgetId, existingBudget.BudgetId);
+        Assert.Equal(new DateOnly(2026, 6, 1), existingBudget.PeriodStartsOn);
+        Assert.Empty(existingBudget.Lines);
+
+        var summary = await client.GetFromJsonAsync<GetBudgetSummaryResponse>(
+            $"/v1/economy/budget-summary?householdId={household.Id.Value}&anchorDate=2026-06-20");
+        Assert.NotNull(summary);
+        Assert.Equal(existingBudget.BudgetId, summary.BudgetId);
+        Assert.Empty(summary.Lines);
+    }
+
+    [Fact]
     public async Task BudgetCopy_WhenPriorPeriodExists_CopiesLines()
     {
         var ownerId = Guid.NewGuid();
@@ -960,6 +993,47 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         Assert.NotNull(top);
         Assert.DoesNotContain(top.Transactions, transaction => string.Equals(transaction.Kind, "Transfer", StringComparison.Ordinal));
         Assert.Equal(9000, top.Transactions.First().Amount.Amount);
+    }
+
+    [Fact]
+    public async Task Analytics_VarianceHistory_WhenCategoryIdIsProvided_ReturnsCategoryVarianceOnly()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var checking = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 10000);
+        var electricity = await AddBudgetCategoryAsync(client, household.Id.Value, "Electricity");
+        var groceries = await AddBudgetCategoryAsync(client, household.Id.Value, "Groceries");
+        var unbudgeted = await AddBudgetCategoryAsync(client, household.Id.Value, "Dining out");
+        var budget = await CreateBudgetAsync(client, household.Id.Value, new DateOnly(2026, 6, 5));
+
+        var electricityLine = await client.PutAsJsonAsync(
+            "/v1/economy/budgets/lines",
+            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, electricity.CategoryId, new MoneyRequest(1200, "SEK")));
+        electricityLine.EnsureSuccessStatusCode();
+        var groceryLine = await client.PutAsJsonAsync(
+            "/v1/economy/budgets/lines",
+            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, groceries.CategoryId, new MoneyRequest(3000, "SEK")));
+        groceryLine.EnsureSuccessStatusCode();
+
+        await RecordTransactionAsync(client, household.Id.Value, checking.AccountId, electricity.CategoryId, 1500, new DateOnly(2026, 6, 10), "Power company", "Expense");
+        await RecordTransactionAsync(client, household.Id.Value, checking.AccountId, groceries.CategoryId, 800, new DateOnly(2026, 6, 11), "Market", "Expense");
+
+        var filtered = await client.GetFromJsonAsync<GetVarianceHistoryResponse>(
+            $"/v1/economy/analytics/variance-history?householdId={household.Id.Value}&from=2026-06-01&to=2026-06-30&categoryId={electricity.CategoryId}");
+        var empty = await client.GetFromJsonAsync<GetVarianceHistoryResponse>(
+            $"/v1/economy/analytics/variance-history?householdId={household.Id.Value}&from=2026-06-01&to=2026-06-30&categoryId={unbudgeted.CategoryId}");
+
+        Assert.NotNull(filtered);
+        var point = Assert.Single(filtered.Series);
+        Assert.Equal("2026-06", point.Label);
+        Assert.Equal(1200, point.Planned.Amount);
+        Assert.Equal(1500, point.Actual.Amount);
+        Assert.Equal(-300, point.Variance.Amount);
+
+        Assert.NotNull(empty);
+        Assert.Empty(empty.Series);
     }
 
     [Fact]

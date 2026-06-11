@@ -124,6 +124,7 @@ internal static class AnalyticsEndpoint
                 Guid householdId,
                 DateOnly from,
                 DateOnly to,
+                Guid? categoryId,
                 IScopedAuthorizationService<HouseholdScope> authorization,
                 ICurrentUser currentUser,
                 IMessageBus bus,
@@ -136,7 +137,11 @@ internal static class AnalyticsEndpoint
                 }
 
                 var result = await bus.InvokeAsync<ErrorOr.ErrorOr<GetVarianceHistoryResponse>>(
-                    new GetVarianceHistoryQuery(householdId, from, to),
+                    new GetVarianceHistoryQuery(
+                        householdId,
+                        from,
+                        to,
+                        categoryId is null ? null : new CategoryId(categoryId.Value)),
                     ct);
                 return result.ToProblemDetailsOr(Results.Ok);
             })

@@ -40,14 +40,17 @@ internal static class CreateBudgetEndpoint
                     return forbidden;
                 }
 
-                var result = await bus.InvokeAsync<ErrorOr.ErrorOr<BudgetResponse>>(
+                var result = await bus.InvokeAsync<ErrorOr.ErrorOr<CreateBudgetResult>>(
                     new CreateBudgetCommand(request.HouseholdId, request.AnchorDate),
                     ct);
-                return result.ToProblemDetailsOr(response => Results.Created($"{EconomyRoutes.Prefix}/budgets/{response.BudgetId}", response));
+                return result.ToProblemDetailsOr(response => response.Created
+                    ? Results.Created($"{EconomyRoutes.Prefix}/budgets/{response.Budget.BudgetId}", response.Budget)
+                    : Results.Ok(response.Budget));
             })
         .WithName("CreateEconomyBudget")
-        .WithSummary("Create a budget for the cycle containing the anchor date.")
+        .WithSummary("Create or return the budget for the cycle containing the anchor date.")
         .Produces<BudgetResponse>(StatusCodes.Status201Created)
+        .Produces<BudgetResponse>(StatusCodes.Status200OK)
         .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
         .RequireAuthorization();
 }

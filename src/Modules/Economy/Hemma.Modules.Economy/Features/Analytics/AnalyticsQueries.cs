@@ -10,6 +10,6 @@ public sealed record GetPeriodComparisonQuery(Guid HouseholdId, DateOnly AnchorD
 
 public sealed record GetIncomeVsExpenseQuery(Guid HouseholdId, DateOnly From, DateOnly To);
 
-public sealed record GetVarianceHistoryQuery(Guid HouseholdId, DateOnly From, DateOnly To);
+public sealed record GetVarianceHistoryQuery(Guid HouseholdId, DateOnly From, DateOnly To, CategoryId? CategoryId);
 
 public sealed record GetTopTransactionsQuery(Guid HouseholdId, DateOnly From, DateOnly To, CategoryId? CategoryId, int Limit);

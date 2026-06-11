@@ -72,8 +72,6 @@ public sealed class CreateTransferHandler(EconomyDbContext db, EconomyAuditPubli
         }
 
         db.Transactions.AddRange(outflow.Value, inflow.Value);
-        await db.SaveChangesAsync(ct);
-
         db.Transfers.Add(transfer.Value);
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(transfer.Value.HouseholdId, "economy.transfer.created", "Transfer", transfer.Value.Id.Value, null, ct);

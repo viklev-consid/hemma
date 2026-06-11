@@ -180,7 +180,15 @@ public sealed class AnalyticsHandler(EconomyDbContext db)
         var series = new List<VarianceHistoryPointResponse>();
         foreach (var budget in budgets)
         {
-            var categoryIds = budget.Lines.Select(line => line.CategoryId).ToHashSet();
+            var lines = query.CategoryId is null
+                ? budget.Lines.ToArray()
+                : budget.Lines.Where(line => line.CategoryId == query.CategoryId).ToArray();
+            if (lines.Length == 0)
+            {
+                continue;
+            }
+
+            var categoryIds = lines.Select(line => line.CategoryId).ToHashSet();
             var transactions = await PostedTransactions(query.HouseholdId, budget.PeriodStartsOn, budget.PeriodEndsOn)
                 .Where(transaction => transaction.CategoryId != null)
                 .ToListAsync(ct);
@@ -194,7 +202,7 @@ public sealed class AnalyticsHandler(EconomyDbContext db)
                                        transferModes.TryGetValue(transaction.TransferId, out var mode) &&
                                        mode == TransferMode.Savings))
                 .Sum(transaction => transaction.Amount.Amount);
-            var planned = budget.Lines.Sum(line => line.Amount.Amount);
+            var planned = lines.Sum(line => line.Amount.Amount);
 
             series.Add(new VarianceHistoryPointResponse(
                 PeriodLabel(budget.PeriodStartsOn),

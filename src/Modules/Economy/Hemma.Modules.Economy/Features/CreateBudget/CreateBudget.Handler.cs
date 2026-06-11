@@ -10,7 +10,7 @@ namespace Hemma.Modules.Economy.Features.CreateBudget;
 
 public sealed class CreateBudgetHandler(EconomyDbContext db, EconomyAuditPublisher audit)
 {
-    public async Task<ErrorOr<BudgetResponse>> Handle(CreateBudgetCommand cmd, CancellationToken ct)
+    public async Task<ErrorOr<CreateBudgetResult>> Handle(CreateBudgetCommand cmd, CancellationToken ct)
     {
         var settings = await db.EconomySettings
             .SingleOrDefaultAsync(value => value.HouseholdId == cmd.HouseholdId, ct);
@@ -20,9 +20,15 @@ public sealed class CreateBudgetHandler(EconomyDbContext db, EconomyAuditPublish
         }
 
         var period = settings.GetPeriodContaining(cmd.AnchorDate);
-        if (await db.Budgets.AnyAsync(budget => budget.HouseholdId == cmd.HouseholdId && budget.PeriodStartsOn == period.StartsOn, ct))
+        var existingBudget = await db.Budgets
+            .AsNoTracking()
+            .Include(budget => budget.Lines)
+            .SingleOrDefaultAsync(budget => budget.HouseholdId == cmd.HouseholdId && budget.PeriodStartsOn == period.StartsOn, ct);
+        if (existingBudget is not null)
         {
-            return EconomyErrors.BudgetAlreadyExists;
+            return new CreateBudgetResult(
+                BudgetResponse.From(existingBudget, GetPaceStartsOn(settings.CreatedOn, period)),
+                Created: false);
         }
 
         var budget = Budget.Create(cmd.HouseholdId, period);
@@ -30,7 +36,9 @@ public sealed class CreateBudgetHandler(EconomyDbContext db, EconomyAuditPublish
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(budget.HouseholdId, "economy.budget.created", "Budget", budget.Id.Value, null, ct);
 
-        return BudgetResponse.From(budget, GetPaceStartsOn(settings.CreatedOn, period));
+        return new CreateBudgetResult(
+            BudgetResponse.From(budget, GetPaceStartsOn(settings.CreatedOn, period)),
+            Created: true);
     }
 
     private static DateOnly GetPaceStartsOn(DateOnly settingsCreatedOn, BudgetPeriod period) =>
