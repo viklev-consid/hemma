@@ -37,6 +37,10 @@ These touch shared/Economy code outside the Property module, so they precede the
 
 ## Phase 1 — Project core
 
+**Status:** Completed in `47bcd55` (`feat: add property project domain`), `78a6891`
+(`feat: persist property projects`), `6b0f151` (`feat: expose property project operations`),
+and `c9f06e8` (`test: cover property project api`).
+
 > **Task breakdown:** `docs/property-phase-1-tasks.md` sequences this phase into ordered work items, locks the implicit micro-decisions (aggregate boundary, reorder semantics, attachment limits), and lists the tests. Generate the equivalent for later heavy phases at their kickoff.
 
 **Entities (`property` schema):**

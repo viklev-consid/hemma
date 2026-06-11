@@ -1,6 +1,6 @@
 using FluentValidation;
-using Hemma.Modules.Property.Features.Projects;
 using Hemma.Modules.Property.Contracts.Authorization;
+using Hemma.Modules.Property.Features.Projects;
 using Hemma.Modules.Property.Gdpr;
 using Hemma.Modules.Property.Integration;
 using Hemma.Modules.Property.Integration.Subscribers;
