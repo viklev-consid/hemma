@@ -1,5 +1,5 @@
 using ErrorOr;
-using Hemma.Modules.Organizations.Contracts.Commands;
+using Hemma.Modules.Households.Contracts.Commands;
 using Hemma.Modules.Users.Contracts.Events;
 using Hemma.Modules.Users.Errors;
 using Hemma.Modules.Users.Gdpr;
@@ -27,17 +27,17 @@ public sealed class DeleteAccountHandler(
 
         var userRef = new UserRef(user.Id.Value, user.DisplayName);
 
-        var organizationCheck = await bus.InvokeAsync<ErrorOr<EnsureUserCanBeErasedFromOrganizationsResponse>>(
-            new EnsureUserCanBeErasedFromOrganizationsCommand(user.Id.Value),
+        var householdCheck = await bus.InvokeAsync<ErrorOr<EnsureUserCanBeErasedFromHouseholdsResponse>>(
+            new EnsureUserCanBeErasedFromHouseholdsCommand(user.Id.Value),
             ct);
-        if (organizationCheck.IsError)
+        if (householdCheck.IsError)
         {
-            return organizationCheck.Errors;
+            return householdCheck.Errors;
         }
 
-        if (!organizationCheck.Value.CanBeErased)
+        if (!householdCheck.Value.CanBeErased)
         {
-            return new DeleteAccountResponse(organizationCheck.Value.BlockingOrganizations);
+            return new DeleteAccountResponse(householdCheck.Value.BlockingHouseholds);
         }
 
         await eraser.EraseAsync(userRef, ErasureStrategy.HardDelete, ct);

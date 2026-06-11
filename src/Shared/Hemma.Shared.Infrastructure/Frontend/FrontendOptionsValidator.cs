@@ -22,7 +22,7 @@ public sealed class FrontendOptionsValidator : IValidateOptions<FrontendOptions>
         ValidatePath(options.Paths.ConfirmEmailChange, "Frontend:Paths:ConfirmEmailChange", failures);
         ValidatePath(options.Paths.ResetPassword, "Frontend:Paths:ResetPassword", failures);
         ValidatePath(options.Paths.UserInvitation, "Frontend:Paths:UserInvitation", failures);
-        ValidatePath(options.Paths.OrganizationInvitation, "Frontend:Paths:OrganizationInvitation", failures);
+        ValidatePath(options.Paths.HouseholdInvitation, "Frontend:Paths:HouseholdInvitation", failures);
 
         return failures.Count == 0
             ? ValidateOptionsResult.Success

@@ -32,7 +32,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 
 ### Naming
 - Root namespace: `Hemma.Modules.Economy`.
-- **Money is always the `Money` value object** (amount + currency). Never raw `decimal` for money in domain or cross-module contracts. v1 currency = SEK, but model it.
+- **Money is always the `Money` value object** (amount + currency). Never raw `decimal` for money in domain or cross-module contracts. v1 is SEK-only; DTOs keep currency explicit for contract stability, and non-SEK write paths must be rejected.
 - HTTP DTOs represent money with the stable JSON shape `{ "amount": 119.00, "currency": "SEK" }`.
 - Code identifiers are English; Swedish domain terms (Mat, Boende, Sparande) live only in seed data / user-facing strings.
 
@@ -41,7 +41,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 2. **Transfers:** *Neutral* → nets to zero everywhere. *Savings-tagged* → excluded from net worth & income-vs-expense (not consumption) but **counted as allocation** in budget-vs-actual & breakdown. A transfer is always two reconciling legs; never double-counted as both expense and income.
 3. **Subscription ↔ transaction link is one-directional evidence:** `Transaction.SubscriptionId?` (nullable FK inside `economy`). Importer auto-matches; user links/unlinks manually. Price history is derived *from* linked transactions.
 4. **Analytics adds no aggregates.** Read-only query slices over existing tables; exclude `Kind = Transfer` except savings-allocation views.
-5. **Receipts** use the existing `IBlobStore` (two-step: reserve → attach). Never store blobs in Postgres.
+5. **Receipts** use the existing `IBlobStore` through a backend-mediated multipart upload endpoint. Never store blobs in Postgres. Direct-to-blob upload reservation is deferred until the blob abstraction supports upload targets.
 
 ### Definition of Done (every task)
 - Slice compiles; domain/value objects have focused unit tests; every slice has ≥1 integration test through the HTTP/API or Wolverine path using real Postgres via the existing harness / Testcontainers.
@@ -145,8 +145,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 | Slice | Type | Notes |
 |---|---|---|
 | `RecordTransaction` | Command | Expense/Income; validates account + optional category |
-| `ReserveReceiptUpload` | Command | step 1: returns blob upload target via `IBlobStore` |
-| `AttachReceipt` | Command | step 2: links `ReceiptBlobId` |
+| `AttachReceipt` | Command | accepts `multipart/form-data`, stores the uploaded file via `IBlobStore`, links `ReceiptBlobId`; delete the blob if DB save fails |
 | `ListTransactions` | Query | filters: category, date range, payer, has-receipt, amount range; paged |
 | `SearchTransactionNote` | Query | free-text (`ILIKE`/trigram) |
 | `CreateTransfer` | Command | `Mode`; both legs atomic |
@@ -168,7 +167,9 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 
 **Decision:** savings transfer defaults come from both account `Type` and transfer tag. Account type pre-selects the likely behavior, and the transfer carries the final category; backend must accept an explicit category on the transfer to allow override.
 
-**API surface published this phase:** `/v1/economy/transactions` (record/list/search), `/v1/economy/transactions/{id}/receipt` (reserve/attach), `/v1/economy/transfers` (create), `/v1/economy/accounts/balances`, `/v1/economy/budget-summary`. Update OpenAPI. **Flag to frontend agent:** transfer create accepts `mode` + optional `categoryId`.
+**Decision:** receipt uploads are backend-mediated for now. The frontend sends the file to `AttachReceipt` as `multipart/form-data`; the backend validates metadata/size, stores the stream with `IBlobStore`, and persists the blob reference on the transaction. A future direct-upload flow can add a reservation endpoint when `IBlobStore` supports upload targets.
+
+**API surface published this phase:** `/v1/economy/transactions` (record/list/search), `/v1/economy/transactions/{id}/receipt` (multipart upload attach), `/v1/economy/transfers` (create), `/v1/economy/accounts/balances`, `/v1/economy/budget-summary`. Update OpenAPI. **Flag to frontend agent:** transfer create accepts `mode` + optional `categoryId`; receipt attach is multipart file upload, not direct-to-blob reservation.
 
 ---
 
@@ -188,7 +189,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 | `ConfirmEstimatedBill` | Command | real amount → posts actual transaction; clears pending |
 | `SkipOccurrence` | Command | single instance |
 | `PauseOccurrence` / `Resume` | Command | single instance |
-| `ListRecurringBills` | Query | next due + pending-confirm inbox |
+| `ListRecurringBills` | Query | next due + pending-confirm inbox; must not eager-load historical occurrences |
 | `RunDueBills` | Scheduled (TickerQ) | Fixed → auto-post; Estimated → pending + notify |
 
 ### Invariant enforcement
@@ -202,6 +203,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 - Fixed monthly 119 → exactly one transaction per cycle on the configured day.
 - Estimated shows pending, doesn't affect actuals until confirmed.
 - Skipping one occurrence doesn't affect later ones.
+- Due-bill processing is per bill and idempotent on `(RecurringBillId, DueOn)` overlap; a bad bill does not abort the batch.
 
 **API surface published this phase:** `/v1/economy/recurring-bills` (create/list/confirm/skip/pause/resume). Update OpenAPI.
 
@@ -216,6 +218,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 ### Domain
 - `CategorizationRule`: `Match ∈ {Contains, Regex}`, `Pattern`, `TargetCategoryId`, `Enabled`, household-wide scope.
 - Import working state is transient until commit; committed rows become `Transaction`s.
+- Enabled categorization rules are capped at 100 per household. Regex matching uses a timeout and timeout failures must not abort an import.
 
 ### Contract
 - Backend accepts normalized import rows, not bank-specific CSV files.
@@ -243,6 +246,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 - Re-importing the same file flags every row as duplicate; none double-committed.
 - `Contains "ICA"` rule auto-assigns Mat on import.
 - Hand-categorizing during preview offers a persistable rule on commit.
+- Rule count and normalized row field lengths are bounded so a 1000-row import cannot trigger unbounded CPU or memory work.
 - Import scoped to exactly one account.
 
 **Decisions:** CSV parsing and field mapping are frontend responsibilities; categorization rules are household-wide; each import is scoped to exactly one account.
@@ -282,6 +286,8 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 - Month calendar marks a day *actual* when a matched transaction exists, else *predicted*.
 
 **Events published:** `TrialRenewalDueV1` (→ Notifications).
+
+**Idempotency:** `TrialRenewalReminder` records the trial end date it has reminded for and publishes at most once per subscription trial end window.
 
 **Acceptance:**
 - Creating/charging a subscription posts **zero** transactions on its own.
@@ -324,20 +330,19 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 
 ## Phase 7 — Cross-cutting & privacy (backend portion)
 
-**Goal:** Audit, GDPR, Notifications prefs, Tier-2 field encryption. Nothing ships to production until all phases are complete; implement encryption when it is simplest for the codebase, but before any real production Economy data exists.
+**Goal:** Audit, GDPR, Notifications prefs. Application-level field encryption for sensitive Economy free-text/name fields is a pre-production requirement; per-household key wrap is deferred until crypto-erasure is explicitly required.
 
 ### Tasks
 1. **GDPR:** export + erase for Economy data; subscribe to `GdprErasureRequestedV1`, `HouseholdMemberRemovedV1`. Erasure cascades to receipt blobs.
 2. **Audit:** subscribe write slices to the Audit module.
 3. **Notifications:** per-household preferences for budget/bill/trial alerts.
-4. **Encryption (Tier 2):** app-level field protection on sensitive columns + receipt blob metadata via ASP.NET DataProtection protectors; key ring stored on the filesystem outside Postgres; per-household key wrap.
+4. **Encryption (Tier 2):** protect sensitive Economy free-text/name fields from raw database disclosure before production. Per-household key wrap is deferred; use application-level field encryption unless an ADR accepts plaintext with compensating controls.
 
-**DataProtection note:** ADR-0021 warns not to use DataProtection for arbitrary configuration secrets. Economy encryption is a deliberate field-protection use, consistent with the existing Users module's TOTP-secret protection pattern, not config secret storage. Keep protector purposes stable and versioned so protected values remain decryptable across deployments.
+**DataProtection note:** ADR-0021 warns not to use DataProtection for arbitrary configuration secrets. Economy field encryption may use DataProtection for deliberate field protection, consistent with the existing Users module's TOTP-secret protection pattern. Do not include `HouseholdId` in the DataProtection purpose string unless a per-household key-wrap/envelope design is documented.
 
 **Acceptance:**
-- GDPR export returns all of a member's Economy data; erase cascades to receipt blobs per agreed rule.
-- Sensitive fields unreadable in a raw DB dump.
-- DataProtection keys are persisted outside Postgres on the filesystem and are covered by deployment backup/restore procedures.
+- GDPR HTTP export is self-scoped to the authenticated data subject. Erasure clears only records attributable to that user; household-member removal must not clear other members' notes, import fingerprints, or receipt blobs.
+- Sensitive Economy free-text/name fields are unreadable in a raw database dump before production, or an explicit ADR records why plaintext is accepted.
 - Audit entries for every mutating Economy slice.
 
 **API surface published this phase:** `/v1/economy/gdpr/export`, notification-preference endpoints (verify if owned here or by Notifications module). Update OpenAPI.
@@ -362,7 +367,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 - API base paths `/v1/economy/...` and `/v1/households/...`.
 - Existing Postgres integration-test harness — reuse it.
 - `IBlobStore`, TickerQ, HybridCache, Notifications/Audit/GDPR modules available and unchanged.
-- SEK-only v1, but `Money` carries currency.
+- SEK-only v1. `Money` carries currency for API stability, but non-SEK writes are rejected until analytics and account/transaction invariants are redesigned for multi-currency.
 
 ## Hand-off to the frontend agent
 After each phase, the **"API surface published this phase"** list + the regenerated OpenAPI document is the contract. The frontend agent never reads this repo's code — only the OpenAPI spec and the behavioral flags noted (transfer `mode`+`categoryId`, import multi-step `isDuplicate`/`suggestedCategoryId`, subscription `matchState`, analytics series shapes).

@@ -733,8 +733,9 @@
           "Asp.Versioning.Http": "[10.0.0, )",
           "Aspire.StackExchange.Redis.DistributedCaching": "[13.3.0, )",
           "Hemma.Modules.Audit": "[1.0.0, )",
+          "Hemma.Modules.Economy": "[1.0.0, )",
+          "Hemma.Modules.Households": "[1.0.0, )",
           "Hemma.Modules.Notifications": "[1.0.0, )",
-          "Hemma.Modules.Organizations": "[1.0.0, )",
           "Hemma.Modules.Users": "[1.0.0, )",
           "Hemma.ServiceDefaults": "[1.0.0, )",
           "Hemma.Shared.Infrastructure": "[1.0.0, )",
@@ -757,7 +758,8 @@
           "EFCore.NamingConventions": "[10.0.1, )",
           "ErrorOr": "[2.1.0, )",
           "Hemma.Modules.Audit.Contracts": "[1.0.0, )",
-          "Hemma.Modules.Organizations.Contracts": "[1.0.0, )",
+          "Hemma.Modules.Economy.Contracts": "[1.0.0, )",
+          "Hemma.Modules.Households.Contracts": "[1.0.0, )",
           "Hemma.Modules.Users.Contracts": "[1.0.0, )",
           "Hemma.Shared.Infrastructure": "[1.0.0, )",
           "Hemma.Shared.Kernel": "[1.0.0, )",
@@ -776,13 +778,67 @@
           "Hemma.Shared.Kernel": "[1.0.0, )"
         }
       },
+      "hemma.modules.economy": {
+        "type": "Project",
+        "dependencies": {
+          "EFCore.NamingConventions": "[10.0.1, )",
+          "ErrorOr": "[2.1.0, )",
+          "FluentValidation": "[12.1.1, )",
+          "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
+          "Hemma.Modules.Economy.Contracts": "[1.0.0, )",
+          "Hemma.Modules.Households.Contracts": "[1.0.0, )",
+          "Hemma.Modules.Users.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Infrastructure": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )",
+          "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "[10.0.8, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.1, )",
+          "OpenTelemetry.Extensions.Hosting": "[1.15.3, )",
+          "WolverineFx": "[5.32.1, )",
+          "WolverineFx.EntityFrameworkCore": "[5.32.1, )"
+        }
+      },
+      "hemma.modules.economy.contracts": {
+        "type": "Project",
+        "dependencies": {
+          "ErrorOr": "[2.1.0, )",
+          "Hemma.Shared.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )"
+        }
+      },
+      "hemma.modules.households": {
+        "type": "Project",
+        "dependencies": {
+          "EFCore.NamingConventions": "[10.0.1, )",
+          "ErrorOr": "[2.1.0, )",
+          "FluentValidation": "[12.1.1, )",
+          "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
+          "Hemma.Modules.Audit.Contracts": "[1.0.0, )",
+          "Hemma.Modules.Households.Contracts": "[1.0.0, )",
+          "Hemma.Modules.Users.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Infrastructure": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )",
+          "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "[10.0.8, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.1, )",
+          "OpenTelemetry.Extensions.Hosting": "[1.15.3, )",
+          "WolverineFx": "[5.32.1, )",
+          "WolverineFx.EntityFrameworkCore": "[5.32.1, )"
+        }
+      },
+      "hemma.modules.households.contracts": {
+        "type": "Project",
+        "dependencies": {
+          "ErrorOr": "[2.1.0, )",
+          "Hemma.Shared.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )"
+        }
+      },
       "hemma.modules.notifications": {
         "type": "Project",
         "dependencies": {
           "EFCore.NamingConventions": "[10.0.1, )",
           "ErrorOr": "[2.1.0, )",
+          "Hemma.Modules.Households.Contracts": "[1.0.0, )",
           "Hemma.Modules.Notifications.Contracts": "[1.0.0, )",
-          "Hemma.Modules.Organizations.Contracts": "[1.0.0, )",
           "Hemma.Modules.Users.Contracts": "[1.0.0, )",
           "Hemma.Shared.Infrastructure": "[1.0.0, )",
           "Hemma.Shared.Kernel": "[1.0.0, )",
@@ -802,33 +858,6 @@
           "Hemma.Shared.Kernel": "[1.0.0, )"
         }
       },
-      "hemma.modules.organizations": {
-        "type": "Project",
-        "dependencies": {
-          "EFCore.NamingConventions": "[10.0.1, )",
-          "ErrorOr": "[2.1.0, )",
-          "FluentValidation": "[12.1.1, )",
-          "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
-          "Hemma.Modules.Audit.Contracts": "[1.0.0, )",
-          "Hemma.Modules.Organizations.Contracts": "[1.0.0, )",
-          "Hemma.Modules.Users.Contracts": "[1.0.0, )",
-          "Hemma.Shared.Infrastructure": "[1.0.0, )",
-          "Hemma.Shared.Kernel": "[1.0.0, )",
-          "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "[10.0.8, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.1, )",
-          "OpenTelemetry.Extensions.Hosting": "[1.15.3, )",
-          "WolverineFx": "[5.32.1, )",
-          "WolverineFx.EntityFrameworkCore": "[5.32.1, )"
-        }
-      },
-      "hemma.modules.organizations.contracts": {
-        "type": "Project",
-        "dependencies": {
-          "ErrorOr": "[2.1.0, )",
-          "Hemma.Shared.Contracts": "[1.0.0, )",
-          "Hemma.Shared.Kernel": "[1.0.0, )"
-        }
-      },
       "hemma.modules.users": {
         "type": "Project",
         "dependencies": {
@@ -837,7 +866,7 @@
           "ErrorOr": "[2.1.0, )",
           "FluentValidation": "[12.1.1, )",
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
-          "Hemma.Modules.Organizations.Contracts": "[1.0.0, )",
+          "Hemma.Modules.Households.Contracts": "[1.0.0, )",
           "Hemma.Modules.Users.Contracts": "[1.0.0, )",
           "Hemma.Shared.Infrastructure": "[1.0.0, )",
           "Hemma.Shared.Kernel": "[1.0.0, )",

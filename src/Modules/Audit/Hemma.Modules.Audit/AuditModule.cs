@@ -1,17 +1,17 @@
-using Microsoft.AspNetCore.Routing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Hemma.Modules.Audit.Authorization;
 using Hemma.Modules.Audit.Contracts.Authorization;
 using Hemma.Modules.Audit.Features.GetAuditTrail;
-using Hemma.Modules.Audit.Features.ListOrganizationAuditEntries;
+using Hemma.Modules.Audit.Features.ListHouseholdAuditEntries;
 using Hemma.Modules.Audit.Gdpr;
 using Hemma.Modules.Audit.Integration.Subscribers;
 using Hemma.Modules.Audit.Persistence;
 using Hemma.Shared.Infrastructure.Authorization;
 using Hemma.Shared.Infrastructure.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry;
 using Wolverine;
 
@@ -37,7 +37,7 @@ public static class AuditModule
         services.AddScoped<IPersonalDataExporter, AuditPersonalDataExporter>();
         services.AddScoped<AuditPersonalDataEraser>();
         services.AddScoped<IPersonalDataEraser>(sp => sp.GetRequiredService<AuditPersonalDataEraser>());
-        services.AddScoped<OrganizationAuditWriter>();
+        services.AddScoped<HouseholdAuditWriter>();
 
         services.AddSingleton<IResourcePolicy<AuditTrailResource>, AuditTrailPolicy>();
 
@@ -54,7 +54,7 @@ public static class AuditModule
     public static WolverineOptions AddAuditHandlers(this WolverineOptions opts)
     {
         opts.Discovery.IncludeType<GetAuditTrailHandler>();
-        opts.Discovery.IncludeType<ListOrganizationAuditEntriesHandler>();
+        opts.Discovery.IncludeType<ListHouseholdAuditEntriesHandler>();
         opts.Discovery.IncludeType<OnUserRegisteredHandler>();
         opts.Discovery.IncludeType<OnUserEmailChangedHandler>();
         opts.Discovery.IncludeType<OnUserLoggedInHandler>();
@@ -74,12 +74,13 @@ public static class AuditModule
         opts.Discovery.IncludeType<OnTwoFactorEnabledHandler>();
         opts.Discovery.IncludeType<OnTwoFactorDisabledHandler>();
         opts.Discovery.IncludeType<OnRecoveryCodesRegeneratedHandler>();
-        opts.Discovery.IncludeType<OnOrganizationCreatedHandler>();
-        opts.Discovery.IncludeType<OnOrganizationDeletedHandler>();
-        opts.Discovery.IncludeType<OnOrganizationInvitationCreatedHandler>();
-        opts.Discovery.IncludeType<OnOrganizationMemberAddedHandler>();
-        opts.Discovery.IncludeType<OnOrganizationMemberRemovedHandler>();
-        opts.Discovery.IncludeType<OnOrganizationMemberRoleChangedHandler>();
+        opts.Discovery.IncludeType<OnHouseholdCreatedHandler>();
+        opts.Discovery.IncludeType<OnHouseholdDeletedHandler>();
+        opts.Discovery.IncludeType<OnHouseholdInvitationCreatedHandler>();
+        opts.Discovery.IncludeType<OnHouseholdMemberAddedHandler>();
+        opts.Discovery.IncludeType<OnHouseholdMemberRemovedHandler>();
+        opts.Discovery.IncludeType<OnHouseholdMemberRoleChangedHandler>();
+        opts.Discovery.IncludeType<OnEconomyMutationRecordedHandler>();
         return opts;
     }
 

@@ -5,4 +5,4 @@ public sealed record RegisterRequest(
     string Password,
     string DisplayName,
     string? InvitationToken = null,
-    string? OrganizationInvitationToken = null);
+    string? HouseholdInvitationToken = null);

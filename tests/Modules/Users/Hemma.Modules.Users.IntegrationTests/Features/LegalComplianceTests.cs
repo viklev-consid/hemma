@@ -198,13 +198,13 @@ public sealed class LegalComplianceTests(UsersApiFixture fixture) : IAsyncLifeti
     public async Task LegalComplianceMiddleware_WhenBlockingDocumentIsMissing_BlocksCrossModuleActions()
     {
         await SeedLegalDocumentAsync("1.1", isRequiredForContinuedUse: true);
-        var (userId, email, displayName) = await SeedUserAsync("legal-blocked-organization@example.com", "Legal Blocked Organization");
+        var (userId, email, displayName) = await SeedUserAsync("legal-blocked-household@example.com", "Legal Blocked Household");
         var auth = fixture.CreateAuthenticatedClientBuilder()
             .WithUser(userId, email, displayName)
             .Build();
 
-        var response = await auth.PostAsJsonAsync("/v1/organizations",
-            new { name = "Blocked Organization", slug = "blocked-organization" });
+        var response = await auth.PostAsJsonAsync("/v1/households",
+            new { name = "Blocked Household", slug = "blocked-household" });
 
         Assert.Equal((HttpStatusCode)428, response.StatusCode);
     }

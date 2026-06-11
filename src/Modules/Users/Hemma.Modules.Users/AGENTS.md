@@ -119,7 +119,7 @@ Do not implement these without an explicit request:
 - Account lockout after failed logins.
 - Breach password checks.
 - External identity providers.
-- Owning organization membership. Users may coordinate organization-invite registration only through Organizations.Contracts.
+- Owning household membership. Users may coordinate household-invite registration only through Households.Contracts.
 - Admin user impersonation.
 
 Authentication stays in Users. JWT validation is shared infrastructure, but issuance and refresh-token lifecycle stay here.

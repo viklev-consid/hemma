@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Hemma.Modules.Notifications.Domain;
 using Hemma.Modules.Notifications.Persistence;
-using Hemma.Modules.Organizations.Contracts.Events;
+using Hemma.Modules.Households.Contracts.Events;
 using Hemma.Modules.Users.Contracts.Events;
 using Wolverine.Tracking;
 
@@ -48,11 +48,11 @@ public sealed class InvitationEmailNotificationTests(NotificationsCrossModuleFix
     }
 
     [Fact]
-    public async Task OrganizationInvitationCreated_SendsInvitationEmail()
+    public async Task HouseholdInvitationCreated_SendsInvitationEmail()
     {
         var eventId = Guid.NewGuid();
         var invitedByUserId = Guid.NewGuid();
-        var invitation = new OrganizationInvitationCreatedV1(
+        var invitation = new HouseholdInvitationCreatedV1(
             Guid.NewGuid(),
             Guid.NewGuid(),
             "org-invitee@example.com",
@@ -76,14 +76,14 @@ public sealed class InvitationEmailNotificationTests(NotificationsCrossModuleFix
         var db = scope.ServiceProvider.GetRequiredService<NotificationsDbContext>();
         var log = await db.NotificationLogs.SingleAsync(l => l.IdempotencyKey == eventId);
         Assert.Equal(Guid.Empty, log.UserId);
-        Assert.Equal(NotificationType.OrganizationInvitation, log.NotificationType);
+        Assert.Equal(NotificationType.HouseholdInvitation, log.NotificationType);
         Assert.Equal(NotificationDeliveryStatus.Sent, log.DeliveryStatus);
     }
 
     [Fact]
-    public async Task OrganizationInvitationCreated_HtmlEncodesUntrustedTemplateValues()
+    public async Task HouseholdInvitationCreated_HtmlEncodesUntrustedTemplateValues()
     {
-        var invitation = new OrganizationInvitationCreatedV1(
+        var invitation = new HouseholdInvitationCreatedV1(
             Guid.NewGuid(),
             Guid.NewGuid(),
             "xss-org-invitee@example.com",

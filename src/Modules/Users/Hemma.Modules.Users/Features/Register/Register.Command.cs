@@ -5,4 +5,4 @@ public sealed record RegisterCommand(
     string Password,
     string DisplayName,
     string? InvitationToken,
-    string? OrganizationInvitationToken);
+    string? HouseholdInvitationToken);

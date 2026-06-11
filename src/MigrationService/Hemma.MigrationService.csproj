@@ -12,7 +12,7 @@
     <ProjectReference Include="..\Api\Hemma.Api.csproj" />
     <ProjectReference Include="..\Modules\Audit\Hemma.Modules.Audit\Hemma.Modules.Audit.csproj" />
     <ProjectReference Include="..\Modules\Notifications\Hemma.Modules.Notifications\Hemma.Modules.Notifications.csproj" />
-    <ProjectReference Include="..\Modules\Organizations\Hemma.Modules.Organizations\Hemma.Modules.Organizations.csproj" />
+    <ProjectReference Include="..\Modules\Households\Hemma.Modules.Households\Hemma.Modules.Households.csproj" />
     <ProjectReference Include="..\Modules\Users\Hemma.Modules.Users\Hemma.Modules.Users.csproj" />
     <ProjectReference Include="..\ServiceDefaults\Hemma.ServiceDefaults.csproj" />
   </ItemGroup>

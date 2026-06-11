@@ -1,10 +1,10 @@
 {
   "templates": [
     {
-      "id": "organizations.invitation",
-      "subject": "You're invited to an organization",
-      "html": "organizations-invitation.html",
-      "schema": "organizations-invitation.schema.json"
+      "id": "households.invitation",
+      "subject": "You're invited to an household",
+      "html": "households-invitation.html",
+      "schema": "households-invitation.schema.json"
     },
     {
       "id": "users.email-change-request",

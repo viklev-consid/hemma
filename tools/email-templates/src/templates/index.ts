@@ -2,7 +2,7 @@ import type { EmailTemplateDefinition } from "../template-contract";
 import { emailChangedTemplate } from "./email-changed";
 import { emailChangeRequestTemplate } from "./email-change-request";
 import { emailConfirmationRequestTemplate } from "./email-confirmation-request";
-import { organizationInvitationTemplate } from "./organization-invitation";
+import { householdInvitationTemplate } from "./household-invitation";
 import { passwordChangedTemplate } from "./password-changed";
 import { passwordResetConfirmationTemplate } from "./password-reset-confirmation";
 import { passwordResetRequestTemplate } from "./password-reset-request";
@@ -16,7 +16,7 @@ export const emailTemplates: EmailTemplateDefinition[] = [
   emailChangeRequestTemplate,
   emailChangedTemplate,
   emailConfirmationRequestTemplate,
-  organizationInvitationTemplate,
+  householdInvitationTemplate,
   passwordChangedTemplate,
   passwordResetConfirmationTemplate,
   passwordResetRequestTemplate,

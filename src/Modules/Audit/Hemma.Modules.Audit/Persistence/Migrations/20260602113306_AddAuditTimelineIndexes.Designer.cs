@@ -55,9 +55,9 @@ namespace Hemma.Modules.Audit.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("occurred_at");
 
-                    b.Property<Guid?>("OrganizationId")
+                    b.Property<Guid?>("HouseholdId")
                         .HasColumnType("uuid")
-                        .HasColumnName("organization_id");
+                        .HasColumnName("household_id");
 
                     b.Property<string>("Payload")
                         .IsRequired()
@@ -87,14 +87,14 @@ namespace Hemma.Modules.Audit.Persistence.Migrations
                     b.HasIndex("OccurredAt")
                         .HasDatabaseName("ix_audit_entries_occurred_at");
 
-                    b.HasIndex("OrganizationId")
-                        .HasDatabaseName("ix_audit_entries_organization_id");
+                    b.HasIndex("HouseholdId")
+                        .HasDatabaseName("ix_audit_entries_household_id");
 
                     b.HasIndex("ActorId", "OccurredAt")
                         .HasDatabaseName("ix_audit_entries_actor_id_occurred_at");
 
-                    b.HasIndex("OrganizationId", "OccurredAt")
-                        .HasDatabaseName("ix_audit_entries_organization_id_occurred_at");
+                    b.HasIndex("HouseholdId", "OccurredAt")
+                        .HasDatabaseName("ix_audit_entries_household_id_occurred_at");
 
                     b.HasIndex("ResourceId", "OccurredAt")
                         .HasDatabaseName("ix_audit_entries_resource_id_occurred_at");

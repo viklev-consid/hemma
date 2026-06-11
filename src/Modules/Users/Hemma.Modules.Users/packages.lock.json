@@ -621,7 +621,7 @@
           "WolverineFx": "5.32.1"
         }
       },
-      "hemma.modules.organizations.contracts": {
+      "hemma.modules.households.contracts": {
         "type": "Project",
         "dependencies": {
           "ErrorOr": "[2.1.0, )",

@@ -94,7 +94,7 @@ public static class NotificationsModule
         opts.Discovery.IncludeType<OnEmailChangeRequestedHandler>();
         opts.Discovery.IncludeType<OnEmailChangedHandler>();
         opts.Discovery.IncludeType<OnUserInvitationCreatedHandler>();
-        opts.Discovery.IncludeType<OnOrganizationInvitationCreatedHandler>();
+        opts.Discovery.IncludeType<OnHouseholdInvitationCreatedHandler>();
 
         opts.Discovery.IncludeType<OnTwoFactorEnabledHandler>();
         opts.Discovery.IncludeType<OnTwoFactorDisabledHandler>();

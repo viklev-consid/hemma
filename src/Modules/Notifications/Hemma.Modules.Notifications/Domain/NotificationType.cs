@@ -13,5 +13,5 @@ public enum NotificationType
     RecoveryCodesRegenerated = 13,
     EmailConfirmationRequest = 14,
     UserInvitation = 15,
-    OrganizationInvitation = 16,
+    HouseholdInvitation = 16,
 }

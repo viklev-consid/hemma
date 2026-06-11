@@ -14,21 +14,21 @@ Can this user use platform override?
 
 Global permissions come from the user's global role and are exposed through `/v1/users/me`.
 
-Use global permissions for platform administration and module capabilities that are not tied to an organization.
+Use global permissions for platform administration and module capabilities that are not tied to an household.
 
 ## Scoped authorization
 
 Scoped authorization answers questions about one resource scope:
 
 ```text
-Can this user manage members in this organization?
-Can this user create a project in this organization?
-Can this user read audit entries for this organization?
+Can this user manage members in this household?
+Can this user create a project in this household?
+Can this user read audit entries for this household?
 ```
 
 Scoped permissions are evaluated per request and are not stored in JWTs.
 
-Use scoped authorization when the answer can differ by organization.
+Use scoped authorization when the answer can differ by household.
 
 ## Platform override
 
@@ -39,6 +39,6 @@ Rules:
 - disabled by default
 - enabled per endpoint/policy call
 - audited as platform override
-- does not create implicit organization membership
+- does not create implicit household membership
 
 Prefer scoped membership access for normal product workflows.

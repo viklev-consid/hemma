@@ -17,5 +17,5 @@ public sealed class FrontendPathOptions
     public string UserInvitation { get; init; } = "/register";
 
     [Required]
-    public string OrganizationInvitation { get; init; } = "/invite";
+    public string HouseholdInvitation { get; init; } = "/invite";
 }

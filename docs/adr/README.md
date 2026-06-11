@@ -40,6 +40,8 @@ This directory contains ADRs documenting every significant design decision in He
 | [0032](0032-tickerq-for-recurring-scheduled-jobs.md) | TickerQ for Recurring Scheduled Jobs | Accepted |
 | [0033](0033-two-factor-authentication.md) | TOTP Two-Factor Authentication | Accepted |
 | [0034](0034-backend-owned-versioned-legal-documents.md) | Backend-Owned Versioned Legal Documents | Accepted |
+| [0035](0035-organizations-and-scoped-authorization.md) | Organizations and Scoped Authorization | Accepted |
+| [0036](0036-product-openapi-excludes-operator-apis.md) | Product OpenAPI Excludes Operator APIs | Accepted |
 
 ## Reading order
 
