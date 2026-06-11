@@ -4,11 +4,15 @@ using Hemma.Shared.Infrastructure.Blobs;
 using Hemma.Shared.Kernel.Gdpr;
 using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 
 namespace Hemma.Modules.Property.Gdpr;
 
-public sealed class PropertyPersonalDataEraser(PropertyDbContext db, IBlobStore blobStore) : IPersonalDataEraser
+public sealed partial class PropertyPersonalDataEraser(
+    PropertyDbContext db,
+    IBlobStore blobStore,
+    ILogger<PropertyPersonalDataEraser> logger) : IPersonalDataEraser
 {
     public async Task<ErasureResult> EraseAsync(UserRef user, ErasureStrategy strategy, CancellationToken ct)
     {
@@ -23,6 +27,7 @@ public sealed class PropertyPersonalDataEraser(PropertyDbContext db, IBlobStore 
         }
         catch (PostgresException ex) when (string.Equals(ex.SqlState, PostgresErrorCodes.UndefinedTable, StringComparison.Ordinal))
         {
+            LogErasureSkippedMissingTable(logger, user.UserId, ex);
             affected = 0;
         }
 
@@ -72,7 +77,20 @@ public sealed class PropertyPersonalDataEraser(PropertyDbContext db, IBlobStore 
         }
         catch (PostgresException ex) when (string.Equals(ex.SqlState, PostgresErrorCodes.UndefinedTable, StringComparison.Ordinal))
         {
+            LogHouseholdErasureSkippedMissingTable(logger, householdId, ex);
             return 0;
         }
     }
+
+    [LoggerMessage(
+        EventId = 1,
+        Level = LogLevel.Warning,
+        Message = "Property erasure for user {UserId} skipped: a Property table is missing. If Property migrations have run on this host, this indicates a real deployment error and personal data was NOT erased.")]
+    private static partial void LogErasureSkippedMissingTable(ILogger logger, Guid userId, Exception exception);
+
+    [LoggerMessage(
+        EventId = 2,
+        Level = LogLevel.Warning,
+        Message = "Property household erasure for household {HouseholdId} skipped: a Property table is missing. If Property migrations have run on this host, this indicates a real deployment error and personal data was NOT erased.")]
+    private static partial void LogHouseholdErasureSkippedMissingTable(ILogger logger, Guid householdId, Exception exception);
 }
