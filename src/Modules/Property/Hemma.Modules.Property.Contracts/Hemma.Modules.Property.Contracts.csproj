@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- CA1716: 'Property' is a VB keyword; suppressed because module namespaces are C#-only. -->
+    <NoWarn>$(NoWarn);CA1716</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Hemma.Shared.Contracts\Hemma.Shared.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Hemma.Shared.Kernel\Hemma.Shared.Kernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ErrorOr" />
+  </ItemGroup>
+
+</Project>

@@ -81,6 +81,7 @@ public static class AuditModule
         opts.Discovery.IncludeType<OnHouseholdMemberRemovedHandler>();
         opts.Discovery.IncludeType<OnHouseholdMemberRoleChangedHandler>();
         opts.Discovery.IncludeType<OnEconomyMutationRecordedHandler>();
+        opts.Discovery.IncludeType<OnPropertyMutationRecordedHandler>();
         return opts;
     }
 

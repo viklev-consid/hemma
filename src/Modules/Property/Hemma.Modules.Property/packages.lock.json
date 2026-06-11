@@ -18,6 +18,21 @@
         "resolved": "2.1.0",
         "contentHash": "lA3hsherg67AQhMmldZveDmqCSRrVsWzhVTQhBUilOpFV/DTBdoaEhxe0DSz+CA25nXA02x+ZO9bWM3vDlYRbw=="
       },
+      "FluentValidation": {
+        "type": "Direct",
+        "requested": "[12.1.1, )",
+        "resolved": "12.1.1",
+        "contentHash": "EPpkIe1yh1a0OXyC100oOA8WMbZvqUu5plwhvYcb7oSELfyUZzfxV48BLhvs3kKo4NwG7MGLNgy1RJiYtT8Dpw=="
+      },
+      "FluentValidation.DependencyInjectionExtensions": {
+        "type": "Direct",
+        "requested": "[12.1.1, )",
+        "resolved": "12.1.1",
+        "contentHash": "D0VXh4dtjjX2aQizuaa0g6R8X3U1JaVqJPfGCvLwZX9t/O2h7tkpbitbadQMfwcgSPdDbI2vDxuwRMv/Uf9dHA==",
+        "dependencies": {
+          "FluentValidation": "12.1.1"
+        }
+      },
       "Meziantou.Analyzer": {
         "type": "Direct",
         "requested": "[3.0.54, )",
@@ -538,22 +553,6 @@
           "WolverineFx": "5.32.1"
         }
       },
-      "hemma.modules.audit.contracts": {
-        "type": "Project",
-        "dependencies": {
-          "ErrorOr": "[2.1.0, )",
-          "Hemma.Shared.Contracts": "[1.0.0, )",
-          "Hemma.Shared.Kernel": "[1.0.0, )"
-        }
-      },
-      "hemma.modules.economy.contracts": {
-        "type": "Project",
-        "dependencies": {
-          "ErrorOr": "[2.1.0, )",
-          "Hemma.Shared.Contracts": "[1.0.0, )",
-          "Hemma.Shared.Kernel": "[1.0.0, )"
-        }
-      },
       "hemma.modules.households.contracts": {
         "type": "Project",
         "dependencies": {
@@ -606,12 +605,6 @@
         "dependencies": {
           "ErrorOr": "[2.1.0, )"
         }
-      },
-      "FluentValidation": {
-        "type": "CentralTransitive",
-        "requested": "[12.1.1, )",
-        "resolved": "12.1.1",
-        "contentHash": "EPpkIe1yh1a0OXyC100oOA8WMbZvqUu5plwhvYcb7oSELfyUZzfxV48BLhvs3kKo4NwG7MGLNgy1RJiYtT8Dpw=="
       },
       "MailKit": {
         "type": "CentralTransitive",
