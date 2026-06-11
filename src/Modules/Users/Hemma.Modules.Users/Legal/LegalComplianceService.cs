@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Hybrid;
-using Microsoft.Extensions.Logging;
 using Hemma.Modules.Users.Domain;
 using Hemma.Modules.Users.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.Logging;
 
 namespace Hemma.Modules.Users.Legal;
 

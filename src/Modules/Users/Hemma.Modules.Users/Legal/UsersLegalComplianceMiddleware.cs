@@ -1,9 +1,9 @@
 using System.Diagnostics;
+using Hemma.Modules.Users.Domain;
+using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Hemma.Modules.Users.Domain;
-using Hemma.Shared.Kernel.Interfaces;
 
 namespace Hemma.Modules.Users.Legal;
 

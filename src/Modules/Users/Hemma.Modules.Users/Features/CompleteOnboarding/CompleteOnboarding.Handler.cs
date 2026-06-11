@@ -1,6 +1,4 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Hemma.Modules.Users.Contracts;
 using Hemma.Modules.Users.Contracts.Events;
 using Hemma.Modules.Users.Domain;
@@ -8,6 +6,8 @@ using Hemma.Modules.Users.Errors;
 using Hemma.Modules.Users.Legal;
 using Hemma.Modules.Users.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Wolverine;
 
 namespace Hemma.Modules.Users.Features.CompleteOnboarding;

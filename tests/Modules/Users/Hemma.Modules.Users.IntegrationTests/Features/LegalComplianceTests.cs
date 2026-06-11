@@ -3,12 +3,12 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Hemma.Modules.Users.Domain;
 using Hemma.Modules.Users.Features.GetLegalCompliance;
 using Hemma.Modules.Users.Persistence;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Hemma.Modules.Users.IntegrationTests.Features;
 

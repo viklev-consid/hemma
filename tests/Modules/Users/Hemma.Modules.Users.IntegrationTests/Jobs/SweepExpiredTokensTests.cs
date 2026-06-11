@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Hemma.Modules.Users.Domain;
 using Hemma.Modules.Users.Jobs;
 using Hemma.Modules.Users.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Wolverine;
 
 namespace Hemma.Modules.Users.IntegrationTests.Jobs;

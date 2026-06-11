@@ -6,7 +6,7 @@ namespace Hemma.Modules.Property.UnitTests.Domain;
 [Trait("Category", "Unit")]
 public sealed class MaintenanceOccurrenceTests
 {
-    private static readonly DateTimeOffset Now = new(2026, 6, 11, 9, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset now = new(2026, 6, 11, 9, 0, 0, TimeSpan.Zero);
 
     [Fact]
     public void Schedule_CreatesUpcomingOccurrenceForPlanHousehold()
@@ -26,11 +26,11 @@ public sealed class MaintenanceOccurrenceTests
     {
         var occurrence = MaintenanceOccurrence.Schedule(CreatePlan(), new DateOnly(2026, 7, 1));
 
-        var result = occurrence.Complete("Replaced filter", new FixedClock(Now));
+        var result = occurrence.Complete("Replaced filter", new FixedClock(now));
 
         Assert.False(result.IsError);
         Assert.Equal(MaintenanceOccurrenceStatus.Done, occurrence.Status);
-        Assert.Equal(Now, occurrence.CompletedAt);
+        Assert.Equal(now, occurrence.CompletedAt);
         Assert.Equal("Replaced filter", occurrence.Notes);
     }
 
@@ -39,7 +39,7 @@ public sealed class MaintenanceOccurrenceTests
     {
         var occurrence = MaintenanceOccurrence.Schedule(CreatePlan(), new DateOnly(2026, 7, 1));
 
-        var result = occurrence.Skip(null, new FixedClock(Now));
+        var result = occurrence.Skip(null, new FixedClock(now));
 
         Assert.False(result.IsError);
         Assert.Equal(MaintenanceOccurrenceStatus.Skipped, occurrence.Status);
@@ -51,7 +51,7 @@ public sealed class MaintenanceOccurrenceTests
         var occurrence = MaintenanceOccurrence.Schedule(CreatePlan(), new DateOnly(2026, 7, 1));
         var projectId = Guid.NewGuid();
 
-        var result = occurrence.PromoteToProject(projectId, new FixedClock(Now));
+        var result = occurrence.PromoteToProject(projectId, new FixedClock(now));
 
         Assert.False(result.IsError);
         Assert.Equal(MaintenanceOccurrenceStatus.Done, occurrence.Status);
@@ -62,9 +62,9 @@ public sealed class MaintenanceOccurrenceTests
     public void Complete_WhenAlreadyDone_ReturnsValidationFailure()
     {
         var occurrence = MaintenanceOccurrence.Schedule(CreatePlan(), new DateOnly(2026, 7, 1));
-        occurrence.Complete(null, new FixedClock(Now));
+        occurrence.Complete(null, new FixedClock(now));
 
-        var result = occurrence.Complete(null, new FixedClock(Now));
+        var result = occurrence.Complete(null, new FixedClock(now));
 
         Assert.True(result.IsError);
     }

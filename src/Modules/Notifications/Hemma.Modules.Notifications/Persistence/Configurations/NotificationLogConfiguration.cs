@@ -1,6 +1,6 @@
+using Hemma.Modules.Notifications.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Hemma.Modules.Notifications.Domain;
 
 namespace Hemma.Modules.Notifications.Persistence.Configurations;
 

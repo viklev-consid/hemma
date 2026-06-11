@@ -1,12 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Hemma.Modules.Notifications.Domain;
 using Hemma.Modules.Notifications.Integration.Subscribers;
 using Hemma.Modules.Notifications.Persistence;
 using Hemma.Shared.Infrastructure.Notifications;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Wolverine;
 using Wolverine.Tracking;
 

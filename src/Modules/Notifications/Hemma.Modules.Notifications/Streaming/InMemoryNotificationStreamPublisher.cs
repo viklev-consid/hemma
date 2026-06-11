@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using ErrorOr;
-using Microsoft.Extensions.Options;
 using Hemma.Modules.Notifications.Errors;
+using Microsoft.Extensions.Options;
 
 namespace Hemma.Modules.Notifications.Streaming;
 

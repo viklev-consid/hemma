@@ -1,13 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Hemma.Modules.Audit.Persistence;
 using Hemma.Modules.Users.Contracts.Events;
 using Hemma.Modules.Users.Features.Login;
 using Hemma.Modules.Users.Features.Logout;
 using Hemma.Modules.Users.Features.Register;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Wolverine;
 using Wolverine.Tracking;
 

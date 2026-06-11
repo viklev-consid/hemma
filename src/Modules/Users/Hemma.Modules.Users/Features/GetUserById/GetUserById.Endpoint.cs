@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Hemma.Modules.Users.Contracts.Authorization;
 using Hemma.Modules.Users.Domain;
 using Hemma.Shared.Infrastructure.Http;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Wolverine;
 
 namespace Hemma.Modules.Users.Features.GetUserById;

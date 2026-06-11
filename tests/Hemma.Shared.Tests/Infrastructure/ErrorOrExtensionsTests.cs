@@ -1,8 +1,8 @@
 using System.Text.Json;
 using ErrorOr;
+using Hemma.Shared.Infrastructure.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Hemma.Shared.Infrastructure.Http;
 
 namespace Hemma.Shared.Tests.Infrastructure;
 

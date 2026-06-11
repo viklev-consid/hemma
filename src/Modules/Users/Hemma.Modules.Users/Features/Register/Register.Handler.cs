@@ -1,7 +1,4 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Hemma.Modules.Households.Contracts.Commands;
 using Hemma.Modules.Households.Contracts.Queries;
 using Hemma.Modules.Users.Contracts;
@@ -12,6 +9,9 @@ using Hemma.Modules.Users.Persistence;
 using Hemma.Modules.Users.Security;
 using Hemma.Shared.Infrastructure.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Wolverine;
 
 namespace Hemma.Modules.Users.Features.Register;

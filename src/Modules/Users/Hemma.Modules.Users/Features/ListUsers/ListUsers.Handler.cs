@@ -1,8 +1,8 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Users.Errors;
 using Hemma.Modules.Users.Persistence;
 using Hemma.Shared.Kernel.Pagination;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Users.Features.ListUsers;
 

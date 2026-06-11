@@ -10,7 +10,7 @@ namespace Hemma.Api.Infrastructure.OpenApi;
 /// </summary>
 internal sealed class ProductOpenApiDocumentTransformer : IOpenApiDocumentTransformer
 {
-    private static readonly string[] OperationalPathPrefixes =
+    private static readonly string[] operationalPathPrefixes =
     [
         "/admin/jobs",
         "/api/",
@@ -29,7 +29,7 @@ internal sealed class ProductOpenApiDocumentTransformer : IOpenApiDocumentTransf
 
         var operationalPaths = document.Paths
             .Keys
-            .Where(path => OperationalPathPrefixes.Any(prefix =>
+            .Where(path => operationalPathPrefixes.Any(prefix =>
                 path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
             .ToArray();
 

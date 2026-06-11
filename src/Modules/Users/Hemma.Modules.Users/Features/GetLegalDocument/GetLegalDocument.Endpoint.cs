@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Hemma.Modules.Users.Errors;
 using Hemma.Modules.Users.Legal;
 using Hemma.Shared.Infrastructure.Http;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Wolverine;
 
 namespace Hemma.Modules.Users.Features.GetLegalDocument;

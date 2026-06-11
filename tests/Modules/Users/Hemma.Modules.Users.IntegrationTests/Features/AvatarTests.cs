@@ -1,9 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using ImageMagick;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Hemma.Modules.Audit.Persistence;
 using Hemma.Modules.Users.Contracts.Events;
 using Hemma.Modules.Users.Domain;
@@ -12,6 +9,9 @@ using Hemma.Modules.Users.Features.Register;
 using Hemma.Modules.Users.Features.UpdateAvatar;
 using Hemma.Modules.Users.Persistence;
 using Hemma.Shared.Infrastructure.Blobs;
+using ImageMagick;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Wolverine.Tracking;
 
 namespace Hemma.Modules.Users.IntegrationTests.Features;

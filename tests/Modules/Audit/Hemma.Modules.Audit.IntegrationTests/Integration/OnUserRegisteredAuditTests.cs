@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Hemma.Modules.Audit.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Hemma.Modules.Audit.Persistence;
 using Wolverine;
 using Wolverine.Tracking;
 

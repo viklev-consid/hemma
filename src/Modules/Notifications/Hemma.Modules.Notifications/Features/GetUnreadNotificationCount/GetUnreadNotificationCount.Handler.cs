@@ -1,6 +1,6 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Notifications.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Notifications.Features.GetUnreadNotificationCount;
 

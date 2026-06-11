@@ -21,7 +21,7 @@ public sealed class ProjectHandler(
     PropertyAuditPublisher audit,
     IClock clock)
 {
-    private const string DefaultCurrency = "SEK";
+    private const string defaultCurrency = "SEK";
 
     public async Task<ErrorOr<ProjectResponse>> Handle(CreateProjectCommand cmd, CancellationToken ct)
     {
@@ -447,7 +447,7 @@ public sealed class ProjectHandler(
             ct);
         var spend = summary.Summaries.SingleOrDefault(item => item.ProjectId == query.ProjectId);
 
-        var linkedTotal = spend?.LinkedTotal ?? new MoneyDto(0m, DefaultCurrency);
+        var linkedTotal = spend?.LinkedTotal ?? new MoneyDto(0m, defaultCurrency);
         var transactionCount = spend?.TransactionCount ?? 0;
 
         var estimateDto = budgetEstimate is null

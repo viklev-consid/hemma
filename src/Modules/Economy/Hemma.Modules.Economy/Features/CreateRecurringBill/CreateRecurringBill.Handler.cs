@@ -1,9 +1,9 @@
 using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
-using Hemma.Shared.Contracts;
 using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
+using Hemma.Shared.Contracts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.CreateRecurringBill;

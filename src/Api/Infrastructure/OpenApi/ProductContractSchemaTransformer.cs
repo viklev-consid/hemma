@@ -10,7 +10,7 @@ namespace Hemma.Api.Infrastructure.OpenApi;
 /// </summary>
 internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransformer
 {
-    private static readonly IReadOnlyDictionary<string, string[]> EnumSchemas =
+    private static readonly IReadOnlyDictionary<string, string[]> enumSchemas =
         new Dictionary<string, string[]>(StringComparer.Ordinal)
         {
             ["HouseholdRole"] = ["owner", "member"],
@@ -30,7 +30,7 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
             ["HouseholdAccessMode"] = ["ScopedPermission", "PlatformOverride"],
         };
 
-    private static readonly (string SchemaName, string PropertyName, string EnumSchemaName)[] EnumProperties =
+    private static readonly (string SchemaName, string PropertyName, string EnumSchemaName)[] enumProperties =
     [
         ("AcceptHouseholdInvitationResponse", "role", "HouseholdRole"),
         ("ChangeHouseholdMemberRoleRequest", "role", "HouseholdRole"),
@@ -94,7 +94,7 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
         ("GetHouseholdResponse", "accessMode", "HouseholdAccessMode"),
     ];
 
-    private static readonly (string SchemaName, string PropertyName)[] IntegerProperties =
+    private static readonly (string SchemaName, string PropertyName)[] integerProperties =
     [
         ("CreateRecurringBillRequest", "cadenceInterval"),
         ("CreateRecurringBillRequest", "cadenceDayOfMonth"),
@@ -112,17 +112,17 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
         document.Components ??= new OpenApiComponents();
         document.Components.Schemas ??= new Dictionary<string, IOpenApiSchema>(StringComparer.Ordinal);
 
-        foreach (var (name, values) in EnumSchemas)
+        foreach (var (name, values) in enumSchemas)
         {
             document.Components.Schemas[name] = CreateStringEnumSchema(values);
         }
 
-        foreach (var (schemaName, propertyName, enumSchemaName) in EnumProperties)
+        foreach (var (schemaName, propertyName, enumSchemaName) in enumProperties)
         {
             ReplaceProperty(document, schemaName, propertyName, new OpenApiSchemaReference(enumSchemaName, document));
         }
 
-        foreach (var (schemaName, propertyName) in IntegerProperties)
+        foreach (var (schemaName, propertyName) in integerProperties)
         {
             ReplaceProperty(document, schemaName, propertyName, new OpenApiSchema
             {

@@ -1,8 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Audit.Domain;
 using Hemma.Modules.Audit.Persistence;
 using Hemma.Shared.Infrastructure.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Audit.Integration.Subscribers;
 

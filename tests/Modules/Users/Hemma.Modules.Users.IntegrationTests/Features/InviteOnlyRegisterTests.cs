@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Hemma.Modules.Users.Domain;
 using Hemma.Modules.Users.Features.Register;
 using Hemma.Modules.Users.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Hemma.Modules.Users.IntegrationTests.Features;
 

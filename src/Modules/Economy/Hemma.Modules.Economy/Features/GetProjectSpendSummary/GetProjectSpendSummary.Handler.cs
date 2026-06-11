@@ -7,7 +7,7 @@ namespace Hemma.Modules.Economy.Features.GetProjectSpendSummary;
 
 public sealed class GetProjectSpendSummaryHandler(EconomyDbContext db)
 {
-    private const string Currency = "SEK";
+    private const string currency = "SEK";
 
     public async Task<GetProjectSpendSummaryResult> Handle(GetProjectSpendSummaryQuery query, CancellationToken ct)
     {
@@ -33,7 +33,7 @@ public sealed class GetProjectSpendSummaryHandler(EconomyDbContext db)
             .ToListAsync(ct);
 
         var summaries = grouped
-            .Select(row => new ProjectSpendSummary(row.ProjectId, new MoneyDto(row.Total, Currency), row.Count))
+            .Select(row => new ProjectSpendSummary(row.ProjectId, new MoneyDto(row.Total, currency), row.Count))
             .ToArray();
 
         return new GetProjectSpendSummaryResult(summaries);

@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Options;
 using Hemma.Modules.Notifications.Domain;
+using Microsoft.Extensions.Options;
 
 namespace Hemma.Modules.Notifications.Policies;
 

@@ -1,5 +1,5 @@
-using Hemma.Shared.Kernel.Domain;
 using Hemma.Modules.Economy.Domain;
+using Hemma.Shared.Kernel.Domain;
 
 namespace Hemma.Modules.Economy.UnitTests.Domain;
 

@@ -14,8 +14,8 @@ namespace Hemma.Modules.Property.Features.Maintenance;
 
 internal static class MaintenanceEndpoint
 {
-    private const string PlansPrefix = $"{PropertyRoutes.Prefix}/maintenance/plans";
-    private const string OccurrencesPrefix = $"{PropertyRoutes.Prefix}/maintenance/occurrences";
+    private const string plansPrefix = $"{PropertyRoutes.Prefix}/maintenance/plans";
+    private const string occurrencesPrefix = $"{PropertyRoutes.Prefix}/maintenance/occurrences";
 
     public static void Map(IEndpointRouteBuilder app)
     {
@@ -25,7 +25,7 @@ internal static class MaintenanceEndpoint
 
     private static void MapPlans(IEndpointRouteBuilder app)
     {
-        app.MapPost(PlansPrefix,
+        app.MapPost(plansPrefix,
             async (
                 MaintenancePlanRequest request,
                 IValidator<MaintenancePlanRequest> validator,
@@ -52,7 +52,7 @@ internal static class MaintenanceEndpoint
                         request.LeadTimeDays),
                     ct);
 
-                return result.ToProblemDetailsOr(response => Results.Created($"{PlansPrefix}/{response.Plan.PlanId}", response));
+                return result.ToProblemDetailsOr(response => Results.Created($"{plansPrefix}/{response.Plan.PlanId}", response));
             })
             .WithName("CreatePropertyMaintenancePlan")
             .WithTags(PropertyRoutes.GroupTag)
@@ -60,7 +60,7 @@ internal static class MaintenanceEndpoint
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
             .RequireAuthorization();
 
-        app.MapGet(PlansPrefix,
+        app.MapGet(plansPrefix,
             async (
                 Guid householdId,
                 bool? activeOnly,
@@ -80,7 +80,7 @@ internal static class MaintenanceEndpoint
             .Produces<ListMaintenancePlansResponse>()
             .RequireAuthorization();
 
-        app.MapGet($"{PlansPrefix}/{{planId:guid}}",
+        app.MapGet($"{plansPrefix}/{{planId:guid}}",
             async (
                 Guid planId,
                 Guid householdId,
@@ -100,7 +100,7 @@ internal static class MaintenanceEndpoint
             .Produces<GetMaintenancePlanResponse>()
             .RequireAuthorization();
 
-        app.MapPut($"{PlansPrefix}/{{planId:guid}}",
+        app.MapPut($"{plansPrefix}/{{planId:guid}}",
             async (
                 Guid planId,
                 MaintenancePlanRequest request,
@@ -137,7 +137,7 @@ internal static class MaintenanceEndpoint
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
             .RequireAuthorization();
 
-        app.MapPost($"{PlansPrefix}/{{planId:guid}}/deactivate",
+        app.MapPost($"{plansPrefix}/{{planId:guid}}/deactivate",
             async (
                 Guid planId,
                 Guid householdId,
@@ -157,7 +157,7 @@ internal static class MaintenanceEndpoint
             .Produces<MaintenancePlanResponse>()
             .RequireAuthorization();
 
-        app.MapDelete($"{PlansPrefix}/{{planId:guid}}",
+        app.MapDelete($"{plansPrefix}/{{planId:guid}}",
             async (
                 Guid planId,
                 Guid householdId,
@@ -180,7 +180,7 @@ internal static class MaintenanceEndpoint
 
     private static void MapOccurrences(IEndpointRouteBuilder app)
     {
-        app.MapGet(OccurrencesPrefix,
+        app.MapGet(occurrencesPrefix,
             async (
                 Guid householdId,
                 int? horizonDays,
@@ -202,7 +202,7 @@ internal static class MaintenanceEndpoint
             .Produces<ListUpcomingOccurrencesResponse>()
             .RequireAuthorization();
 
-        app.MapPost($"{OccurrencesPrefix}/{{occurrenceId:guid}}/complete",
+        app.MapPost($"{occurrencesPrefix}/{{occurrenceId:guid}}/complete",
             async (
                 Guid occurrenceId,
                 CompleteOccurrenceRequest request,
@@ -229,7 +229,7 @@ internal static class MaintenanceEndpoint
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
             .RequireAuthorization();
 
-        app.MapPost($"{OccurrencesPrefix}/{{occurrenceId:guid}}/skip",
+        app.MapPost($"{occurrencesPrefix}/{{occurrenceId:guid}}/skip",
             async (
                 Guid occurrenceId,
                 SkipOccurrenceRequest request,
@@ -256,7 +256,7 @@ internal static class MaintenanceEndpoint
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
             .RequireAuthorization();
 
-        app.MapPost($"{OccurrencesPrefix}/{{occurrenceId:guid}}/promote",
+        app.MapPost($"{occurrencesPrefix}/{{occurrenceId:guid}}/promote",
             async (
                 Guid occurrenceId,
                 PromoteOccurrenceRequest request,

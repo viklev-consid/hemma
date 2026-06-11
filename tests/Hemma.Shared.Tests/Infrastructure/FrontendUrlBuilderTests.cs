@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Options;
 using Hemma.Shared.Infrastructure.Frontend;
+using Microsoft.Extensions.Options;
 
 namespace Hemma.Shared.Tests.Infrastructure;
 

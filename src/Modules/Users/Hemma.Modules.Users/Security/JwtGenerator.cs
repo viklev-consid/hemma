@@ -1,11 +1,11 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Hemma.Modules.Users.Domain;
 using Hemma.Shared.Infrastructure.Auth;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Hemma.Modules.Users.Security;
 

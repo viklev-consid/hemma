@@ -1,6 +1,6 @@
+using Hemma.Modules.Audit.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Hemma.Modules.Audit.Domain;
 
 namespace Hemma.Modules.Audit.Persistence.Configurations;
 

@@ -1,11 +1,11 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Users.Contracts.Events;
 using Hemma.Modules.Users.Domain;
 using Hemma.Modules.Users.Errors;
 using Hemma.Modules.Users.Persistence;
 using Hemma.Modules.Users.Security;
 using Hemma.Modules.Users.Security.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 
 namespace Hemma.Modules.Users.Features.ChangeUserRole;

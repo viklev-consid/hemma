@@ -1,6 +1,6 @@
+using Hemma.Modules.Users.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Hemma.Modules.Users.Domain;
 
 namespace Hemma.Modules.Users.Persistence.Configurations;
 

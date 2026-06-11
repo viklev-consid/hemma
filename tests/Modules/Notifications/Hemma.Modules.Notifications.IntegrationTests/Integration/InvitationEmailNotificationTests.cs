@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using Hemma.Modules.Households.Contracts.Events;
 using Hemma.Modules.Notifications.Domain;
 using Hemma.Modules.Notifications.Persistence;
-using Hemma.Modules.Households.Contracts.Events;
 using Hemma.Modules.Users.Contracts.Events;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Wolverine.Tracking;
 
 namespace Hemma.Modules.Notifications.IntegrationTests.Integration;

@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Logging;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.Extensions.Logging;
 using Wolverine;
 
 namespace Hemma.Shared.Infrastructure.Messaging;

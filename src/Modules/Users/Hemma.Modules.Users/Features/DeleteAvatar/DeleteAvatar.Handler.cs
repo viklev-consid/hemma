@@ -1,10 +1,10 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Users.Avatars;
 using Hemma.Modules.Users.Contracts.Events;
 using Hemma.Modules.Users.Domain;
 using Hemma.Modules.Users.Errors;
 using Hemma.Modules.Users.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 
 namespace Hemma.Modules.Users.Features.DeleteAvatar;
