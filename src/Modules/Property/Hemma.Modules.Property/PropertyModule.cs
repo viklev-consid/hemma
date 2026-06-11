@@ -1,4 +1,5 @@
 using FluentValidation;
+using Hemma.Modules.Property.Features.Projects;
 using Hemma.Modules.Property.Contracts.Authorization;
 using Hemma.Modules.Property.Gdpr;
 using Hemma.Modules.Property.Integration;
@@ -65,11 +66,13 @@ public static class PropertyModule
     {
         opts.Discovery.IncludeType<OnUserErasureRequestedHandler>();
         opts.Discovery.IncludeType<OnHouseholdDeletedHandler>();
+        opts.Discovery.IncludeType<ProjectHandler>();
         return opts;
     }
 
     public static IEndpointRouteBuilder MapPropertyEndpoints(this IEndpointRouteBuilder app)
     {
+        ProjectEndpoint.Map(app);
         return app;
     }
 }
