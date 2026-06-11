@@ -288,26 +288,40 @@ public sealed class MaintenanceHandler(
     {
         var horizon = Today.AddDays(Math.Max(0, query.HorizonDays));
 
-        var items = await db.MaintenanceOccurrences
+        var occurrences = await db.MaintenanceOccurrences
             .AsNoTracking()
             .Where(o => o.HouseholdId == query.HouseholdId
                 && o.Status == MaintenanceOccurrenceStatus.Upcoming
                 && o.DueDate <= horizon)
-            .Join(
-                db.MaintenancePlans.AsNoTracking(),
-                o => o.PlanId,
-                plan => plan.Id,
-                (o, plan) => new UpcomingOccurrenceItem(
+            .OrderBy(o => o.DueDate)
+            .ToListAsync(ct);
+
+        if (occurrences.Count == 0)
+        {
+            return new ListUpcomingOccurrencesResponse([]);
+        }
+
+        var plans = await db.MaintenancePlans
+            .AsNoTracking()
+            .Where(plan => plan.HouseholdId == query.HouseholdId)
+            .ToDictionaryAsync(plan => plan.Id, ct);
+
+        var items = occurrences
+            .Select(o =>
+            {
+                plans.TryGetValue(o.PlanId, out var plan);
+                return new UpcomingOccurrenceItem(
                     o.Id.Value,
                     o.PlanId.Value,
                     o.HouseholdId,
-                    plan.Title,
-                    plan.Area,
+                    plan?.Title ?? string.Empty,
+                    plan?.Area,
                     o.DueDate,
-                    o.Status.ToString()))
+                    o.Status.ToString());
+            })
             .OrderBy(item => item.DueDate)
-            .ThenBy(item => item.PlanTitle)
-            .ToArrayAsync(ct);
+            .ThenBy(item => item.PlanTitle, StringComparer.Ordinal)
+            .ToArray();
 
         return new ListUpcomingOccurrencesResponse(items);
     }
@@ -322,8 +336,10 @@ public sealed class MaintenanceHandler(
         var floor = Today > completed.DueDate.AddDays(1) ? Today : completed.DueDate.AddDays(1);
         var dueDate = plan.NextDueOnOrAfter(floor);
 
+        // The occurrence being completed is still Upcoming in the database (its Done state is not
+        // yet saved), so exclude it when checking whether another Upcoming occurrence already exists.
         var alreadyScheduled = await db.MaintenanceOccurrences
-            .AnyAsync(o => o.PlanId == plan.Id && o.Status == MaintenanceOccurrenceStatus.Upcoming, ct);
+            .AnyAsync(o => o.PlanId == plan.Id && o.Id != completed.Id && o.Status == MaintenanceOccurrenceStatus.Upcoming, ct);
         if (alreadyScheduled)
         {
             return null;
