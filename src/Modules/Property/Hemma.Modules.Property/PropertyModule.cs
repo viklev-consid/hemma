@@ -1,9 +1,11 @@
 using FluentValidation;
 using Hemma.Modules.Property.Contracts.Authorization;
+using Hemma.Modules.Property.Features.Maintenance;
 using Hemma.Modules.Property.Features.Projects;
 using Hemma.Modules.Property.Gdpr;
 using Hemma.Modules.Property.Integration;
 using Hemma.Modules.Property.Integration.Subscribers;
+using Hemma.Modules.Property.Jobs;
 using Hemma.Modules.Property.Persistence;
 using Hemma.Modules.Property.Seeding;
 using Hemma.Shared.Infrastructure.Authorization;
@@ -17,6 +19,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry;
+using TickerQ.Utilities;
+using TickerQ.Utilities.Entities;
 using Wolverine;
 
 namespace Hemma.Modules.Property;
@@ -67,12 +71,22 @@ public static class PropertyModule
         opts.Discovery.IncludeType<OnUserErasureRequestedHandler>();
         opts.Discovery.IncludeType<OnHouseholdDeletedHandler>();
         opts.Discovery.IncludeType<ProjectHandler>();
+        opts.Discovery.IncludeType<MaintenanceHandler>();
+        opts.Discovery.IncludeType<MaterializeMaintenanceOccurrencesHandler>();
+        return opts;
+    }
+
+    public static TickerOptionsBuilder<TimeTickerEntity, CronTickerEntity> AddPropertyJobs(
+        this TickerOptionsBuilder<TimeTickerEntity, CronTickerEntity> opts)
+    {
+        _ = typeof(MaterializeMaintenanceOccurrencesJob);
         return opts;
     }
 
     public static IEndpointRouteBuilder MapPropertyEndpoints(this IEndpointRouteBuilder app)
     {
         ProjectEndpoint.Map(app);
+        MaintenanceEndpoint.Map(app);
         return app;
     }
 }
