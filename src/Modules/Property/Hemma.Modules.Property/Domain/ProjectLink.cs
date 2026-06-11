@@ -28,7 +28,7 @@ public sealed class ProjectLink : Entity<ProjectLinkId>
         }
 
         var normalizedUrl = NormalizeRequired(url, 2048);
-        if (normalizedUrl is null)
+        if (normalizedUrl is null || !IsAllowedUrl(normalizedUrl))
         {
             return PropertyErrors.LinkUrlInvalid;
         }
@@ -41,4 +41,9 @@ public sealed class ProjectLink : Entity<ProjectLinkId>
         var normalized = value.Trim();
         return normalized.Length is 0 || normalized.Length > maxLength ? null : normalized;
     }
+
+    private static bool IsAllowedUrl(string value) =>
+        Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
+        (string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) ||
+         string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase));
 }

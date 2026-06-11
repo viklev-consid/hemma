@@ -124,6 +124,55 @@ public sealed class PropertyApiTests(PropertyApiFixture fixture) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task LinkCreation_RejectsNonHttpUrl()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Links", "links");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        var project = await CreateProjectAsync(client, household.Id.Value);
+
+        var response = await client.PostAsJsonAsync(
+            $"/v1/property/projects/{project.ProjectId}/links",
+            new ProjectLinkRequest(household.Id.Value, "Bad", "javascript:alert(1)"));
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task StatusValidation_RejectsNumericEnumString()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Status", "status");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+
+        var response = await client.PostAsJsonAsync(
+            "/v1/property/projects",
+            new ProjectRequest(household.Id.Value, "Project", null, "99", null, null, null, null, null));
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AttachmentUpload_RejectsOversizeBeforeHandlerBuffering()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Oversize", "oversize");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        var project = await CreateProjectAsync(client, household.Id.Value);
+
+        using var content = new MultipartFormDataContent();
+        var file = new ByteArrayContent(new byte[10 * 1024 * 1024 + 1]);
+        file.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+        content.Add(file, "file", "large.png");
+
+        var response = await client.PostAsync(
+            $"/v1/property/projects/{project.ProjectId}/attachments?householdId={household.Id.Value}",
+            content);
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+    }
+
+    [Fact]
     public async Task CrossHouseholdRead_ReturnsForbidden()
     {
         var ownerId = Guid.NewGuid();

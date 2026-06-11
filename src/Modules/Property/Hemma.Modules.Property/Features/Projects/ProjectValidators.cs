@@ -18,7 +18,7 @@ internal sealed class ProjectRequestValidator : AbstractValidator<ProjectRequest
     }
 
     private static bool BeProjectStatus(string status) =>
-        Enum.TryParse<Domain.ProjectStatus>(status, ignoreCase: true, out _);
+        Enum.TryParse<Domain.ProjectStatus>(status, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed);
 }
 
 internal sealed class ChangeProjectStatusRequestValidator : AbstractValidator<ChangeProjectStatusRequest>
@@ -26,7 +26,8 @@ internal sealed class ChangeProjectStatusRequestValidator : AbstractValidator<Ch
     public ChangeProjectStatusRequestValidator()
     {
         RuleFor(x => x.HouseholdId).NotEmpty();
-        RuleFor(x => x.Status).NotEmpty().Must(status => Enum.TryParse<Domain.ProjectStatus>(status, true, out _));
+        RuleFor(x => x.Status).NotEmpty().Must(status =>
+            Enum.TryParse<Domain.ProjectStatus>(status, true, out var parsed) && Enum.IsDefined(parsed));
     }
 }
 
@@ -36,7 +37,8 @@ internal sealed class ProjectTaskRequestValidator : AbstractValidator<ProjectTas
     {
         RuleFor(x => x.HouseholdId).NotEmpty();
         RuleFor(x => x.Title).NotEmpty().MaximumLength(200);
-        RuleFor(x => x.Status).NotEmpty().Must(status => Enum.TryParse<Domain.ProjectTaskStatus>(status, true, out _));
+        RuleFor(x => x.Status).NotEmpty().Must(status =>
+            Enum.TryParse<Domain.ProjectTaskStatus>(status, true, out var parsed) && Enum.IsDefined(parsed));
     }
 }
 
@@ -55,6 +57,11 @@ internal sealed class ProjectLinkRequestValidator : AbstractValidator<ProjectLin
     {
         RuleFor(x => x.HouseholdId).NotEmpty();
         RuleFor(x => x.Label).NotEmpty().MaximumLength(160);
-        RuleFor(x => x.Url).NotEmpty().MaximumLength(2048).Must(url => Uri.TryCreate(url, UriKind.Absolute, out _));
+        RuleFor(x => x.Url).NotEmpty().MaximumLength(2048).Must(BeHttpUrl);
     }
+
+    private static bool BeHttpUrl(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
+        (string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) ||
+         string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase));
 }

@@ -12,6 +12,8 @@ public static class ProjectAttachmentRules
         "image/webp"
     };
 
-    public static bool IsAllowed(string contentType, long size) =>
-        size is > 0 and <= MaxSizeBytes && allowedContentTypes.Contains(contentType);
+    public static bool IsAllowed(string? contentType, long size) =>
+        size is > 0 and <= MaxSizeBytes &&
+        !string.IsNullOrWhiteSpace(contentType) &&
+        allowedContentTypes.Contains(contentType);
 }

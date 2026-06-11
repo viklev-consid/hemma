@@ -83,6 +83,37 @@ public sealed class ProjectTests
     }
 
     [Fact]
+    public void AddAttachment_WhenContentTypeIsMissing_ReturnsValidationFailure()
+    {
+        var project = CreateProject();
+
+        var result = project.AddAttachment("property", "key", "receipt.pdf", string.Empty, 128);
+
+        Assert.True(result.IsError);
+    }
+
+    [Fact]
+    public void AddLink_WhenUrlUsesScriptScheme_ReturnsValidationFailure()
+    {
+        var project = CreateProject();
+
+        var result = project.AddLink("Bad", "javascript:alert(1)");
+
+        Assert.True(result.IsError);
+    }
+
+    [Fact]
+    public void AddLink_WhenUrlUsesHttpsScheme_AddsLink()
+    {
+        var project = CreateProject();
+
+        var result = project.AddLink("Docs", "https://example.com/spec");
+
+        Assert.False(result.IsError);
+        Assert.Equal("https://example.com/spec", result.Value.Url);
+    }
+
+    [Fact]
     public void Create_WithMoneyEstimate_StoresEstimate()
     {
         var estimate = Money.Create(123.456m, Money.SupportedCurrency).Value;

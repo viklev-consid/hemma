@@ -423,6 +423,7 @@ public sealed class ProjectHandler(
             .Include(project => project.Tasks)
             .Include(project => project.Links)
             .Include(project => project.Attachments)
+            .AsSplitQuery()
             .Where(project => project.HouseholdId == householdId && project.Id == new ProjectId(projectId));
 
         if (!tracking)

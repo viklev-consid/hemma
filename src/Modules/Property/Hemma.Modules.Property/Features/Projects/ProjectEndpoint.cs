@@ -1,11 +1,14 @@
 using FluentValidation;
 using Hemma.Modules.Households.Contracts.Authorization;
 using Hemma.Modules.Property.Contracts.Authorization;
+using Hemma.Modules.Property.Domain;
+using Hemma.Modules.Property.Errors;
 using Hemma.Shared.Infrastructure.Authorization;
 using Hemma.Shared.Infrastructure.Http;
 using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Wolverine;
 
@@ -302,6 +305,16 @@ internal static class ProjectEndpoint
                 var forbidden = await AuthorizeAsync(householdId, PropertyPermissions.Write, authorization, currentUser, ct);
                 if (forbidden is not null) { return forbidden; }
 
+                if (!ProjectAttachmentRules.IsAllowed(file.ContentType, file.Length))
+                {
+                    return Results.ValidationProblem(
+                        new Dictionary<string, string[]>(StringComparer.Ordinal)
+                        {
+                            [PropertyErrors.AttachmentFileInvalid.Code] = [PropertyErrors.AttachmentFileInvalid.Description]
+                        },
+                        statusCode: StatusCodes.Status422UnprocessableEntity);
+                }
+
                 await using var stream = file.OpenReadStream();
                 using var memory = new MemoryStream();
                 await stream.CopyToAsync(memory, ct);
@@ -314,6 +327,7 @@ internal static class ProjectEndpoint
             .WithName("AddPropertyProjectAttachment")
             .WithTags(PropertyRoutes.GroupTag)
             .DisableAntiforgery()
+            .WithMetadata(new RequestSizeLimitAttribute(ProjectAttachmentRules.MaxSizeBytes + 1024 * 1024))
             .RequireAuthorization();
 
         app.MapGet($"{PropertyRoutes.Prefix}/projects/{{projectId:guid}}/attachments/{{attachmentId:guid}}/content",
