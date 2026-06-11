@@ -76,4 +76,28 @@ internal static class PropertyErrors
 
     public static readonly ErrorOr.Error MaintenanceOccurrenceNotOpen =
         ErrorOr.Error.Validation("Property.MaintenanceOccurrence.NotOpen", "Maintenance occurrence is not upcoming and cannot be changed.");
+
+    public static readonly ErrorOr.Error HistoryEntryNotFound =
+        ErrorOr.Error.NotFound("Property.HistoryEntry.NotFound", "History entry was not found.");
+
+    public static readonly ErrorOr.Error HistoryEntryTitleInvalid =
+        ErrorOr.Error.Validation("Property.HistoryEntry.TitleInvalid", "History entry title is required and cannot exceed 160 characters.");
+
+    public static readonly ErrorOr.Error HistoryEntryAreaInvalid =
+        ErrorOr.Error.Validation("Property.HistoryEntry.AreaInvalid", "History entry area cannot exceed 100 characters.");
+
+    public static readonly ErrorOr.Error HistoryEntryTypeInvalid =
+        ErrorOr.Error.Validation("Property.HistoryEntry.TypeInvalid", "History entry type must be Project, Maintenance, or Manual.");
+
+    public static readonly ErrorOr.Error HistoryEntrySourceInvalid =
+        ErrorOr.Error.Validation("Property.HistoryEntry.SourceInvalid", "History entry source does not match its type.");
+
+    public static readonly ErrorOr.Error HistoryPhotoNotFound =
+        ErrorOr.Error.NotFound("Property.HistoryPhoto.NotFound", "History photo was not found.");
+
+    public static readonly ErrorOr.Error HistoryPhotoInvalid =
+        ErrorOr.Error.Validation("Property.HistoryPhoto.Invalid", "History photo must be a supported image and within the allowed size.");
+
+    public static readonly ErrorOr.Error HistoryPhotoBlobInvalid =
+        ErrorOr.Error.Validation("Property.HistoryPhoto.BlobInvalid", "History photo blob reference is invalid.");
 }

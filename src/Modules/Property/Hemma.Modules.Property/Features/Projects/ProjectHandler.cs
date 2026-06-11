@@ -113,17 +113,25 @@ public sealed class ProjectHandler(
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.project.status_changed", "Project", project.Id.Value, null, ct);
 
-        var suggested = status.Value == ProjectStatus.Done && project.CompletedAt is not null
-            ? new SuggestedHistoryEntryResponse(
+        SuggestedHistoryEntryResponse? suggested = null;
+        if (status.Value == ProjectStatus.Done && project.CompletedAt is not null)
+        {
+            var budget = await Handle(new GetProjectBudgetQuery(project.Id.Value, cmd.HouseholdId), ct);
+            if (budget.IsError)
+            {
+                return budget.Errors;
+            }
+
+            suggested = new SuggestedHistoryEntryResponse(
                 DateOnly.FromDateTime(project.CompletedAt.Value.UtcDateTime),
                 project.Name,
                 project.Area,
-                null,
+                budget.Value.LinkedTotal,
                 "Project",
                 project.Id.Value,
                 null,
-                project.Attachments.Select(a => new SuggestedHistoryAttachmentResponse(a.Id.Value, a.FileName, a.ContentType)).ToArray())
-            : null;
+                project.Attachments.Select(a => new SuggestedHistoryAttachmentResponse(a.BlobContainer, a.BlobKey)).ToArray());
+        }
 
         return new ChangeProjectStatusResponse(ProjectResponse.FromProject(project), suggested);
     }

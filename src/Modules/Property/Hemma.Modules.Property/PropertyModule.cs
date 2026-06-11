@@ -1,5 +1,6 @@
 using FluentValidation;
 using Hemma.Modules.Property.Contracts.Authorization;
+using Hemma.Modules.Property.Features.Logbook;
 using Hemma.Modules.Property.Features.Maintenance;
 using Hemma.Modules.Property.Features.Projects;
 using Hemma.Modules.Property.Gdpr;
@@ -72,6 +73,7 @@ public static class PropertyModule
         opts.Discovery.IncludeType<OnHouseholdDeletedHandler>();
         opts.Discovery.IncludeType<ProjectHandler>();
         opts.Discovery.IncludeType<MaintenanceHandler>();
+        opts.Discovery.IncludeType<LogbookHandler>();
         opts.Discovery.IncludeType<MaterializeMaintenanceOccurrencesHandler>();
         return opts;
     }
@@ -87,6 +89,7 @@ public static class PropertyModule
     {
         ProjectEndpoint.Map(app);
         MaintenanceEndpoint.Map(app);
+        LogbookEndpoint.Map(app);
         return app;
     }
 }

@@ -9,6 +9,7 @@ public sealed class PropertyDbContext(DbContextOptions<PropertyDbContext> option
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<MaintenancePlan> MaintenancePlans => Set<MaintenancePlan>();
     public DbSet<MaintenanceOccurrence> MaintenanceOccurrences => Set<MaintenanceOccurrence>();
+    public DbSet<HistoryEntry> HistoryEntries => Set<HistoryEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

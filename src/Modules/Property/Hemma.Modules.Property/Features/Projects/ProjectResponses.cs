@@ -88,7 +88,7 @@ public sealed record ProjectAttachmentResponse(Guid AttachmentId, Guid ProjectId
         new(attachment.Id.Value, attachment.ProjectId.Value, attachment.FileName, attachment.ContentType, attachment.Size);
 }
 
-public sealed record SuggestedHistoryAttachmentResponse(Guid AttachmentId, string FileName, string ContentType);
+public sealed record SuggestedHistoryAttachmentResponse(string Container, string Key);
 
 public sealed record SuggestedHistoryEntryResponse(
     DateOnly Date,
