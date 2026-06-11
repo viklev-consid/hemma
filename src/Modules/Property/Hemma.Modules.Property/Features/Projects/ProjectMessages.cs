@@ -51,3 +51,5 @@ public sealed record ListProjectsQuery(Guid HouseholdId, string? Status, string?
 public sealed record GetProjectTasksQuery(Guid ProjectId, Guid HouseholdId);
 
 public sealed record GetAttachmentContentQuery(Guid ProjectId, Guid AttachmentId, Guid HouseholdId);
+
+public sealed record GetProjectBudgetQuery(Guid ProjectId, Guid HouseholdId);

@@ -553,6 +553,14 @@
           "WolverineFx": "5.32.1"
         }
       },
+      "hemma.modules.economy.contracts": {
+        "type": "Project",
+        "dependencies": {
+          "ErrorOr": "[2.1.0, )",
+          "Hemma.Shared.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )"
+        }
+      },
       "hemma.modules.households.contracts": {
         "type": "Project",
         "dependencies": {

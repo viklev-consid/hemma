@@ -103,3 +103,9 @@ public sealed record SuggestedHistoryEntryResponse(
 public sealed record ChangeProjectStatusResponse(ProjectResponse Project, SuggestedHistoryEntryResponse? SuggestedHistoryEntry);
 
 public sealed record AttachmentContentResponse(Stream Content, string ContentType, string FileName);
+
+public sealed record GetProjectBudgetResponse(
+    MoneyDto? Estimate,
+    MoneyDto LinkedTotal,
+    MoneyDto? Remaining,
+    int TransactionCount);

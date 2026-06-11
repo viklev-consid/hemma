@@ -1,4 +1,5 @@
 using ErrorOr;
+using Hemma.Modules.Economy.Contracts.Queries;
 using Hemma.Modules.Property.Contracts.Events;
 using Hemma.Modules.Property.Domain;
 using Hemma.Modules.Property.Errors;
@@ -20,6 +21,8 @@ public sealed class ProjectHandler(
     PropertyAuditPublisher audit,
     IClock clock)
 {
+    private const string DefaultCurrency = "SEK";
+
     public async Task<ErrorOr<ProjectResponse>> Handle(CreateProjectCommand cmd, CancellationToken ct)
     {
         var status = ParseProjectStatus(cmd.Status);
@@ -415,6 +418,38 @@ public sealed class ProjectHandler(
         await blobStore.DeleteAsync(new BlobRef(attachment.Value.BlobContainer, attachment.Value.BlobKey), ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.project.attachment_removed", "ProjectAttachment", cmd.AttachmentId, null, ct);
         return Result.Deleted;
+    }
+
+    public async Task<ErrorOr<GetProjectBudgetResponse>> Handle(GetProjectBudgetQuery query, CancellationToken ct)
+    {
+        var estimate = await db.Projects
+            .AsNoTracking()
+            .Where(project => project.HouseholdId == query.HouseholdId && project.Id == new ProjectId(query.ProjectId))
+            .Select(project => project.BudgetEstimate)
+            .ToListAsync(ct);
+        if (estimate.Count == 0)
+        {
+            return PropertyErrors.ProjectNotFound;
+        }
+
+        var budgetEstimate = estimate[0];
+
+        var summary = await bus.InvokeAsync<GetProjectSpendSummaryResult>(
+            new GetProjectSpendSummaryQuery(query.HouseholdId, [query.ProjectId]),
+            ct);
+        var spend = summary.Summaries.SingleOrDefault(item => item.ProjectId == query.ProjectId);
+
+        var linkedTotal = spend?.LinkedTotal ?? new MoneyDto(0m, DefaultCurrency);
+        var transactionCount = spend?.TransactionCount ?? 0;
+
+        var estimateDto = budgetEstimate is null
+            ? null
+            : new MoneyDto(budgetEstimate.Amount, budgetEstimate.Currency);
+        var remaining = estimateDto is null
+            ? null
+            : new MoneyDto(estimateDto.Amount - linkedTotal.Amount, estimateDto.Currency);
+
+        return new GetProjectBudgetResponse(estimateDto, linkedTotal, remaining, transactionCount);
     }
 
     private async Task<Project?> LoadProjectAsync(Guid householdId, Guid projectId, CancellationToken ct, bool tracking = true)

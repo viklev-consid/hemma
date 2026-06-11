@@ -1,8 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using Hemma.Modules.Audit.Persistence;
+using Hemma.Modules.Economy.Contracts.Queries;
 using Hemma.Modules.Economy.Features.AddCategory;
 using Hemma.Modules.Economy.Features.Analytics;
+using Hemma.Modules.Economy.Features.AssignTransactionToProject;
 using Hemma.Modules.Economy.Features.CategorizationRules;
 using Hemma.Modules.Economy.Features.ChangeRecurringBillOccurrence;
 using Hemma.Modules.Economy.Features.ConfirmEstimatedBill;
@@ -24,6 +26,7 @@ using Hemma.Modules.Economy.Features.ListAccounts;
 using Hemma.Modules.Economy.Features.ListCategories;
 using Hemma.Modules.Economy.Features.ListRecurringBills;
 using Hemma.Modules.Economy.Features.ListTransactions;
+using Hemma.Modules.Economy.Features.ListTransactionsForProject;
 using Hemma.Modules.Economy.Features.NotificationPreferences;
 using Hemma.Modules.Economy.Features.RecordTransaction;
 using Hemma.Modules.Economy.Features.SearchTransactionNote;
@@ -33,6 +36,7 @@ using Hemma.Modules.Economy.Jobs;
 using Hemma.Modules.Economy.Persistence;
 using Hemma.Modules.Households.Contracts.Events;
 using Hemma.Modules.Households.Domain;
+using Hemma.Modules.Property.Contracts.Events;
 using Hemma.Modules.Households.Persistence;
 using Hemma.Modules.Users.Contracts.Events;
 using Hemma.Shared.Contracts;
@@ -1317,6 +1321,98 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         Assert.Equal(removedUserId, states[retainedTransaction.TransactionId].PayerId);
         Assert.Equal("Other household", states[retainedTransaction.TransactionId].Note);
     }
+
+    [Fact]
+    public async Task Transactions_CanAssignAndClearProjectLink()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "assign-project");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var transaction = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 250, new DateOnly(2026, 6, 5), "Tiles");
+        var projectId = Guid.NewGuid();
+
+        var assigned = await AssignTransactionToProjectAsync(client, household.Id.Value, transaction.TransactionId, projectId);
+        Assert.Equal(HttpStatusCode.OK, assigned.StatusCode);
+
+        var linked = await client.GetFromJsonAsync<ListTransactionsForProjectResponse>(
+            $"/v1/economy/projects/{projectId}/transactions?householdId={household.Id.Value}");
+        Assert.NotNull(linked);
+        Assert.Equal(transaction.TransactionId, Assert.Single(linked.Transactions).TransactionId);
+
+        var cleared = await AssignTransactionToProjectAsync(client, household.Id.Value, transaction.TransactionId, projectId: null);
+        Assert.Equal(HttpStatusCode.OK, cleared.StatusCode);
+
+        var afterClear = await client.GetFromJsonAsync<ListTransactionsForProjectResponse>(
+            $"/v1/economy/projects/{projectId}/transactions?householdId={household.Id.Value}");
+        Assert.NotNull(afterClear);
+        Assert.Empty(afterClear.Transactions);
+    }
+
+    [Fact]
+    public async Task ProjectSpendSummary_AggregatesLinkedTransactions()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "spend-summary");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 5000);
+        var projectId = Guid.NewGuid();
+
+        var first = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 3000, new DateOnly(2026, 6, 5), "Counters");
+        var second = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 500, new DateOnly(2026, 6, 6), "Paint");
+        var unlinked = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 999, new DateOnly(2026, 6, 7), "Unrelated");
+
+        await AssignTransactionToProjectAsync(client, household.Id.Value, first.TransactionId, projectId);
+        await AssignTransactionToProjectAsync(client, household.Id.Value, second.TransactionId, projectId);
+
+        using var scope = fixture.Services.CreateScope();
+        var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
+        var summary = await bus.InvokeAsync<GetProjectSpendSummaryResult>(
+            new GetProjectSpendSummaryQuery(household.Id.Value, [projectId]));
+
+        var item = Assert.Single(summary.Summaries);
+        Assert.Equal(projectId, item.ProjectId);
+        Assert.Equal(3500m, item.LinkedTotal.Amount);
+        Assert.Equal("SEK", item.LinkedTotal.Currency);
+        Assert.Equal(2, item.TransactionCount);
+        Assert.NotEqual(unlinked.TransactionId, first.TransactionId);
+    }
+
+    [Fact]
+    public async Task ProjectDeletedV1_NullsLinkedTransactions()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "project-deleted");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var projectId = Guid.NewGuid();
+        var transaction = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 250, new DateOnly(2026, 6, 5), "Tiles");
+        await AssignTransactionToProjectAsync(client, household.Id.Value, transaction.TransactionId, projectId);
+
+        await fixture.ApplicationHost.TrackActivity()
+            .Timeout(TimeSpan.FromSeconds(10))
+            .InvokeMessageAndWaitAsync(new ProjectDeletedV1(household.Id.Value, projectId, Guid.NewGuid()));
+
+        var linkedProjectId = await fixture.QueryDbAsync<EconomyDbContext, Guid?>((db, ct) =>
+            db.Transactions
+                .Where(t => t.Id == new Domain.TransactionId(transaction.TransactionId))
+                .Select(t => t.ProjectId)
+                .SingleAsync(ct));
+
+        Assert.Null(linkedProjectId);
+    }
+
+    private static async Task<HttpResponseMessage> AssignTransactionToProjectAsync(
+        HttpClient client,
+        Guid householdId,
+        Guid transactionId,
+        Guid? projectId) =>
+        await client.PostAsJsonAsync(
+            $"/v1/economy/transactions/{transactionId}/project",
+            new AssignTransactionToProjectRequest(householdId, projectId));
 
     private static async Task<CreateEconomySettingsResponse> CreateSettingsAsync(HttpClient client, Guid householdId)
     {

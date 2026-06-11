@@ -1,10 +1,13 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Hemma.Modules.Economy.Domain;
+using Hemma.Modules.Economy.Persistence;
 using Hemma.Modules.Households.Domain;
 using Hemma.Modules.Households.Persistence;
 using Hemma.Modules.Property.Features.Projects;
 using Hemma.Shared.Contracts;
+using Hemma.Shared.Kernel.Domain;
 using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -183,6 +186,86 @@ public sealed class PropertyApiTests(PropertyApiFixture fixture) : IAsyncLifetim
         var response = await client.GetAsync($"/v1/property/projects?householdId={household.Id.Value}");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetProjectBudget_CombinesStoredEstimateWithLinkedEconomySpend()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Budget", "budget");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+
+        var created = await client.PostAsJsonAsync(
+            "/v1/property/projects",
+            new ProjectRequest(
+                household.Id.Value,
+                "Bathroom",
+                null,
+                "Active",
+                "Bathroom",
+                null,
+                null,
+                new MoneyDto(10000, "SEK"),
+                null));
+        created.EnsureSuccessStatusCode();
+        var project = await created.Content.ReadFromJsonAsync<ProjectResponse>();
+        Assert.NotNull(project);
+
+        await SeedLinkedTransactionsAsync(household.Id.Value, project.ProjectId, [3000m, 500m]);
+
+        var budget = await client.GetFromJsonAsync<GetProjectBudgetResponse>(
+            $"/v1/property/projects/{project.ProjectId}/budget?householdId={household.Id.Value}");
+
+        Assert.NotNull(budget);
+        Assert.Equal(10000m, budget.Estimate!.Amount);
+        Assert.Equal(3500m, budget.LinkedTotal.Amount);
+        Assert.Equal("SEK", budget.LinkedTotal.Currency);
+        Assert.Equal(6500m, budget.Remaining!.Amount);
+        Assert.Equal(2, budget.TransactionCount);
+    }
+
+    [Fact]
+    public async Task GetProjectBudget_WithoutEstimateOrSpend_ReturnsZeroTotals()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Empty", "empty-budget");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        var project = await CreateProjectAsync(client, household.Id.Value);
+
+        var budget = await client.GetFromJsonAsync<GetProjectBudgetResponse>(
+            $"/v1/property/projects/{project.ProjectId}/budget?householdId={household.Id.Value}");
+
+        Assert.NotNull(budget);
+        Assert.Null(budget.Estimate);
+        Assert.Equal(0m, budget.LinkedTotal.Amount);
+        Assert.Null(budget.Remaining);
+        Assert.Equal(0, budget.TransactionCount);
+    }
+
+    private async Task SeedLinkedTransactionsAsync(Guid householdId, Guid projectId, IReadOnlyList<decimal> amounts)
+    {
+        await fixture.ExecuteDbAsync<EconomyDbContext>(async (db, ct) =>
+        {
+            var account = Account.Create(householdId, "Main", AccountType.Spending, Money.Create(0, "SEK").Value).Value;
+            db.Accounts.Add(account);
+
+            foreach (var amount in amounts)
+            {
+                var transaction = Transaction.Record(
+                    householdId,
+                    account,
+                    category: null,
+                    Money.Create(amount, "SEK").Value,
+                    new DateOnly(2026, 6, 1),
+                    note: null,
+                    TransactionKind.Expense,
+                    payerId: null).Value;
+                transaction.AssignToProject(projectId);
+                db.Transactions.Add(transaction);
+            }
+
+            await db.SaveChangesAsync(ct);
+        });
     }
 
     private static async Task<ProjectResponse> CreateProjectAsync(HttpClient client, Guid householdId)
