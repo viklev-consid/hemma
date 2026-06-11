@@ -27,19 +27,25 @@ The architecture is designed to be easy to split into separate services later, b
 │                    TickerQ recurring jobs + admin dashboard           │
 │                                  │                                    │
 │  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐          │
-│  │  Users   │   │  Orgs    │   │  Audit   │   │  Notifi- │   ...    │
-│  │ Module   │   │  Module  │   │  Module  │   │ cations  │          │
-│  │          │   │          │   │          │   │  Module  │          │
+│  │  Users   │   │Households│   │ Economy  │   │ Property │   ...    │
+│  │ Module   │   │ Module   │   │ Module   │   │ Module   │          │
+│  │          │   │          │   │          │   │          │          │
 │  │  own DB  │   │  own DB  │   │  own DB  │   │  own DB  │          │
 │  │  schema  │   │  schema  │   │  schema  │   │  schema  │          │
 │  └──────────┘   └──────────┘   └──────────┘   └──────────┘          │
+│  ┌──────────┐   ┌──────────┐                                        │
+│  │  Audit   │   │ Notifi-  │                                        │
+│  │ Module   │   │ cations  │                                        │
+│  │  own DB  │   │ Module   │                                        │
+│  │  schema  │   │ own DB   │                                        │
+│  └──────────┘   └──────────┘                                        │
 │       ▲              ▲              ▲              ▲                 │
 │       └──────────────┴──────────────┴──────────────┘                 │
 │              via public .Contracts projects only                      │
 │                                                                       │
 │  ┌────────────────────────────────────────────────────────────────┐  │
-│  │  Shared.Kernel (primitives)  +  Shared.Infrastructure         │  │
-│  │  (IBlobStore, IEmailSender, ICurrentUser, cache helpers)      │  │
+│  │  Shared.Kernel + Shared.Contracts + Shared.Infrastructure     │  │
+│  │  (Money, MoneyDto, IBlobStore, ICurrentUser, cache helpers)   │  │
 │  └────────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -71,9 +77,15 @@ Hemma.sln
 │       ├── Notifications/
 │       │   ├── Hemma.Modules.Notifications/
 │       │   └── Hemma.Modules.Notifications.Contracts/
-│       └── Audit/
-│           ├── Hemma.Modules.Audit/
-│           └── Hemma.Modules.Audit.Contracts/
+│       ├── Audit/
+│       │   ├── Hemma.Modules.Audit/
+│       │   └── Hemma.Modules.Audit.Contracts/
+│       ├── Economy/
+│       │   ├── Hemma.Modules.Economy/
+│       │   └── Hemma.Modules.Economy.Contracts/
+│       └── Property/
+│           ├── Hemma.Modules.Property/
+│           └── Hemma.Modules.Property.Contracts/
 └── tests/
     ├── Hemma.Architecture.Tests/
     ├── Hemma.SmokeTests/

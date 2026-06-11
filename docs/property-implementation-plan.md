@@ -23,10 +23,14 @@ You own and publish the OpenAPI contract per phase. The frontend consumes the ge
 
 These touch shared/Economy code outside the Property module, so they precede the module work and must be approved.
 
+**Status:** Completed in `3796e31` (`refactor: move money primitives to shared projects`).
+
 1. **Extract `Money` to the shared kernel.** Move the `Money` value object from `Hemma.Modules.Economy/Domain/` to `Hemma.Shared.Kernel/Domain/`, update all Economy references (domain, `MoneyDto` mapping, analytics, EF owned-type config) and Economy tests. No schema change — the EF owned-type columns (`amount numeric(18,2)`, `currency`) are unchanged. Verify Economy build + tests stay green.
 2. **Add a shared `MoneyDto`** (`{ decimal Amount, string Currency }`) to `Hemma.Shared.Contracts`, so both Economy and Property reference one contract type for money on the wire.
 
 ## Phase 0 — Scaffold
+
+**Status:** Completed in `3696fef` (`feat: scaffold property module foundation`).
 
 - Create the `Property` module project, `property` schema, EF `DbContext`, and initial migration (mostly produced by `dotnet new hemma-module`).
 - Wire household scoping, `PropertyPermissions` (`Read`/`Write`, registered via `AddPermissions`), Wolverine handler discovery, the `PropertyMutationRecordedV1` event + Audit subscriber, and GDPR participation (`PropertyPersonalDataEraser` + a household-deletion subscriber — the template stub; flesh out in Phase 4 once blobs exist).

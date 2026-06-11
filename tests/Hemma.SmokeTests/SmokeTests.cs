@@ -5,6 +5,7 @@ using Hemma.Modules.Users.Domain;
 using Hemma.Modules.Users.Features.Login;
 using Hemma.Modules.Users.Features.Register;
 using Hemma.Modules.Users.Persistence;
+using Hemma.Shared.Contracts;
 using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -161,9 +162,9 @@ public sealed class SmokeTests(SmokeTestFixture fixture) : IAsyncLifetime
         Assert.Equal(
             "#/components/schemas/SubscriptionMatchState",
             schemas.GetProperty("MonthChargeResponse").GetProperty("properties").GetProperty("matchState").GetProperty("$ref").GetString());
-        Assert.Equal(
-            "string",
-            schemas.GetProperty("MoneyResponse").GetProperty("properties").GetProperty("amount").GetProperty("type").GetString());
+        AssertSchemaType(
+            schemas.GetProperty(nameof(MoneyDto)).GetProperty("properties").GetProperty("amount"),
+            "string");
 
         var loginStatusEnum = loginResponseSchema
             .GetProperty("properties")
@@ -190,6 +191,18 @@ public sealed class SmokeTests(SmokeTestFixture fixture) : IAsyncLifetime
             .ToArray();
 
         Assert.Equal(expected, values);
+    }
+
+    private static void AssertSchemaType(JsonElement schema, string expected)
+    {
+        var type = schema.GetProperty("type");
+        if (type.ValueKind == JsonValueKind.Array)
+        {
+            Assert.Contains(expected, type.EnumerateArray().Select(value => value.GetString()));
+            return;
+        }
+
+        Assert.Equal(expected, type.GetString());
     }
 
     private sealed record MailpitMessagesResponse(MailpitMessage[]? Messages, int Total);
