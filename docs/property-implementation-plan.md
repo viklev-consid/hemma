@@ -114,6 +114,19 @@ Changes in **both** the `Property` and `Economy` modules. Dependency directions:
 
 ## Phase 3 — Maintenance
 
+**Status:** Completed in `1f7a3ab` (`feat: add property maintenance domain`),
+`95178d0` (`feat: persist property maintenance plans and occurrences`),
+`087e5c4` (`feat: expose household members query from households contracts`),
+`91cd4c6` (`feat: add property maintenance plans, occurrences, and scheduling`),
+and `34add9f` (`test: cover property maintenance api and scheduling`).
+
+> **Task breakdown:** `docs/property-phase-3-tasks.md` sequenced this phase and locked the
+> aggregate-boundary, materialisation, recurrence, and reminder-idempotency micro-decisions.
+> Note: `MaintenancePlan` and `MaintenanceOccurrence` are **separate household-scoped aggregate
+> roots** (not parent/child); each active plan keeps exactly one `Upcoming` occurrence (created on
+> plan creation, on complete/skip/promote, and healed by the daily job), and `LeadTimeDays` gates
+> the *reminder*, not the occurrence's *existence*.
+
 **Entities** (schedule/task only — **no cost fields** in v1):
 
 `MaintenancePlan`

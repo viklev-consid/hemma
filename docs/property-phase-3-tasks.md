@@ -4,7 +4,11 @@
 >
 > **Before starting:** Phases 0–2 must be merged. Read `/CLAUDE.md`, `src/Modules/CLAUDE.md`, the `vertical-slice`, `rich-domain-model`, and `wolverine-messaging` skills. Model the recurring job on Economy's `RunDueBillsJob`/`RunDueBillsHandler` and `TrialRenewalReminderJob`; model the recurrence/occurrence shape on Economy's `RecurringBill`; reuse the Phase 1 `PropertyAuditPublisher` and `SuggestedHistoryEntryResponse`.
 
-**Status:** In progress.
+**Status:** Completed. Implemented across `1f7a3ab` (domain), `95178d0` (persistence + migration),
+`087e5c4` (Households members contract query), `91cd4c6` (slices + scheduling job + GDPR cascade),
+and `34add9f` (tests). All work items below are done; migration applied, audit emitted on mutations,
+reminders idempotent across job runs, and OpenAPI published via endpoint registration. Full solution
+test suite green.
 
 > Phase 3 stays **entirely inside the Property module** plus one additive contract on Households. It reuses `PropertyPermissions` (`Read`/`Write`), the `property` schema + `PropertyDbContext`, and `PropertyMutationRecordedV1` + the existing Audit subscriber — it does **not** introduce a Maintenance module, schema, permission set, or audit event. New cross-module edges: **Property → `Notifications.Contracts`** (send `CreateNotificationCommand`) and **Property → `Households.Contracts`** (invoke the new `ListHouseholdMembersQuery`). Property already references `Households.Contracts`; the `Notifications.Contracts` reference is new.
 
@@ -37,44 +41,44 @@ These were implicit in the master plan; resolve them this way and don't re-litig
 ## Work items (in order)
 
 ### 1. Domain — Maintenance aggregates
-- [ ] `Domain/MaintenancePlanId.cs`, `MaintenanceOccurrenceId.cs` (typed IDs).
-- [ ] `Domain/MaintenanceRecurrenceUnit.cs` (`Month`/`Year`), `MaintenanceOccurrenceStatus.cs` (`Upcoming`/`Done`/`Skipped`).
-- [ ] `Domain/MaintenancePlan.cs` — `Create`, `UpdateDetails`, `Deactivate`, pure `NextDueOnOrAfter(floor)`. Validates title (≤160, required), description (≤2000), area (≤100), `RecurrenceInterval` (1–120), `LeadTimeDays` (0–365).
-- [ ] `Domain/MaintenanceOccurrence.cs` — `Schedule(plan, dueDate)` factory, `Complete(notes, clock)`, `Skip(notes, clock)`, `PromoteToProject(projectId, clock)`; each rejects unless `Upcoming`.
-- [ ] `PropertyErrors` additions (plan not-found/invalid, recurrence invalid, lead-time invalid, occurrence not-found/not-open).
+- [x] `Domain/MaintenancePlanId.cs`, `MaintenanceOccurrenceId.cs` (typed IDs).
+- [x] `Domain/MaintenanceRecurrenceUnit.cs` (`Month`/`Year`), `MaintenanceOccurrenceStatus.cs` (`Upcoming`/`Done`/`Skipped`).
+- [x] `Domain/MaintenancePlan.cs` — `Create`, `UpdateDetails`, `Deactivate`, pure `NextDueOnOrAfter(floor)`. Validates title (≤160, required), description (≤2000), area (≤100), `RecurrenceInterval` (1–120), `LeadTimeDays` (0–365).
+- [x] `Domain/MaintenanceOccurrence.cs` — `Schedule(plan, dueDate)` factory, `Complete(notes, clock)`, `Skip(notes, clock)`, `PromoteToProject(projectId, clock)`; each rejects unless `Upcoming`.
+- [x] `PropertyErrors` additions (plan not-found/invalid, recurrence invalid, lead-time invalid, occurrence not-found/not-open).
 - **Done when:** unit tests cover recurrence stepping (month/year; anchor in past → next future; anchor in future → anchor), validation, and occurrence transitions. No infra usings in `Domain/`.
 
 ### 2. Persistence
-- [ ] `Persistence/Configurations/MaintenancePlanConfiguration.cs` (indexes `HouseholdId`, `(HouseholdId, IsActive)`).
-- [ ] `Persistence/Configurations/MaintenanceOccurrenceConfiguration.cs` (indexes `(HouseholdId, Status, DueDate)`, `(PlanId, Status)`, **unique `(PlanId, DueDate)`**).
-- [ ] `DbSet<MaintenancePlan>` + `DbSet<MaintenanceOccurrence>` on `PropertyDbContext`.
-- [ ] Migration `Phase3Maintenance` (PropertyDbContext).
+- [x] `Persistence/Configurations/MaintenancePlanConfiguration.cs` (indexes `HouseholdId`, `(HouseholdId, IsActive)`).
+- [x] `Persistence/Configurations/MaintenanceOccurrenceConfiguration.cs` (indexes `(HouseholdId, Status, DueDate)`, `(PlanId, Status)`, **unique `(PlanId, DueDate)`**).
+- [x] `DbSet<MaintenancePlan>` + `DbSet<MaintenanceOccurrence>` on `PropertyDbContext`.
+- [x] Migration `Phase3Maintenance` (PropertyDbContext).
 - **Done when:** migration applies cleanly; arch tests green.
 
 ### 3. Households — members contract query
-- [ ] `Households.Contracts/Queries/ListHouseholdMembersQuery.cs` — `ListHouseholdMembersQuery(Guid HouseholdId)`, `ListHouseholdMembersResult(IReadOnlyList<HouseholdMemberInfo>)`, `HouseholdMemberInfo(Guid UserId)`.
-- [ ] Handler in Households returning active, non-anonymised member user ids; register in `AddHouseholdsHandlers`.
+- [x] `Households.Contracts/Queries/ListHouseholdMembersQuery.cs` — `ListHouseholdMembersQuery(Guid HouseholdId)`, `ListHouseholdMembersResult(IReadOnlyList<HouseholdMemberInfo>)`, `HouseholdMemberInfo(Guid UserId)`.
+- [x] Handler in Households returning active, non-anonymised member user ids; register in `AddHouseholdsHandlers`.
 - **Done when:** Property can invoke it via `IMessageBus`; no Property→Households internal reference.
 
 ### 4. Slices — Maintenance (folder `Features/Maintenance/`)
-- [ ] `CreateMaintenancePlan` (materialises first occurrence if active), `UpdateMaintenancePlan`, `DeactivatePlan`, `DeletePlan`.
-- [ ] `CompleteOccurrence` (returns suggested Logbook payload + schedules next), `SkipOccurrence` (schedules next).
-- [ ] `PromoteOccurrenceToProject` (creates Project, sets `SpawnedProjectId`, schedules next, returns project).
-- [ ] Queries `ListMaintenancePlans`, `GetPlan`, `ListUpcomingOccurrences { HouseholdId, HorizonDays }`.
-- [ ] All endpoints under `/v1/property/maintenance/...`, `HouseholdScope` + `Read`/`Write`, audit on mutations.
+- [x] `CreateMaintenancePlan` (materialises first occurrence if active), `UpdateMaintenancePlan`, `DeactivatePlan`, `DeletePlan`.
+- [x] `CompleteOccurrence` (returns suggested Logbook payload + schedules next), `SkipOccurrence` (schedules next).
+- [x] `PromoteOccurrenceToProject` (creates Project, sets `SpawnedProjectId`, schedules next, returns project).
+- [x] Queries `ListMaintenancePlans`, `GetPlan`, `ListUpcomingOccurrences { HouseholdId, HorizonDays }`.
+- [x] All endpoints under `/v1/property/maintenance/...`, `HouseholdScope` + `Read`/`Write`, audit on mutations.
 - **Done when:** integration tests cover create→materialise→list, complete (payload + next), skip, promote, deactivate/delete, cross-household 403.
 
 ### 5. Scheduling job (TickerQ)
-- [ ] `Property.csproj` references `Notifications.Contracts`.
-- [ ] `Jobs/MaterializeMaintenanceOccurrences.cs` (command), `MaterializeMaintenanceOccurrencesJob.cs` (`[TickerFunction]`, daily), `MaterializeMaintenanceOccurrencesHandler.cs` (heal + notify).
-- [ ] Deterministic idempotency-key helper from `(OccurrenceId, UserId)`.
-- [ ] `AddPropertyJobs` extension + `PropertyModuleInstaller.ConfigureJobs`; register the handler in `AddPropertyHandlers`.
+- [x] `Property.csproj` references `Notifications.Contracts`.
+- [x] `Jobs/MaterializeMaintenanceOccurrences.cs` (command), `MaterializeMaintenanceOccurrencesJob.cs` (`[TickerFunction]`, daily), `MaterializeMaintenanceOccurrencesHandler.cs` (heal + notify).
+- [x] Deterministic idempotency-key helper from `(OccurrenceId, UserId)`.
+- [x] `AddPropertyJobs` extension + `PropertyModuleInstaller.ConfigureJobs`; register the handler in `AddPropertyHandlers`.
 - **Done when:** integration test runs the command, asserts one notification per member, and asserts a second run produces no duplicates.
 
 ### 6. Registration, GDPR, publish
-- [ ] Register `MaintenanceHandler` + `MaterializeMaintenanceOccurrencesHandler` in `AddPropertyHandlers`; map `MaintenanceEndpoint`.
-- [ ] `PropertyPersonalDataEraser.EraseHouseholdAsync` deletes maintenance plans + occurrences for the household (maintenance owns no blobs).
-- [ ] Confirm OpenAPI reflects the new endpoints via full build/test.
+- [x] Register `MaintenanceHandler` + `MaterializeMaintenanceOccurrencesHandler` in `AddPropertyHandlers`; map `MaintenanceEndpoint`.
+- [x] `PropertyPersonalDataEraser.EraseHouseholdAsync` deletes maintenance plans + occurrences for the household (maintenance owns no blobs).
+- [x] Confirm OpenAPI reflects the new endpoints via full build/test.
 
 ---
 
