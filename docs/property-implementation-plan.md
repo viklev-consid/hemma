@@ -33,7 +33,7 @@ These touch shared/Economy code outside the Property module, so they precede the
 **Status:** Completed in `3696fef` (`feat: scaffold property module foundation`).
 
 - Create the `Property` module project, `property` schema, EF `DbContext`, and initial migration (mostly produced by `dotnet new hemma-module`).
-- Wire household scoping, `PropertyPermissions` (`Read`/`Write`, registered via `AddPermissions`), Wolverine handler discovery, the `PropertyMutationRecordedV1` event + Audit subscriber, and GDPR participation (`PropertyPersonalDataEraser` + a household-deletion subscriber — the template stub; flesh out in Phase 4 once blobs exist).
+- Wire household scoping, `PropertyPermissions` (`Read`/`Write`, registered via `AddPermissions`), Wolverine handler discovery, the `PropertyMutationRecordedV1` event + Audit subscriber, and GDPR participation (`PropertyPersonalDataEraser` + a household-deletion subscriber; Phase 4 fleshed this out for project/logbook blob deletion and user assignee scrubbing).
 
 ## Phase 1 — Project core
 
@@ -83,7 +83,7 @@ and `c9f06e8` (`test: cover property project api`).
 
 **Reading attachments back:** no module currently serves blobs (`IBlobStore.GetDownloadUrlAsync` is defined but unused). Add a `GetAttachmentContent { ProjectId, AttachmentId }` endpoint that streams the blob through the API via `IBlobStore.GetAsync` (household-authorized, returns the file with its stored content-type). This same serve path is reused for Logbook photos in Phase 4. (A presigned-URL path via `GetDownloadUrlAsync` is a possible later optimisation — out of scope for v1.)
 
-**Completion behaviour:** `ChangeProjectStatus -> Done` sets `CompletedAt` and the response includes a **suggested Logbook payload** (see Phase 4 shape). Until Phase 4 the field is returned but not persisted anywhere — this is intentional, not dead code; the `HistoryEntry` aggregate that consumes it lands in Phase 4. Keep the field in the published contract from Phase 1 so the OpenAPI shape doesn't churn.
+**Completion behaviour:** `ChangeProjectStatus -> Done` sets `CompletedAt` and the response includes a **suggested Logbook payload** (see Phase 4 shape). Phase 4 added the `HistoryEntry` aggregate that consumes this payload. Project completion now snapshots linked Economy spend into `cost` and offers project attachment blob refs for copy-on-claim.
 
 **Queries:** `GetProject`, `ListProjects` (filter by status/area), `GetProjectTasks`.
 
@@ -172,6 +172,8 @@ and `34add9f` (`test: cover property maintenance api and scheduling`).
 **Publish:** OpenAPI for the above.
 
 ## Phase 4 — Logbook
+
+**Status:** Completed in `09c06c8` (`feat: add property logbook`).
 
 **Entity:** `HistoryEntry` — a **durable** aggregate, deliberately not a live query over Projects/Maintenance. The resale record must survive edits or deletion of the originating project.
 

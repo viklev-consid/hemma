@@ -19,7 +19,7 @@ These were implicit in the master plan; resolve them this way and don't re-litig
 2. **Typed IDs:** `ProjectId`, `ProjectTaskId`, `ProjectLinkId`, `ProjectAttachmentId` (Guid wrappers, per repo convention).
 3. **`ReorderTasks` contract:** client sends the full ordered list of `ProjectTaskId`s; the aggregate reassigns `SortOrder` 0..n. Reject if the set doesn't match the project's current task IDs.
 4. **Attachment limits (reuse AttachReceipt's):** allow `application/pdf`, `image/jpeg`, `image/png`, `image/webp`; max 10 MB; reject otherwise with a `PropertyErrors` value.
-5. **`SuggestedHistoryEntry.photoRefs`** in the contract is a list of `{ attachmentId, fileName, contentType }` (a lightweight DTO), **not** the infra `BlobRef` — keep infrastructure types out of OpenAPI. The serve endpoint resolves a key from `(projectId, attachmentId)`.
+5. **`SuggestedHistoryEntry.photoRefs`** started as lightweight attachment metadata in Phase 1. Phase 4 changed the wire shape to `{ container, key }` so `CreateHistoryEntry` can copy offered blobs via `IBlobStore.GetAsync` -> `PutAsync` without coupling Logbook creation to live project attachment rows.
 6. **`ChangeProjectStatus -> Done`** is the only transition that sets `CompletedAt` and returns the suggested payload. Other transitions just change `Status`. `Done -> *` (reopen) clears `CompletedAt`.
 
 ---
