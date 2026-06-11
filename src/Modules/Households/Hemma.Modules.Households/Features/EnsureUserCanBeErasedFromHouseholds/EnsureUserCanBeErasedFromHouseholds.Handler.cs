@@ -1,8 +1,8 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Households.Contracts.Commands;
 using Hemma.Modules.Households.Domain;
 using Hemma.Modules.Households.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Households.Features.EnsureUserCanBeErasedFromHouseholds;
 

@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Households.Persistence;
 using Hemma.Shared.Kernel.Gdpr;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Households.Gdpr;
 

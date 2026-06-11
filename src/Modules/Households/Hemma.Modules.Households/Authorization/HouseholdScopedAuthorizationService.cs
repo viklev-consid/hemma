@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Households.Contracts.Authorization;
 using Hemma.Modules.Households.Domain;
 using Hemma.Modules.Households.Persistence;
 using Hemma.Shared.Infrastructure.Authorization;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Households.Authorization;
 

@@ -1,11 +1,11 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Hemma.Modules.Households.Authorization;
 using Hemma.Modules.Households.Contracts.Authorization;
 using Hemma.Shared.Infrastructure.Authorization;
 using Hemma.Shared.Infrastructure.Http;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Wolverine;
 
 namespace Hemma.Modules.Households.Features.GetHousehold;

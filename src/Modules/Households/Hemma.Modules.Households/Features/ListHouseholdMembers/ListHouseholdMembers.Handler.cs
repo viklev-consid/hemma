@@ -1,9 +1,9 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Households.Errors;
 using Hemma.Modules.Households.Persistence;
 using Hemma.Modules.Users.Contracts.Queries;
 using Hemma.Shared.Kernel.Pagination;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 
 namespace Hemma.Modules.Households.Features.ListHouseholdMembers;

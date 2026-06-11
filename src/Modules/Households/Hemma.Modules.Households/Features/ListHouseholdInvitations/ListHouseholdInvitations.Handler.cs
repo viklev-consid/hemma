@@ -1,8 +1,8 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Households.Errors;
 using Hemma.Modules.Households.Persistence;
 using Hemma.Shared.Kernel.Pagination;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Households.Features.ListHouseholdInvitations;
 
