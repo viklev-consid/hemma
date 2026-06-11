@@ -1,0 +1,178 @@
+using ErrorOr;
+using Hemma.Modules.Property.Errors;
+using Hemma.Shared.Kernel.Domain;
+
+namespace Hemma.Modules.Property.Domain;
+
+public sealed class MaintenancePlan : AggregateRoot<MaintenancePlanId>
+{
+    public const int MaxRecurrenceInterval = 120;
+    public const int MaxLeadTimeDays = 365;
+
+    private MaintenancePlan(
+        MaintenancePlanId id,
+        Guid householdId,
+        string title,
+        string? description,
+        string? area,
+        MaintenanceRecurrenceUnit recurrenceUnit,
+        int recurrenceInterval,
+        DateOnly anchorDate,
+        int leadTimeDays) : base(id)
+    {
+        HouseholdId = householdId;
+        Title = title;
+        Description = description;
+        Area = area;
+        RecurrenceUnit = recurrenceUnit;
+        RecurrenceInterval = recurrenceInterval;
+        AnchorDate = anchorDate;
+        LeadTimeDays = leadTimeDays;
+        IsActive = true;
+    }
+
+    private MaintenancePlan() : base(default!) { }
+
+    public Guid HouseholdId { get; private set; }
+    public string Title { get; private set; } = string.Empty;
+    public string? Description { get; private set; }
+    public string? Area { get; private set; }
+    public MaintenanceRecurrenceUnit RecurrenceUnit { get; private set; }
+    public int RecurrenceInterval { get; private set; }
+    public DateOnly AnchorDate { get; private set; }
+    public int LeadTimeDays { get; private set; }
+    public bool IsActive { get; private set; }
+
+    public static ErrorOr<MaintenancePlan> Create(
+        Guid householdId,
+        string title,
+        string? description,
+        string? area,
+        MaintenanceRecurrenceUnit recurrenceUnit,
+        int recurrenceInterval,
+        DateOnly anchorDate,
+        int leadTimeDays)
+    {
+        var details = ValidateDetails(title, description, area, recurrenceUnit, recurrenceInterval, leadTimeDays);
+        if (details.IsError)
+        {
+            return details.Errors;
+        }
+
+        return new MaintenancePlan(
+            MaintenancePlanId.New(),
+            householdId,
+            details.Value.Title,
+            details.Value.Description,
+            details.Value.Area,
+            recurrenceUnit,
+            recurrenceInterval,
+            anchorDate,
+            leadTimeDays);
+    }
+
+    public ErrorOr<Success> UpdateDetails(
+        string title,
+        string? description,
+        string? area,
+        MaintenanceRecurrenceUnit recurrenceUnit,
+        int recurrenceInterval,
+        DateOnly anchorDate,
+        int leadTimeDays)
+    {
+        var details = ValidateDetails(title, description, area, recurrenceUnit, recurrenceInterval, leadTimeDays);
+        if (details.IsError)
+        {
+            return details.Errors;
+        }
+
+        Title = details.Value.Title;
+        Description = details.Value.Description;
+        Area = details.Value.Area;
+        RecurrenceUnit = recurrenceUnit;
+        RecurrenceInterval = recurrenceInterval;
+        AnchorDate = anchorDate;
+        LeadTimeDays = leadTimeDays;
+        return Result.Success;
+    }
+
+    public void Deactivate() => IsActive = false;
+
+    /// <summary>
+    /// Returns the first occurrence date on or after <paramref name="floor"/> by stepping
+    /// <see cref="AnchorDate"/> forward in <see cref="RecurrenceInterval"/> × <see cref="RecurrenceUnit"/>
+    /// increments. No backfill — only the single next date is returned.
+    /// </summary>
+    public DateOnly NextDueOnOrAfter(DateOnly floor)
+    {
+        var candidate = AnchorDate;
+        while (candidate < floor)
+        {
+            candidate = RecurrenceUnit == MaintenanceRecurrenceUnit.Year
+                ? candidate.AddYears(RecurrenceInterval)
+                : candidate.AddMonths(RecurrenceInterval);
+        }
+
+        return candidate;
+    }
+
+    private static ErrorOr<PlanDetails> ValidateDetails(
+        string title,
+        string? description,
+        string? area,
+        MaintenanceRecurrenceUnit recurrenceUnit,
+        int recurrenceInterval,
+        int leadTimeDays)
+    {
+        var normalizedTitle = NormalizeRequired(title, 160);
+        if (normalizedTitle is null)
+        {
+            return PropertyErrors.MaintenancePlanTitleInvalid;
+        }
+
+        var normalizedDescription = NormalizeOptional(description, 2000);
+        if (normalizedDescription.IsError)
+        {
+            return PropertyErrors.MaintenancePlanDescriptionInvalid;
+        }
+
+        var normalizedArea = NormalizeOptional(area, 100);
+        if (normalizedArea.IsError)
+        {
+            return PropertyErrors.MaintenancePlanAreaInvalid;
+        }
+
+        if (!Enum.IsDefined(recurrenceUnit) || recurrenceInterval < 1 || recurrenceInterval > MaxRecurrenceInterval)
+        {
+            return PropertyErrors.MaintenanceRecurrenceInvalid;
+        }
+
+        if (leadTimeDays < 0 || leadTimeDays > MaxLeadTimeDays)
+        {
+            return PropertyErrors.MaintenanceLeadTimeInvalid;
+        }
+
+        return new PlanDetails(normalizedTitle, normalizedDescription.Value.Value, normalizedArea.Value.Value);
+    }
+
+    private static string? NormalizeRequired(string value, int maxLength)
+    {
+        var normalized = value.Trim();
+        return normalized.Length is 0 || normalized.Length > maxLength ? null : normalized;
+    }
+
+    private static ErrorOr<OptionalString> NormalizeOptional(string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return new OptionalString(null);
+        }
+
+        var normalized = value.Trim();
+        return normalized.Length > maxLength ? PropertyErrors.MaintenancePlanDescriptionInvalid : new OptionalString(normalized);
+    }
+
+    private sealed record OptionalString(string? Value);
+
+    private sealed record PlanDetails(string Title, string? Description, string? Area);
+}

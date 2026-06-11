@@ -52,4 +52,28 @@ internal static class PropertyErrors
 
     public static readonly ErrorOr.Error AttachmentBlobInvalid =
         ErrorOr.Error.Validation("Property.ProjectAttachment.BlobInvalid", "Attachment blob reference is invalid.");
+
+    public static readonly ErrorOr.Error MaintenancePlanNotFound =
+        ErrorOr.Error.NotFound("Property.MaintenancePlan.NotFound", "Maintenance plan was not found.");
+
+    public static readonly ErrorOr.Error MaintenancePlanTitleInvalid =
+        ErrorOr.Error.Validation("Property.MaintenancePlan.TitleInvalid", "Maintenance plan title is required and cannot exceed 160 characters.");
+
+    public static readonly ErrorOr.Error MaintenancePlanDescriptionInvalid =
+        ErrorOr.Error.Validation("Property.MaintenancePlan.DescriptionInvalid", "Maintenance plan description cannot exceed 2,000 characters.");
+
+    public static readonly ErrorOr.Error MaintenancePlanAreaInvalid =
+        ErrorOr.Error.Validation("Property.MaintenancePlan.AreaInvalid", "Maintenance plan area cannot exceed 100 characters.");
+
+    public static readonly ErrorOr.Error MaintenanceRecurrenceInvalid =
+        ErrorOr.Error.Validation("Property.MaintenancePlan.RecurrenceInvalid", "Maintenance recurrence unit must be Month or Year and the interval must be between 1 and 120.");
+
+    public static readonly ErrorOr.Error MaintenanceLeadTimeInvalid =
+        ErrorOr.Error.Validation("Property.MaintenancePlan.LeadTimeInvalid", "Maintenance lead time must be between 0 and 365 days.");
+
+    public static readonly ErrorOr.Error MaintenanceOccurrenceNotFound =
+        ErrorOr.Error.NotFound("Property.MaintenanceOccurrence.NotFound", "Maintenance occurrence was not found.");
+
+    public static readonly ErrorOr.Error MaintenanceOccurrenceNotOpen =
+        ErrorOr.Error.Validation("Property.MaintenanceOccurrence.NotOpen", "Maintenance occurrence is not upcoming and cannot be changed.");
 }
