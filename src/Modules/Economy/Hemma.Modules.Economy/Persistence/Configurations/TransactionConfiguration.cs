@@ -73,6 +73,8 @@ internal sealed class TransactionConfiguration : IEntityTypeConfiguration<Transa
 
         builder.Property(transaction => transaction.SubscriptionId);
 
+        builder.Property(transaction => transaction.ProjectId);
+
         builder.HasOne<Account>()
             .WithMany()
             .HasForeignKey(transaction => transaction.AccountId)
@@ -90,6 +92,7 @@ internal sealed class TransactionConfiguration : IEntityTypeConfiguration<Transa
         builder.HasIndex(transaction => transaction.PayerId);
         builder.HasIndex(transaction => transaction.TransferId);
         builder.HasIndex(transaction => transaction.SubscriptionId);
+        builder.HasIndex(transaction => new { transaction.HouseholdId, transaction.ProjectId });
         builder.HasIndex(transaction => new { transaction.AccountId, transaction.ImportFingerprint })
             .IsUnique()
             .HasFilter("\"import_fingerprint\" IS NOT NULL");
