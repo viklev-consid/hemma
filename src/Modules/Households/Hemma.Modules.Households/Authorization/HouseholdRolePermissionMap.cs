@@ -1,5 +1,6 @@
 using Hemma.Modules.Households.Contracts.Authorization;
 using Hemma.Modules.Households.Domain;
+using Hemma.Modules.Property.Contracts.Authorization;
 
 namespace Hemma.Modules.Households.Authorization;
 
@@ -16,12 +17,16 @@ internal static class HouseholdRolePermissionMap
                 HouseholdsPermissions.MembersRead,
                 HouseholdsPermissions.MembersManage,
                 HouseholdsPermissions.InvitationsManage,
-                HouseholdsPermissions.AuditRead
+                HouseholdsPermissions.AuditRead,
+                PropertyPermissions.Read,
+                PropertyPermissions.Write
             ],
             [HouseholdRole.Member.Name] =
             [
                 HouseholdsPermissions.HouseholdsRead,
-                HouseholdsPermissions.MembersRead
+                HouseholdsPermissions.MembersRead,
+                PropertyPermissions.Read,
+                PropertyPermissions.Write
             ]
         };
 

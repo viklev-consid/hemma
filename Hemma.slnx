@@ -57,4 +57,9 @@
     <Project Path="tests/Modules/Users/Hemma.Modules.Users.UnitTests/Hemma.Modules.Users.UnitTests.csproj" />
     <Project Path="tests/Modules/Users/Hemma.Modules.Users.IntegrationTests/Hemma.Modules.Users.IntegrationTests.csproj" />
   </Folder>
+  <Folder Name="/tests/Modules/" />
+  <Folder Name="/tests/Modules/Property/">
+    <Project Path="tests/Modules/Property/Hemma.Modules.Property.IntegrationTests/Hemma.Modules.Property.IntegrationTests.csproj" />
+    <Project Path="tests/Modules/Property/Hemma.Modules.Property.UnitTests/Hemma.Modules.Property.UnitTests.csproj" />
+  </Folder>
 </Solution>
