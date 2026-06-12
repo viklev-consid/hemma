@@ -7,7 +7,8 @@ public sealed record CreateProjectCommand(
     string Name,
     string? Description,
     string Status,
-    string? Area,
+    Guid? AreaId,
+    string? Priority,
     DateOnly? TargetStartDate,
     DateOnly? TargetEndDate,
     MoneyDto? BudgetEstimate,
@@ -18,7 +19,8 @@ public sealed record UpdateProjectCommand(
     Guid HouseholdId,
     string Name,
     string? Description,
-    string? Area,
+    Guid? AreaId,
+    string? Priority,
     DateOnly? TargetStartDate,
     DateOnly? TargetEndDate,
     MoneyDto? BudgetEstimate,
@@ -46,7 +48,7 @@ public sealed record RemoveAttachmentCommand(Guid ProjectId, Guid AttachmentId, 
 
 public sealed record GetProjectQuery(Guid ProjectId, Guid HouseholdId);
 
-public sealed record ListProjectsQuery(Guid HouseholdId, string? Status, string? Area);
+public sealed record ListProjectsQuery(Guid HouseholdId, string? Status, Guid? AreaId, string? Priority, IReadOnlyList<Guid>? TagIds);
 
 public sealed record GetProjectTasksQuery(Guid ProjectId, Guid HouseholdId);
 

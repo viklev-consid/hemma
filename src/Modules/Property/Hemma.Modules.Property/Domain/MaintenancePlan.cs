@@ -14,7 +14,7 @@ public sealed class MaintenancePlan : AggregateRoot<MaintenancePlanId>
         Guid householdId,
         string title,
         string? description,
-        string? area,
+        PropertyAreaId? areaId,
         MaintenanceRecurrenceUnit recurrenceUnit,
         int recurrenceInterval,
         DateOnly anchorDate,
@@ -23,7 +23,7 @@ public sealed class MaintenancePlan : AggregateRoot<MaintenancePlanId>
         HouseholdId = householdId;
         Title = title;
         Description = description;
-        Area = area;
+        AreaId = areaId;
         RecurrenceUnit = recurrenceUnit;
         RecurrenceInterval = recurrenceInterval;
         AnchorDate = anchorDate;
@@ -36,7 +36,7 @@ public sealed class MaintenancePlan : AggregateRoot<MaintenancePlanId>
     public Guid HouseholdId { get; private set; }
     public string Title { get; private set; } = string.Empty;
     public string? Description { get; private set; }
-    public string? Area { get; private set; }
+    public PropertyAreaId? AreaId { get; private set; }
     public MaintenanceRecurrenceUnit RecurrenceUnit { get; private set; }
     public int RecurrenceInterval { get; private set; }
     public DateOnly AnchorDate { get; private set; }
@@ -47,13 +47,13 @@ public sealed class MaintenancePlan : AggregateRoot<MaintenancePlanId>
         Guid householdId,
         string title,
         string? description,
-        string? area,
+        PropertyAreaId? areaId,
         MaintenanceRecurrenceUnit recurrenceUnit,
         int recurrenceInterval,
         DateOnly anchorDate,
         int leadTimeDays)
     {
-        var details = ValidateDetails(title, description, area, recurrenceUnit, recurrenceInterval, leadTimeDays);
+        var details = ValidateDetails(title, description, recurrenceUnit, recurrenceInterval, leadTimeDays);
         if (details.IsError)
         {
             return details.Errors;
@@ -64,7 +64,7 @@ public sealed class MaintenancePlan : AggregateRoot<MaintenancePlanId>
             householdId,
             details.Value.Title,
             details.Value.Description,
-            details.Value.Area,
+            areaId,
             recurrenceUnit,
             recurrenceInterval,
             anchorDate,
@@ -74,13 +74,13 @@ public sealed class MaintenancePlan : AggregateRoot<MaintenancePlanId>
     public ErrorOr<Success> UpdateDetails(
         string title,
         string? description,
-        string? area,
+        PropertyAreaId? areaId,
         MaintenanceRecurrenceUnit recurrenceUnit,
         int recurrenceInterval,
         DateOnly anchorDate,
         int leadTimeDays)
     {
-        var details = ValidateDetails(title, description, area, recurrenceUnit, recurrenceInterval, leadTimeDays);
+        var details = ValidateDetails(title, description, recurrenceUnit, recurrenceInterval, leadTimeDays);
         if (details.IsError)
         {
             return details.Errors;
@@ -88,7 +88,7 @@ public sealed class MaintenancePlan : AggregateRoot<MaintenancePlanId>
 
         Title = details.Value.Title;
         Description = details.Value.Description;
-        Area = details.Value.Area;
+        AreaId = areaId;
         RecurrenceUnit = recurrenceUnit;
         RecurrenceInterval = recurrenceInterval;
         AnchorDate = anchorDate;
@@ -119,7 +119,6 @@ public sealed class MaintenancePlan : AggregateRoot<MaintenancePlanId>
     private static ErrorOr<PlanDetails> ValidateDetails(
         string title,
         string? description,
-        string? area,
         MaintenanceRecurrenceUnit recurrenceUnit,
         int recurrenceInterval,
         int leadTimeDays)
@@ -136,12 +135,6 @@ public sealed class MaintenancePlan : AggregateRoot<MaintenancePlanId>
             return PropertyErrors.MaintenancePlanDescriptionInvalid;
         }
 
-        var normalizedArea = NormalizeOptional(area, 100);
-        if (normalizedArea.IsError)
-        {
-            return PropertyErrors.MaintenancePlanAreaInvalid;
-        }
-
         if (!Enum.IsDefined(recurrenceUnit) || recurrenceInterval < 1 || recurrenceInterval > MaxRecurrenceInterval)
         {
             return PropertyErrors.MaintenanceRecurrenceInvalid;
@@ -152,7 +145,7 @@ public sealed class MaintenancePlan : AggregateRoot<MaintenancePlanId>
             return PropertyErrors.MaintenanceLeadTimeInvalid;
         }
 
-        return new PlanDetails(normalizedTitle, normalizedDescription.Value.Value, normalizedArea.Value.Value);
+        return new PlanDetails(normalizedTitle, normalizedDescription.Value.Value);
     }
 
     private static string? NormalizeRequired(string value, int maxLength)
@@ -174,5 +167,5 @@ public sealed class MaintenancePlan : AggregateRoot<MaintenancePlanId>
 
     private sealed record OptionalString(string? Value);
 
-    private sealed record PlanDetails(string Title, string? Description, string? Area);
+    private sealed record PlanDetails(string Title, string? Description);
 }

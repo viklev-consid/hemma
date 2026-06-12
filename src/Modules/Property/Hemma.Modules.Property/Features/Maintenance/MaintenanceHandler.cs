@@ -24,11 +24,17 @@ public sealed class MaintenanceHandler(
             return PropertyErrors.MaintenanceRecurrenceInvalid;
         }
 
+        var areaId = await ValidateAreaAsync(cmd.HouseholdId, cmd.AreaId, ct);
+        if (areaId.IsError)
+        {
+            return areaId.Errors;
+        }
+
         var plan = MaintenancePlan.Create(
             cmd.HouseholdId,
             cmd.Title,
             cmd.Description,
-            cmd.Area,
+            areaId.Value.Value,
             unit.Value,
             cmd.RecurrenceInterval,
             cmd.AnchorDate,
@@ -65,10 +71,16 @@ public sealed class MaintenanceHandler(
             return PropertyErrors.MaintenancePlanNotFound;
         }
 
+        var areaId = await ValidateAreaAsync(cmd.HouseholdId, cmd.AreaId, ct);
+        if (areaId.IsError)
+        {
+            return areaId.Errors;
+        }
+
         var updated = plan.UpdateDetails(
             cmd.Title,
             cmd.Description,
-            cmd.Area,
+            areaId.Value.Value,
             unit.Value,
             cmd.RecurrenceInterval,
             cmd.AnchorDate,
@@ -142,7 +154,8 @@ public sealed class MaintenanceHandler(
             : new SuggestedHistoryEntryResponse(
                 DateOnly.FromDateTime(occurrence.CompletedAt!.Value.UtcDateTime),
                 plan.Title,
-                plan.Area,
+                plan.AreaId?.Value,
+                null,
                 null,
                 "Maintenance",
                 null,
@@ -188,6 +201,18 @@ public sealed class MaintenanceHandler(
             return PropertyErrors.ProjectStatusInvalid;
         }
 
+        var priority = ParseProjectPriority(cmd.Priority);
+        if (priority is null)
+        {
+            return PropertyErrors.ProjectPriorityInvalid;
+        }
+
+        var areaId = await ValidateAreaAsync(cmd.HouseholdId, cmd.AreaId, ct);
+        if (areaId.IsError)
+        {
+            return areaId.Errors;
+        }
+
         var estimate = ToMoney(cmd.BudgetEstimate);
         if (estimate.IsError)
         {
@@ -205,7 +230,8 @@ public sealed class MaintenanceHandler(
             cmd.Name,
             cmd.Description,
             status.Value,
-            cmd.Area,
+            areaId.Value.Value,
+            priority.Value,
             cmd.TargetStartDate,
             cmd.TargetEndDate,
             estimate.Value.Value,
@@ -265,6 +291,29 @@ public sealed class MaintenanceHandler(
             plans = plans.Where(plan => plan.IsActive);
         }
 
+        if (query.AreaId is not null)
+        {
+            plans = plans.Where(plan => plan.AreaId == new PropertyAreaId(query.AreaId.Value));
+        }
+
+        if (query.TagIds is { Count: > 0 })
+        {
+            var tagIds = query.TagIds.Distinct().Select(id => new PropertyTagId(id)).ToArray();
+            var matchingPlanIds = (await db.TagAssignments
+                .AsNoTracking()
+                .Where(assignment => assignment.HouseholdId == query.HouseholdId
+                    && assignment.TargetType == PropertyTagTargetType.MaintenancePlan
+                    && tagIds.Contains(assignment.TagId))
+                .GroupBy(assignment => assignment.TargetId)
+                .Where(group => group.Select(assignment => assignment.TagId).Distinct().Count() == tagIds.Length)
+                .Select(group => group.Key)
+                .ToArrayAsync(ct))
+                .Select(id => new MaintenancePlanId(id))
+                .ToArray();
+
+            plans = plans.Where(plan => matchingPlanIds.Contains(plan.Id));
+        }
+
         var items = await plans
             .OrderByDescending(plan => plan.IsActive)
             .ThenBy(plan => plan.Title)
@@ -273,7 +322,8 @@ public sealed class MaintenanceHandler(
                 plan.HouseholdId,
                 plan.Title,
                 plan.Description,
-                plan.Area,
+                plan.AreaId == null ? null : plan.AreaId.Value.Value,
+                null,
                 plan.RecurrenceUnit.ToString(),
                 plan.RecurrenceInterval,
                 plan.AnchorDate,
@@ -315,7 +365,8 @@ public sealed class MaintenanceHandler(
                     o.PlanId.Value,
                     o.HouseholdId,
                     plan?.Title ?? string.Empty,
-                    plan?.Area,
+                    plan?.AreaId?.Value,
+                    null,
                     o.DueDate,
                     o.Status.ToString());
             })
@@ -373,6 +424,16 @@ public sealed class MaintenanceHandler(
     private static ProjectStatus? ParseProjectStatus(string status) =>
         Enum.TryParse<ProjectStatus>(status, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed) ? parsed : null;
 
+    private static ProjectPriority? ParseProjectPriority(string? priority)
+    {
+        if (string.IsNullOrWhiteSpace(priority))
+        {
+            return ProjectPriority.Medium;
+        }
+
+        return Enum.TryParse<ProjectPriority>(priority, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed) ? parsed : null;
+    }
+
     private static ErrorOr<OptionalMoney> ToMoney(MoneyDto? money)
     {
         if (money is null)
@@ -385,4 +446,18 @@ public sealed class MaintenanceHandler(
     }
 
     private sealed record OptionalMoney(Money? Value);
+
+    private async Task<ErrorOr<OptionalAreaId>> ValidateAreaAsync(Guid householdId, Guid? areaId, CancellationToken ct)
+    {
+        if (areaId is null)
+        {
+            return new OptionalAreaId(null);
+        }
+
+        var typedId = new PropertyAreaId(areaId.Value);
+        var exists = await db.Areas.AnyAsync(area => area.HouseholdId == householdId && area.Id == typedId, ct);
+        return exists ? new OptionalAreaId(typedId) : PropertyErrors.AreaNotFound;
+    }
+
+    private sealed record OptionalAreaId(PropertyAreaId? Value);
 }

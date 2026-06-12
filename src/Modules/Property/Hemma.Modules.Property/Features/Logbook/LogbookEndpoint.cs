@@ -35,7 +35,7 @@ internal static class LogbookEndpoint
                         request.HouseholdId,
                         request.Date,
                         request.Title,
-                        request.Area,
+                        request.AreaId,
                         request.Cost,
                         request.Type,
                         request.SourceProjectId,
@@ -73,7 +73,7 @@ internal static class LogbookEndpoint
                         request.HouseholdId,
                         request.Date,
                         request.Title,
-                        request.Area,
+                        request.AreaId,
                         request.Cost,
                         request.Type,
                         request.SourceProjectId,
@@ -92,8 +92,9 @@ internal static class LogbookEndpoint
             async (
                 Guid householdId,
                 int? year,
-                string? area,
+                Guid? areaId,
                 string? type,
+                [Microsoft.AspNetCore.Mvc.FromQuery] Guid[]? tagIds,
                 IScopedAuthorizationService<HouseholdScope> authorization,
                 ICurrentUser currentUser,
                 IMessageBus bus,
@@ -103,7 +104,7 @@ internal static class LogbookEndpoint
                 if (forbidden is not null) { return forbidden; }
 
                 var result = await bus.InvokeAsync<ErrorOr.ErrorOr<ListHistoryResponse>>(
-                    new ListHistoryQuery(householdId, year, area, type),
+                    new ListHistoryQuery(householdId, year, areaId, type, tagIds),
                     ct);
                 return result.ToProblemDetailsOr(Results.Ok);
             })

@@ -10,7 +10,6 @@ internal sealed class HistoryEntryRequestValidator : AbstractValidator<HistoryEn
         RuleFor(x => x.HouseholdId).NotEmpty();
         RuleFor(x => x.Date).NotEmpty();
         RuleFor(x => x.Title).NotEmpty().MaximumLength(160);
-        RuleFor(x => x.Area).MaximumLength(100);
         RuleFor(x => x.Type).NotEmpty().Must(type => Enum.TryParse<Domain.HistoryEntryType>(type, ignoreCase: true, out _));
         RuleForEach(x => x.PhotoRefs).ChildRules(photo =>
         {

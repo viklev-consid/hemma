@@ -17,7 +17,8 @@ public sealed class Project : AggregateRoot<ProjectId>
         string name,
         string? description,
         ProjectStatus status,
-        string? area,
+        PropertyAreaId? areaId,
+        ProjectPriority priority,
         DateOnly? targetStartDate,
         DateOnly? targetEndDate,
         Money? budgetEstimate,
@@ -27,7 +28,8 @@ public sealed class Project : AggregateRoot<ProjectId>
         Name = name;
         Description = description;
         Status = status;
-        Area = area;
+        AreaId = areaId;
+        Priority = priority;
         TargetStartDate = targetStartDate;
         TargetEndDate = targetEndDate;
         BudgetEstimate = budgetEstimate;
@@ -40,7 +42,8 @@ public sealed class Project : AggregateRoot<ProjectId>
     public string Name { get; private set; } = string.Empty;
     public string? Description { get; private set; }
     public ProjectStatus Status { get; private set; }
-    public string? Area { get; private set; }
+    public PropertyAreaId? AreaId { get; private set; }
+    public ProjectPriority Priority { get; private set; }
     public DateOnly? TargetStartDate { get; private set; }
     public DateOnly? TargetEndDate { get; private set; }
     public Money? BudgetEstimate { get; private set; }
@@ -55,13 +58,14 @@ public sealed class Project : AggregateRoot<ProjectId>
         string name,
         string? description,
         ProjectStatus status,
-        string? area,
+        PropertyAreaId? areaId,
+        ProjectPriority priority,
         DateOnly? targetStartDate,
         DateOnly? targetEndDate,
         Money? budgetEstimate,
         string? notes)
     {
-        var details = ValidateDetails(name, description, area, targetStartDate, targetEndDate, notes);
+        var details = ValidateDetails(name, description, targetStartDate, targetEndDate, notes);
         if (details.IsError)
         {
             return details.Errors;
@@ -72,13 +76,19 @@ public sealed class Project : AggregateRoot<ProjectId>
             return PropertyErrors.ProjectStatusInvalid;
         }
 
+        if (!Enum.IsDefined(priority))
+        {
+            return PropertyErrors.ProjectPriorityInvalid;
+        }
+
         var project = new Project(
             ProjectId.New(),
             householdId,
             details.Value.Name,
             details.Value.Description,
             status,
-            details.Value.Area,
+            areaId,
+            priority,
             targetStartDate,
             targetEndDate,
             budgetEstimate,
@@ -90,21 +100,28 @@ public sealed class Project : AggregateRoot<ProjectId>
     public ErrorOr<Success> UpdateDetails(
         string name,
         string? description,
-        string? area,
+        PropertyAreaId? areaId,
+        ProjectPriority priority,
         DateOnly? targetStartDate,
         DateOnly? targetEndDate,
         Money? budgetEstimate,
         string? notes)
     {
-        var details = ValidateDetails(name, description, area, targetStartDate, targetEndDate, notes);
+        var details = ValidateDetails(name, description, targetStartDate, targetEndDate, notes);
         if (details.IsError)
         {
             return details.Errors;
         }
 
+        if (!Enum.IsDefined(priority))
+        {
+            return PropertyErrors.ProjectPriorityInvalid;
+        }
+
         Name = details.Value.Name;
         Description = details.Value.Description;
-        Area = details.Value.Area;
+        AreaId = areaId;
+        Priority = priority;
         TargetStartDate = targetStartDate;
         TargetEndDate = targetEndDate;
         BudgetEstimate = budgetEstimate;
@@ -253,7 +270,6 @@ public sealed class Project : AggregateRoot<ProjectId>
     private static ErrorOr<ProjectDetails> ValidateDetails(
         string name,
         string? description,
-        string? area,
         DateOnly? targetStartDate,
         DateOnly? targetEndDate,
         string? notes)
@@ -270,12 +286,6 @@ public sealed class Project : AggregateRoot<ProjectId>
             return PropertyErrors.ProjectDescriptionInvalid;
         }
 
-        var normalizedArea = NormalizeOptional(area, 100);
-        if (normalizedArea.IsError)
-        {
-            return PropertyErrors.ProjectAreaInvalid;
-        }
-
         var normalizedNotes = NormalizeOptional(notes, 4000);
         if (normalizedNotes.IsError)
         {
@@ -290,7 +300,6 @@ public sealed class Project : AggregateRoot<ProjectId>
         return new ProjectDetails(
             normalizedName,
             normalizedDescription.Value.Value,
-            normalizedArea.Value.Value,
             normalizedNotes.Value.Value);
     }
 
@@ -313,5 +322,5 @@ public sealed class Project : AggregateRoot<ProjectId>
 
     private sealed record OptionalString(string? Value);
 
-    private sealed record ProjectDetails(string Name, string? Description, string? Area, string? Notes);
+    private sealed record ProjectDetails(string Name, string? Description, string? Notes);
 }

@@ -52,7 +52,7 @@ public sealed class MaintenanceApiTests(PropertyApiFixture fixture) : IAsyncLife
         using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
         fixture.Clock.Set(new DateTimeOffset(2026, 6, 11, 8, 0, 0, TimeSpan.Zero));
 
-        var plan = await CreatePlanAsync(client, household.Id.Value, "Month", 3, new DateOnly(2026, 6, 1), area: "Utility");
+        var plan = await CreatePlanAsync(client, household.Id.Value, "Month", 3, new DateOnly(2026, 6, 1));
         var occurrenceId = plan.NextOccurrence!.OccurrenceId;
 
         var response = await client.PostAsJsonAsync(
@@ -66,7 +66,7 @@ public sealed class MaintenanceApiTests(PropertyApiFixture fixture) : IAsyncLife
         Assert.NotNull(completion.SuggestedHistoryEntry);
         Assert.Equal("Maintenance", completion.SuggestedHistoryEntry.Type);
         Assert.Null(completion.SuggestedHistoryEntry.Cost);
-        Assert.Equal("Utility", completion.SuggestedHistoryEntry.Area);
+        Assert.Null(completion.SuggestedHistoryEntry.AreaId);
         Assert.Equal(occurrenceId, completion.SuggestedHistoryEntry.SourceMaintenanceOccurrenceId);
 
         Assert.NotNull(completion.NextOccurrence);
@@ -113,7 +113,8 @@ public sealed class MaintenanceApiTests(PropertyApiFixture fixture) : IAsyncLife
                 "Repaint facade",
                 null,
                 "Planning",
-                "Exterior",
+                null,
+                null,
                 null,
                 null,
                 null,
@@ -241,7 +242,8 @@ public sealed class MaintenanceApiTests(PropertyApiFixture fixture) : IAsyncLife
                 "Wrong household project",
                 null,
                 "Planning",
-                "Exterior",
+                null,
+                null,
                 null,
                 null,
                 null,
@@ -255,12 +257,12 @@ public sealed class MaintenanceApiTests(PropertyApiFixture fixture) : IAsyncLife
         string recurrenceUnit,
         int interval,
         DateOnly anchorDate,
-        string? area = null,
+        Guid? areaId = null,
         int leadTimeDays = 14)
     {
         var response = await client.PostAsJsonAsync(
             "/v1/property/maintenance/plans",
-            new MaintenancePlanRequest(householdId, "Boiler", null, area, recurrenceUnit, interval, anchorDate, leadTimeDays));
+            new MaintenancePlanRequest(householdId, "Boiler", null, areaId, recurrenceUnit, interval, anchorDate, leadTimeDays));
         response.EnsureSuccessStatusCode();
         var plan = await response.Content.ReadFromJsonAsync<GetMaintenancePlanResponse>();
         Assert.NotNull(plan);

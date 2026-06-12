@@ -70,7 +70,7 @@ public sealed class MaintenanceOccurrenceTests
     }
 
     private static MaintenancePlan CreatePlan() =>
-        MaintenancePlan.Create(Guid.NewGuid(), "Service boiler", null, "Utility", MaintenanceRecurrenceUnit.Month, 6, new DateOnly(2026, 1, 1), 14).Value;
+        MaintenancePlan.Create(Guid.NewGuid(), "Service boiler", null, null, MaintenanceRecurrenceUnit.Month, 6, new DateOnly(2026, 1, 1), 14).Value;
 
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock
     {

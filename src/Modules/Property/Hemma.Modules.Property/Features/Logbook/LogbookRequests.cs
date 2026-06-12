@@ -6,7 +6,7 @@ public sealed record HistoryEntryRequest(
     Guid HouseholdId,
     DateOnly Date,
     string Title,
-    string? Area,
+    Guid? AreaId,
     MoneyDto? Cost,
     string Type,
     Guid? SourceProjectId,

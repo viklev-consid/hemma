@@ -30,8 +30,16 @@ internal sealed class ProjectConfiguration : IEntityTypeConfiguration<Project>
             .HasMaxLength(32)
             .IsRequired();
 
-        builder.Property(project => project.Area)
-            .HasMaxLength(100);
+        builder.Property(project => project.AreaId)
+            .HasConversion<Guid?>(
+                id => id == null ? null : id.Value.Value,
+                value => value == null ? null : new PropertyAreaId(value.Value));
+
+        builder.Property(project => project.Priority)
+            .HasConversion<string>()
+            .HasMaxLength(16)
+            .HasDefaultValue(ProjectPriority.Medium)
+            .IsRequired();
 
         builder.Property(project => project.TargetStartDate);
         builder.Property(project => project.TargetEndDate);
@@ -78,6 +86,7 @@ internal sealed class ProjectConfiguration : IEntityTypeConfiguration<Project>
 
         builder.HasIndex(project => project.HouseholdId);
         builder.HasIndex(project => new { project.HouseholdId, project.Status });
-        builder.HasIndex(project => new { project.HouseholdId, project.Area });
+        builder.HasIndex(project => new { project.HouseholdId, project.AreaId });
+        builder.HasIndex(project => new { project.HouseholdId, project.Priority });
     }
 }

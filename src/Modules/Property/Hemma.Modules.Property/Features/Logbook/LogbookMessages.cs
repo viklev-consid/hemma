@@ -6,7 +6,7 @@ public sealed record CreateHistoryEntryCommand(
     Guid HouseholdId,
     DateOnly Date,
     string Title,
-    string? Area,
+    Guid? AreaId,
     MoneyDto? Cost,
     string Type,
     Guid? SourceProjectId,
@@ -18,7 +18,7 @@ public sealed record UpdateHistoryEntryCommand(
     Guid HouseholdId,
     DateOnly Date,
     string Title,
-    string? Area,
+    Guid? AreaId,
     MoneyDto? Cost,
     string Type,
     Guid? SourceProjectId,
@@ -26,6 +26,6 @@ public sealed record UpdateHistoryEntryCommand(
 
 public sealed record DeleteHistoryEntryCommand(Guid HistoryEntryId, Guid HouseholdId);
 
-public sealed record ListHistoryQuery(Guid HouseholdId, int? Year, string? Area, string? Type);
+public sealed record ListHistoryQuery(Guid HouseholdId, int? Year, Guid? AreaId, string? Type, IReadOnlyList<Guid>? TagIds);
 
 public sealed record GetHistoryPhotoQuery(Guid HistoryEntryId, string BlobKey, Guid HouseholdId);

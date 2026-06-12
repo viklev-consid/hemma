@@ -6,7 +6,7 @@ public sealed record CreateMaintenancePlanCommand(
     Guid HouseholdId,
     string Title,
     string? Description,
-    string? Area,
+    Guid? AreaId,
     string RecurrenceUnit,
     int RecurrenceInterval,
     DateOnly AnchorDate,
@@ -17,7 +17,7 @@ public sealed record UpdateMaintenancePlanCommand(
     Guid HouseholdId,
     string Title,
     string? Description,
-    string? Area,
+    Guid? AreaId,
     string RecurrenceUnit,
     int RecurrenceInterval,
     DateOnly AnchorDate,
@@ -37,7 +37,8 @@ public sealed record PromoteOccurrenceToProjectCommand(
     string Name,
     string? Description,
     string Status,
-    string? Area,
+    Guid? AreaId,
+    string? Priority,
     DateOnly? TargetStartDate,
     DateOnly? TargetEndDate,
     MoneyDto? BudgetEstimate,
@@ -45,6 +46,6 @@ public sealed record PromoteOccurrenceToProjectCommand(
 
 public sealed record GetMaintenancePlanQuery(Guid PlanId, Guid HouseholdId);
 
-public sealed record ListMaintenancePlansQuery(Guid HouseholdId, bool? ActiveOnly);
+public sealed record ListMaintenancePlansQuery(Guid HouseholdId, bool? ActiveOnly, Guid? AreaId, IReadOnlyList<Guid>? TagIds);
 
 public sealed record ListUpcomingOccurrencesQuery(Guid HouseholdId, int HorizonDays);

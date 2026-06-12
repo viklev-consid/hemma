@@ -45,7 +45,7 @@ internal static class MaintenanceEndpoint
                         request.HouseholdId,
                         request.Title,
                         request.Description,
-                        request.Area,
+                        request.AreaId,
                         request.RecurrenceUnit,
                         request.RecurrenceInterval,
                         request.AnchorDate,
@@ -64,6 +64,8 @@ internal static class MaintenanceEndpoint
             async (
                 Guid householdId,
                 bool? activeOnly,
+                Guid? areaId,
+                [Microsoft.AspNetCore.Mvc.FromQuery] Guid[]? tagIds,
                 IScopedAuthorizationService<HouseholdScope> authorization,
                 ICurrentUser currentUser,
                 IMessageBus bus,
@@ -72,7 +74,9 @@ internal static class MaintenanceEndpoint
                 var forbidden = await AuthorizeAsync(householdId, PropertyPermissions.Read, authorization, currentUser, ct);
                 if (forbidden is not null) { return forbidden; }
 
-                var result = await bus.InvokeAsync<ErrorOr.ErrorOr<ListMaintenancePlansResponse>>(new ListMaintenancePlansQuery(householdId, activeOnly), ct);
+                var result = await bus.InvokeAsync<ErrorOr.ErrorOr<ListMaintenancePlansResponse>>(
+                    new ListMaintenancePlansQuery(householdId, activeOnly, areaId, tagIds),
+                    ct);
                 return result.ToProblemDetailsOr(Results.Ok);
             })
             .WithName("ListPropertyMaintenancePlans")
@@ -122,7 +126,7 @@ internal static class MaintenanceEndpoint
                         request.HouseholdId,
                         request.Title,
                         request.Description,
-                        request.Area,
+                        request.AreaId,
                         request.RecurrenceUnit,
                         request.RecurrenceInterval,
                         request.AnchorDate,
@@ -279,7 +283,8 @@ internal static class MaintenanceEndpoint
                         request.Name,
                         request.Description,
                         request.Status,
-                        request.Area,
+                        request.AreaId,
+                        request.Priority,
                         request.TargetStartDate,
                         request.TargetEndDate,
                         request.BudgetEstimate,

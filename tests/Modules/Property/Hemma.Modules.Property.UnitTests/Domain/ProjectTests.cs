@@ -10,7 +10,7 @@ public sealed class ProjectTests
     [Fact]
     public void Create_WhenNameIsBlank_ReturnsValidationFailure()
     {
-        var result = Project.Create(Guid.NewGuid(), " ", null, ProjectStatus.Planning, null, null, null, null, null);
+        var result = Project.Create(Guid.NewGuid(), " ", null, ProjectStatus.Planning, null, ProjectPriority.Medium, null, null, null, null);
 
         Assert.True(result.IsError);
     }
@@ -140,13 +140,13 @@ public sealed class ProjectTests
     {
         var estimate = Money.Create(123.456m, Money.SupportedCurrency).Value;
 
-        var project = Project.Create(Guid.NewGuid(), "Kitchen", null, ProjectStatus.Planning, null, null, null, estimate, null).Value;
+        var project = Project.Create(Guid.NewGuid(), "Kitchen", null, ProjectStatus.Planning, null, ProjectPriority.Medium, null, null, estimate, null).Value;
 
         Assert.Equal(123.46m, project.BudgetEstimate!.Amount);
     }
 
     private static Project CreateProject() =>
-        Project.Create(Guid.NewGuid(), "Kitchen refresh", null, ProjectStatus.Planning, "Kitchen", null, null, null, null).Value;
+        Project.Create(Guid.NewGuid(), "Kitchen refresh", null, ProjectStatus.Planning, null, ProjectPriority.Medium, null, null, null, null).Value;
 
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock
     {

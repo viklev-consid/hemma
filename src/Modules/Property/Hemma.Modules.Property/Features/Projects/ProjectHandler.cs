@@ -31,6 +31,18 @@ public sealed class ProjectHandler(
             return PropertyErrors.ProjectStatusInvalid;
         }
 
+        var priority = ParseProjectPriority(cmd.Priority);
+        if (priority is null)
+        {
+            return PropertyErrors.ProjectPriorityInvalid;
+        }
+
+        var areaId = await ValidateAreaAsync(cmd.HouseholdId, cmd.AreaId, ct);
+        if (areaId.IsError)
+        {
+            return areaId.Errors;
+        }
+
         var estimate = ToMoney(cmd.BudgetEstimate);
         if (estimate.IsError)
         {
@@ -42,7 +54,8 @@ public sealed class ProjectHandler(
             cmd.Name,
             cmd.Description,
             status.Value,
-            cmd.Area,
+            areaId.Value.Value,
+            priority.Value,
             cmd.TargetStartDate,
             cmd.TargetEndDate,
             estimate.Value.Value,
@@ -72,10 +85,23 @@ public sealed class ProjectHandler(
             return estimate.Errors;
         }
 
+        var priority = ParseProjectPriority(cmd.Priority);
+        if (priority is null)
+        {
+            return PropertyErrors.ProjectPriorityInvalid;
+        }
+
+        var areaId = await ValidateAreaAsync(cmd.HouseholdId, cmd.AreaId, ct);
+        if (areaId.IsError)
+        {
+            return areaId.Errors;
+        }
+
         var updated = project.UpdateDetails(
             cmd.Name,
             cmd.Description,
-            cmd.Area,
+            areaId.Value.Value,
+            priority.Value,
             cmd.TargetStartDate,
             cmd.TargetEndDate,
             estimate.Value.Value,
@@ -125,7 +151,8 @@ public sealed class ProjectHandler(
             suggested = new SuggestedHistoryEntryResponse(
                 DateOnly.FromDateTime(project.CompletedAt.Value.UtcDateTime),
                 project.Name,
-                project.Area,
+                project.AreaId?.Value,
+                null,
                 budget.Value.LinkedTotal,
                 "Project",
                 project.Id.Value,
@@ -182,9 +209,38 @@ public sealed class ProjectHandler(
             projects = projects.Where(project => project.Status == status.Value);
         }
 
-        if (!string.IsNullOrWhiteSpace(query.Area))
+        if (query.AreaId is not null)
         {
-            projects = projects.Where(project => project.Area == query.Area);
+            projects = projects.Where(project => project.AreaId == new PropertyAreaId(query.AreaId.Value));
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Priority))
+        {
+            var priority = ParseProjectPriority(query.Priority);
+            if (priority is null)
+            {
+                return PropertyErrors.ProjectPriorityInvalid;
+            }
+
+            projects = projects.Where(project => project.Priority == priority.Value);
+        }
+
+        if (query.TagIds is { Count: > 0 })
+        {
+            var tagIds = query.TagIds.Distinct().Select(id => new PropertyTagId(id)).ToArray();
+            var matchingProjectIds = (await db.TagAssignments
+                .AsNoTracking()
+                .Where(assignment => assignment.HouseholdId == query.HouseholdId
+                    && assignment.TargetType == PropertyTagTargetType.Project
+                    && tagIds.Contains(assignment.TagId))
+                .GroupBy(assignment => assignment.TargetId)
+                .Where(group => group.Select(assignment => assignment.TagId).Distinct().Count() == tagIds.Length)
+                .Select(group => group.Key)
+                .ToArrayAsync(ct))
+                .Select(id => new ProjectId(id))
+                .ToArray();
+
+            projects = projects.Where(project => matchingProjectIds.Contains(project.Id));
         }
 
         var items = await projects
@@ -196,7 +252,9 @@ public sealed class ProjectHandler(
                 project.Name,
                 project.Description,
                 project.Status.ToString(),
-                project.Area,
+                project.AreaId == null ? null : project.AreaId.Value.Value,
+                null,
+                project.Priority.ToString(),
                 project.TargetStartDate,
                 project.TargetEndDate,
                 project.BudgetEstimate == null ? null : new MoneyDto(project.BudgetEstimate.Amount, project.BudgetEstimate.Currency),
@@ -480,6 +538,16 @@ public sealed class ProjectHandler(
     private static ProjectStatus? ParseProjectStatus(string status) =>
         Enum.TryParse<ProjectStatus>(status, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed) ? parsed : null;
 
+    private static ProjectPriority? ParseProjectPriority(string? priority)
+    {
+        if (string.IsNullOrWhiteSpace(priority))
+        {
+            return ProjectPriority.Medium;
+        }
+
+        return Enum.TryParse<ProjectPriority>(priority, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed) ? parsed : null;
+    }
+
     private static ProjectTaskStatus? ParseTaskStatus(string status) =>
         Enum.TryParse<ProjectTaskStatus>(status, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed) ? parsed : null;
 
@@ -495,4 +563,18 @@ public sealed class ProjectHandler(
     }
 
     private sealed record OptionalMoney(Money? Value);
+
+    private async Task<ErrorOr<OptionalAreaId>> ValidateAreaAsync(Guid householdId, Guid? areaId, CancellationToken ct)
+    {
+        if (areaId is null)
+        {
+            return new OptionalAreaId(null);
+        }
+
+        var typedId = new PropertyAreaId(areaId.Value);
+        var exists = await db.Areas.AnyAsync(area => area.HouseholdId == householdId && area.Id == typedId, ct);
+        return exists ? new OptionalAreaId(typedId) : PropertyErrors.AreaNotFound;
+    }
+
+    private sealed record OptionalAreaId(PropertyAreaId? Value);
 }

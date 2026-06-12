@@ -26,11 +26,17 @@ public sealed class LogbookHandler(PropertyDbContext db, IBlobStore blobStore, P
             return cost.Errors;
         }
 
+        var areaId = await ValidateAreaAsync(cmd.HouseholdId, cmd.AreaId, ct);
+        if (areaId.IsError)
+        {
+            return areaId.Errors;
+        }
+
         var entry = HistoryEntry.Create(
             cmd.HouseholdId,
             cmd.Date,
             cmd.Title,
-            cmd.Area,
+            areaId.Value.Value,
             cost.Value.Value,
             type.Value,
             cmd.SourceProjectId,
@@ -101,10 +107,16 @@ public sealed class LogbookHandler(PropertyDbContext db, IBlobStore blobStore, P
             return PropertyErrors.HistoryEntryNotFound;
         }
 
+        var areaId = await ValidateAreaAsync(cmd.HouseholdId, cmd.AreaId, ct);
+        if (areaId.IsError)
+        {
+            return areaId.Errors;
+        }
+
         var updated = entry.Update(
             cmd.Date,
             cmd.Title,
-            cmd.Area,
+            areaId.Value.Value,
             cost.Value.Value,
             type.Value,
             cmd.SourceProjectId,
@@ -151,9 +163,9 @@ public sealed class LogbookHandler(PropertyDbContext db, IBlobStore blobStore, P
             entries = entries.Where(entry => entry.Date.Year == query.Year);
         }
 
-        if (!string.IsNullOrWhiteSpace(query.Area))
+        if (query.AreaId is not null)
         {
-            entries = entries.Where(entry => entry.Area == query.Area);
+            entries = entries.Where(entry => entry.AreaId == new PropertyAreaId(query.AreaId.Value));
         }
 
         if (!string.IsNullOrWhiteSpace(query.Type))
@@ -165,6 +177,24 @@ public sealed class LogbookHandler(PropertyDbContext db, IBlobStore blobStore, P
             }
 
             entries = entries.Where(entry => entry.Type == type.Value);
+        }
+
+        if (query.TagIds is { Count: > 0 })
+        {
+            var tagIds = query.TagIds.Distinct().Select(id => new PropertyTagId(id)).ToArray();
+            var matchingEntryIds = (await db.TagAssignments
+                .AsNoTracking()
+                .Where(assignment => assignment.HouseholdId == query.HouseholdId
+                    && assignment.TargetType == PropertyTagTargetType.HistoryEntry
+                    && tagIds.Contains(assignment.TagId))
+                .GroupBy(assignment => assignment.TargetId)
+                .Where(group => group.Select(assignment => assignment.TagId).Distinct().Count() == tagIds.Length)
+                .Select(group => group.Key)
+                .ToArrayAsync(ct))
+                .Select(id => new HistoryEntryId(id))
+                .ToArray();
+
+            entries = entries.Where(entry => matchingEntryIds.Contains(entry.Id));
         }
 
         var items = await entries
@@ -265,4 +295,18 @@ public sealed class LogbookHandler(PropertyDbContext db, IBlobStore blobStore, P
     private sealed record CopiedPhoto(BlobRef Reference, BlobMetadata Metadata);
     private sealed record PhotoSource(string Container, string Key);
     private sealed record OptionalMoney(Money? Value);
+
+    private async Task<ErrorOr<OptionalAreaId>> ValidateAreaAsync(Guid householdId, Guid? areaId, CancellationToken ct)
+    {
+        if (areaId is null)
+        {
+            return new OptionalAreaId(null);
+        }
+
+        var typedId = new PropertyAreaId(areaId.Value);
+        var exists = await db.Areas.AnyAsync(area => area.HouseholdId == householdId && area.Id == typedId, ct);
+        return exists ? new OptionalAreaId(typedId) : PropertyErrors.AreaNotFound;
+    }
+
+    private sealed record OptionalAreaId(PropertyAreaId? Value);
 }

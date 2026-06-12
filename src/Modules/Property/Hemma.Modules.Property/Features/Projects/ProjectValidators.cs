@@ -10,7 +10,7 @@ internal sealed class ProjectRequestValidator : AbstractValidator<ProjectRequest
         RuleFor(x => x.Name).NotEmpty().MaximumLength(160);
         RuleFor(x => x.Description).MaximumLength(2000);
         RuleFor(x => x.Status).NotEmpty().Must(BeProjectStatus);
-        RuleFor(x => x.Area).MaximumLength(100);
+        RuleFor(x => x.Priority).MaximumLength(16).Must(BeProjectPriority).When(x => x.Priority is not null);
         RuleFor(x => x.Notes).MaximumLength(4000);
         RuleFor(x => x.TargetEndDate)
             .GreaterThanOrEqualTo(x => x.TargetStartDate)
@@ -19,6 +19,9 @@ internal sealed class ProjectRequestValidator : AbstractValidator<ProjectRequest
 
     private static bool BeProjectStatus(string status) =>
         Enum.TryParse<Domain.ProjectStatus>(status, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed);
+
+    private static bool BeProjectPriority(string? priority) =>
+        Enum.TryParse<Domain.ProjectPriority>(priority, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed);
 }
 
 internal sealed class ChangeProjectStatusRequestValidator : AbstractValidator<ChangeProjectStatusRequest>

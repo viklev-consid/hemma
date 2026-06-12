@@ -25,8 +25,10 @@ internal sealed class HistoryEntryConfiguration : IEntityTypeConfiguration<Histo
             .HasMaxLength(160)
             .IsRequired();
 
-        builder.Property(entry => entry.Area)
-            .HasMaxLength(100);
+        builder.Property(entry => entry.AreaId)
+            .HasConversion<Guid?>(
+                id => id == null ? null : id.Value.Value,
+                value => value == null ? null : new PropertyAreaId(value.Value));
 
         builder.OwnsOne(entry => entry.Cost, money =>
         {
@@ -56,7 +58,7 @@ internal sealed class HistoryEntryConfiguration : IEntityTypeConfiguration<Histo
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.HasIndex(entry => new { entry.HouseholdId, entry.Date });
-        builder.HasIndex(entry => new { entry.HouseholdId, entry.Area });
+        builder.HasIndex(entry => new { entry.HouseholdId, entry.AreaId });
         builder.HasIndex(entry => new { entry.HouseholdId, entry.Type });
     }
 }

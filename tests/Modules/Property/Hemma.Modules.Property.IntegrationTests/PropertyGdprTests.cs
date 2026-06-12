@@ -68,7 +68,7 @@ public sealed class PropertyGdprTests(PropertyApiFixture fixture) : IAsyncLifeti
     {
         var response = await client.PostAsJsonAsync(
             "/v1/property/projects",
-            new ProjectRequest(householdId, name, null, "Planning", null, null, null, null, null));
+            new ProjectRequest(householdId, name, null, "Planning", null, null, null, null, null, null));
         response.EnsureSuccessStatusCode();
         var project = await response.Content.ReadFromJsonAsync<ProjectResponse>();
         Assert.NotNull(project);

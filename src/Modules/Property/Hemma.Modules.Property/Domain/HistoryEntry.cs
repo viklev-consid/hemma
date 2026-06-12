@@ -14,7 +14,7 @@ public sealed class HistoryEntry : AggregateRoot<HistoryEntryId>
         Guid householdId,
         DateOnly date,
         string title,
-        string? area,
+        PropertyAreaId? areaId,
         Money? cost,
         HistoryEntryType type,
         Guid? sourceProjectId,
@@ -23,7 +23,7 @@ public sealed class HistoryEntry : AggregateRoot<HistoryEntryId>
         HouseholdId = householdId;
         Date = date;
         Title = title;
-        Area = area;
+        AreaId = areaId;
         Cost = cost;
         Type = type;
         SourceProjectId = sourceProjectId;
@@ -35,7 +35,7 @@ public sealed class HistoryEntry : AggregateRoot<HistoryEntryId>
     public Guid HouseholdId { get; private set; }
     public DateOnly Date { get; private set; }
     public string Title { get; private set; } = string.Empty;
-    public string? Area { get; private set; }
+    public PropertyAreaId? AreaId { get; private set; }
     public Money? Cost { get; private set; }
     public HistoryEntryType Type { get; private set; }
     public Guid? SourceProjectId { get; private set; }
@@ -46,13 +46,13 @@ public sealed class HistoryEntry : AggregateRoot<HistoryEntryId>
         Guid householdId,
         DateOnly date,
         string title,
-        string? area,
+        PropertyAreaId? areaId,
         Money? cost,
         HistoryEntryType type,
         Guid? sourceProjectId,
         Guid? sourceMaintenanceOccurrenceId)
     {
-        var details = ValidateDetails(title, area, type, sourceProjectId, sourceMaintenanceOccurrenceId);
+        var details = ValidateDetails(title, type, sourceProjectId, sourceMaintenanceOccurrenceId);
         if (details.IsError)
         {
             return details.Errors;
@@ -63,7 +63,7 @@ public sealed class HistoryEntry : AggregateRoot<HistoryEntryId>
             householdId,
             date,
             details.Value.Title,
-            details.Value.Area,
+            areaId,
             cost,
             type,
             sourceProjectId,
@@ -73,13 +73,13 @@ public sealed class HistoryEntry : AggregateRoot<HistoryEntryId>
     public ErrorOr<Success> Update(
         DateOnly date,
         string title,
-        string? area,
+        PropertyAreaId? areaId,
         Money? cost,
         HistoryEntryType type,
         Guid? sourceProjectId,
         Guid? sourceMaintenanceOccurrenceId)
     {
-        var details = ValidateDetails(title, area, type, sourceProjectId, sourceMaintenanceOccurrenceId);
+        var details = ValidateDetails(title, type, sourceProjectId, sourceMaintenanceOccurrenceId);
         if (details.IsError)
         {
             return details.Errors;
@@ -87,7 +87,7 @@ public sealed class HistoryEntry : AggregateRoot<HistoryEntryId>
 
         Date = date;
         Title = details.Value.Title;
-        Area = details.Value.Area;
+        AreaId = areaId;
         Cost = cost;
         Type = type;
         SourceProjectId = sourceProjectId;
@@ -114,7 +114,6 @@ public sealed class HistoryEntry : AggregateRoot<HistoryEntryId>
 
     private static ErrorOr<HistoryEntryDetails> ValidateDetails(
         string title,
-        string? area,
         HistoryEntryType type,
         Guid? sourceProjectId,
         Guid? sourceMaintenanceOccurrenceId)
@@ -122,12 +121,6 @@ public sealed class HistoryEntry : AggregateRoot<HistoryEntryId>
         if (string.IsNullOrWhiteSpace(title) || title.Trim().Length > 160)
         {
             return PropertyErrors.HistoryEntryTitleInvalid;
-        }
-
-        var normalizedArea = string.IsNullOrWhiteSpace(area) ? null : area.Trim();
-        if (normalizedArea is { Length: > 100 })
-        {
-            return PropertyErrors.HistoryEntryAreaInvalid;
         }
 
         if (!Enum.IsDefined(type))
@@ -150,8 +143,8 @@ public sealed class HistoryEntry : AggregateRoot<HistoryEntryId>
             return PropertyErrors.HistoryEntrySourceInvalid;
         }
 
-        return new HistoryEntryDetails(title.Trim(), normalizedArea);
+        return new HistoryEntryDetails(title.Trim());
     }
 
-    private sealed record HistoryEntryDetails(string Title, string? Area);
+    private sealed record HistoryEntryDetails(string Title);
 }

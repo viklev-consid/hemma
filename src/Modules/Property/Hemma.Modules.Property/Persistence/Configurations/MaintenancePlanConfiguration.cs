@@ -25,8 +25,10 @@ internal sealed class MaintenancePlanConfiguration : IEntityTypeConfiguration<Ma
         builder.Property(plan => plan.Description)
             .HasMaxLength(2000);
 
-        builder.Property(plan => plan.Area)
-            .HasMaxLength(100);
+        builder.Property(plan => plan.AreaId)
+            .HasConversion<Guid?>(
+                id => id == null ? null : id.Value.Value,
+                value => value == null ? null : new PropertyAreaId(value.Value));
 
         builder.Property(plan => plan.RecurrenceUnit)
             .HasConversion<string>()
@@ -47,5 +49,6 @@ internal sealed class MaintenancePlanConfiguration : IEntityTypeConfiguration<Ma
 
         builder.HasIndex(plan => plan.HouseholdId);
         builder.HasIndex(plan => new { plan.HouseholdId, plan.IsActive });
+        builder.HasIndex(plan => new { plan.HouseholdId, plan.AreaId });
     }
 }

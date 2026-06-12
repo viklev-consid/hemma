@@ -5,6 +5,7 @@ using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Persistence;
 using Hemma.Modules.Households.Domain;
 using Hemma.Modules.Households.Persistence;
+using Hemma.Modules.Property.Features.AreasTags;
 using Hemma.Modules.Property.Features.Projects;
 using Hemma.Shared.Contracts;
 using Hemma.Shared.Kernel.Domain;
@@ -35,7 +36,8 @@ public sealed class PropertyApiTests(PropertyApiFixture fixture) : IAsyncLifetim
                 "Kitchen refresh",
                 "Paint and counters",
                 "Planning",
-                "Kitchen",
+                null,
+                null,
                 new DateOnly(2026, 7, 1),
                 new DateOnly(2026, 8, 1),
                 new MoneyDto(10000, "SEK"),
@@ -47,7 +49,7 @@ public sealed class PropertyApiTests(PropertyApiFixture fixture) : IAsyncLifetim
         Assert.Equal("Kitchen refresh", project.Name);
 
         var listed = await client.GetFromJsonAsync<ListProjectsResponse>(
-            $"/v1/property/projects?householdId={household.Id.Value}&status=Planning&area=Kitchen");
+            $"/v1/property/projects?householdId={household.Id.Value}&status=Planning");
         Assert.NotNull(listed);
         Assert.Single(listed.Projects);
 
@@ -150,7 +152,7 @@ public sealed class PropertyApiTests(PropertyApiFixture fixture) : IAsyncLifetim
 
         var response = await client.PostAsJsonAsync(
             "/v1/property/projects",
-            new ProjectRequest(household.Id.Value, "Project", null, "99", null, null, null, null, null));
+            new ProjectRequest(household.Id.Value, "Project", null, "99", null, null, null, null, null, null));
 
         Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
     }
@@ -202,7 +204,8 @@ public sealed class PropertyApiTests(PropertyApiFixture fixture) : IAsyncLifetim
                 "Bathroom",
                 null,
                 "Active",
-                "Bathroom",
+                null,
+                null,
                 null,
                 null,
                 new MoneyDto(10000, "SEK"),
@@ -242,6 +245,71 @@ public sealed class PropertyApiTests(PropertyApiFixture fixture) : IAsyncLifetim
         Assert.Equal(0, budget.TransactionCount);
     }
 
+    [Fact]
+    public async Task AreasTagsAndProjectFilters_WorkEndToEnd()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "PhaseFive", "phase-five");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+
+        var kitchen = await CreateAreaAsync(client, household.Id.Value, "Kitchen");
+        var exterior = await CreateAreaAsync(client, household.Id.Value, "Exterior");
+
+        var reordered = await client.PostAsJsonAsync(
+            "/v1/property/areas/reorder",
+            new ReorderAreasRequest(household.Id.Value, [exterior.AreaId, kitchen.AreaId]));
+        reordered.EnsureSuccessStatusCode();
+
+        var areas = await client.GetFromJsonAsync<ListAreasResponse>(
+            $"/v1/property/areas?householdId={household.Id.Value}");
+        Assert.NotNull(areas);
+        Assert.Equal([exterior.AreaId, kitchen.AreaId], areas.Areas.Select(area => area.AreaId).ToArray());
+
+        var urgentTag = await CreateTagAsync(client, household.Id.Value, "Urgent", "#ff0000");
+        var cosmeticTag = await CreateTagAsync(client, household.Id.Value, "Cosmetic", null);
+
+        var created = await client.PostAsJsonAsync(
+            "/v1/property/projects",
+            new ProjectRequest(
+                household.Id.Value,
+                "Fix leak",
+                null,
+                "Active",
+                kitchen.AreaId,
+                "Critical",
+                null,
+                null,
+                null,
+                null));
+        created.EnsureSuccessStatusCode();
+        var project = await created.Content.ReadFromJsonAsync<ProjectResponse>();
+        Assert.NotNull(project);
+        Assert.Equal(kitchen.AreaId, project.AreaId);
+        Assert.Equal("Critical", project.Priority);
+
+        var assigned = await client.PutAsJsonAsync(
+            "/v1/property/tags/assignments",
+            new AssignTagsRequest(household.Id.Value, "Project", project.ProjectId, [urgentTag.TagId, cosmeticTag.TagId]));
+        assigned.EnsureSuccessStatusCode();
+
+        var filteredResponse = await client.GetAsync(
+            $"/v1/property/projects?householdId={household.Id.Value}&areaId={kitchen.AreaId}&priority=Critical&tagIds={urgentTag.TagId}");
+        var filteredBody = await filteredResponse.Content.ReadAsStringAsync();
+        Assert.True(filteredResponse.IsSuccessStatusCode, filteredBody);
+        var filtered = await filteredResponse.Content.ReadFromJsonAsync<ListProjectsResponse>();
+        Assert.NotNull(filtered);
+        Assert.Single(filtered.Projects);
+        Assert.Equal(project.ProjectId, filtered.Projects[0].ProjectId);
+
+        var noMatchResponse = await client.GetAsync(
+            $"/v1/property/projects?householdId={household.Id.Value}&areaId={exterior.AreaId}&tagIds={urgentTag.TagId}");
+        var noMatchBody = await noMatchResponse.Content.ReadAsStringAsync();
+        Assert.True(noMatchResponse.IsSuccessStatusCode, noMatchBody);
+        var noMatch = await noMatchResponse.Content.ReadFromJsonAsync<ListProjectsResponse>();
+        Assert.NotNull(noMatch);
+        Assert.Empty(noMatch.Projects);
+    }
+
     private async Task SeedLinkedTransactionsAsync(Guid householdId, Guid projectId, IReadOnlyList<decimal> amounts)
     {
         await fixture.ExecuteDbAsync<EconomyDbContext>(async (db, ct) =>
@@ -272,7 +340,7 @@ public sealed class PropertyApiTests(PropertyApiFixture fixture) : IAsyncLifetim
     {
         var response = await client.PostAsJsonAsync(
             "/v1/property/projects",
-            new ProjectRequest(householdId, "Project", null, "Planning", null, null, null, null, null));
+            new ProjectRequest(householdId, "Project", null, "Planning", null, null, null, null, null, null));
         response.EnsureSuccessStatusCode();
         var project = await response.Content.ReadFromJsonAsync<ProjectResponse>();
         Assert.NotNull(project);
@@ -288,6 +356,28 @@ public sealed class PropertyApiTests(PropertyApiFixture fixture) : IAsyncLifetim
         var task = await response.Content.ReadFromJsonAsync<ProjectTaskResponse>();
         Assert.NotNull(task);
         return task;
+    }
+
+    private static async Task<PropertyAreaResponse> CreateAreaAsync(HttpClient client, Guid householdId, string name)
+    {
+        var response = await client.PostAsJsonAsync(
+            "/v1/property/areas",
+            new PropertyAreaRequest(householdId, name, null));
+        response.EnsureSuccessStatusCode();
+        var area = await response.Content.ReadFromJsonAsync<PropertyAreaResponse>();
+        Assert.NotNull(area);
+        return area;
+    }
+
+    private static async Task<PropertyTagResponse> CreateTagAsync(HttpClient client, Guid householdId, string name, string? color)
+    {
+        var response = await client.PostAsJsonAsync(
+            "/v1/property/tags",
+            new PropertyTagRequest(householdId, name, color));
+        response.EnsureSuccessStatusCode();
+        var tag = await response.Content.ReadFromJsonAsync<PropertyTagResponse>();
+        Assert.NotNull(tag);
+        return tag;
     }
 
     private async Task<(HouseholdId Id, string Slug)> CreateHouseholdAsync(Guid ownerId, string name, string slug)

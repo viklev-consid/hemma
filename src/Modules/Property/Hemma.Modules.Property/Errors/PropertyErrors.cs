@@ -23,6 +23,9 @@ internal static class PropertyErrors
     public static readonly ErrorOr.Error ProjectStatusInvalid =
         ErrorOr.Error.Validation("Property.Project.StatusInvalid", "Project status is invalid.");
 
+    public static readonly ErrorOr.Error ProjectPriorityInvalid =
+        ErrorOr.Error.Validation("Property.Project.PriorityInvalid", "Project priority is invalid.");
+
     public static readonly ErrorOr.Error TaskNotFound =
         ErrorOr.Error.NotFound("Property.ProjectTask.NotFound", "Project task was not found.");
 
@@ -100,4 +103,40 @@ internal static class PropertyErrors
 
     public static readonly ErrorOr.Error HistoryPhotoBlobInvalid =
         ErrorOr.Error.Validation("Property.HistoryPhoto.BlobInvalid", "History photo blob reference is invalid.");
+
+    public static readonly ErrorOr.Error AreaNotFound =
+        ErrorOr.Error.NotFound("Property.Area.NotFound", "Area was not found.");
+
+    public static readonly ErrorOr.Error AreaNameInvalid =
+        ErrorOr.Error.Validation("Property.Area.NameInvalid", "Area name is required and cannot exceed 120 characters.");
+
+    public static readonly ErrorOr.Error AreaDescriptionInvalid =
+        ErrorOr.Error.Validation("Property.Area.DescriptionInvalid", "Area description cannot exceed 1,000 characters.");
+
+    public static readonly ErrorOr.Error AreaNameAlreadyExists =
+        ErrorOr.Error.Conflict("Property.Area.NameAlreadyExists", "An area with this name already exists in the household.");
+
+    public static readonly ErrorOr.Error AreaOrderInvalid =
+        ErrorOr.Error.Validation("Property.Area.OrderInvalid", "Area order must include every current area exactly once.");
+
+    public static readonly ErrorOr.Error TagNotFound =
+        ErrorOr.Error.NotFound("Property.Tag.NotFound", "Tag was not found.");
+
+    public static readonly ErrorOr.Error TagNameInvalid =
+        ErrorOr.Error.Validation("Property.Tag.NameInvalid", "Tag name is required and cannot exceed 80 characters.");
+
+    public static readonly ErrorOr.Error TagColorInvalid =
+        ErrorOr.Error.Validation("Property.Tag.ColorInvalid", "Tag color cannot exceed 40 characters.");
+
+    public static readonly ErrorOr.Error TagNameAlreadyExists =
+        ErrorOr.Error.Conflict("Property.Tag.NameAlreadyExists", "A tag with this name already exists in the household.");
+
+    public static readonly ErrorOr.Error TagTargetTypeInvalid =
+        ErrorOr.Error.Validation("Property.TagAssignment.TargetTypeInvalid", "Tag target type is invalid.");
+
+    public static readonly ErrorOr.Error TagTargetNotFound =
+        ErrorOr.Error.NotFound("Property.TagAssignment.TargetNotFound", "Tag assignment target was not found.");
+
+    public static readonly ErrorOr.Error TagAssignmentInvalid =
+        ErrorOr.Error.Validation("Property.TagAssignment.Invalid", "All assigned tags must belong to the same household.");
 }

@@ -39,7 +39,8 @@ internal static class ProjectEndpoint
                         request.Name,
                         request.Description,
                         request.Status,
-                        request.Area,
+                        request.AreaId,
+                        request.Priority,
                         request.TargetStartDate,
                         request.TargetEndDate,
                         request.BudgetEstimate,
@@ -58,7 +59,9 @@ internal static class ProjectEndpoint
             async (
                 Guid householdId,
                 string? status,
-                string? area,
+                Guid? areaId,
+                string? priority,
+                [FromQuery] Guid[]? tagIds,
                 IScopedAuthorizationService<HouseholdScope> authorization,
                 ICurrentUser currentUser,
                 IMessageBus bus,
@@ -67,7 +70,9 @@ internal static class ProjectEndpoint
                 var forbidden = await AuthorizeAsync(householdId, PropertyPermissions.Read, authorization, currentUser, ct);
                 if (forbidden is not null) { return forbidden; }
 
-                var result = await bus.InvokeAsync<ErrorOr.ErrorOr<ListProjectsResponse>>(new ListProjectsQuery(householdId, status, area), ct);
+                var result = await bus.InvokeAsync<ErrorOr.ErrorOr<ListProjectsResponse>>(
+                    new ListProjectsQuery(householdId, status, areaId, priority, tagIds),
+                    ct);
                 return result.ToProblemDetailsOr(Results.Ok);
             })
             .WithName("ListPropertyProjects")
@@ -137,7 +142,8 @@ internal static class ProjectEndpoint
                         request.HouseholdId,
                         request.Name,
                         request.Description,
-                        request.Area,
+                        request.AreaId,
+                        request.Priority,
                         request.TargetStartDate,
                         request.TargetEndDate,
                         request.BudgetEstimate,

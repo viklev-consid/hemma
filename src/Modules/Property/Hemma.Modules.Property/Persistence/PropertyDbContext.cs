@@ -10,6 +10,9 @@ public sealed class PropertyDbContext(DbContextOptions<PropertyDbContext> option
     public DbSet<MaintenancePlan> MaintenancePlans => Set<MaintenancePlan>();
     public DbSet<MaintenanceOccurrence> MaintenanceOccurrences => Set<MaintenanceOccurrence>();
     public DbSet<HistoryEntry> HistoryEntries => Set<HistoryEntry>();
+    public DbSet<PropertyArea> Areas => Set<PropertyArea>();
+    public DbSet<PropertyTag> Tags => Set<PropertyTag>();
+    public DbSet<PropertyTagAssignment> TagAssignments => Set<PropertyTagAssignment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -35,7 +35,7 @@ public sealed class LogbookApiTests(PropertyApiFixture fixture) : IAsyncLifetime
                 household.Id.Value,
                 new DateOnly(2026, 5, 1),
                 "Painted hallway",
-                "Hallway",
+                null,
                 new MoneyDto(1200m, "SEK"),
                 "Manual",
                 null,
@@ -49,7 +49,7 @@ public sealed class LogbookApiTests(PropertyApiFixture fixture) : IAsyncLifetime
         Assert.Empty(entry.Photos);
 
         var listed = await client.GetFromJsonAsync<ListHistoryResponse>(
-            $"/v1/property/history?householdId={household.Id.Value}&year=2026&area=Hallway&type=Manual");
+            $"/v1/property/history?householdId={household.Id.Value}&year=2026&type=Manual");
         Assert.NotNull(listed);
         Assert.Single(listed.Entries);
 
@@ -59,7 +59,7 @@ public sealed class LogbookApiTests(PropertyApiFixture fixture) : IAsyncLifetime
                 household.Id.Value,
                 new DateOnly(2026, 5, 2),
                 "Painted hallway trim",
-                "Hallway",
+                null,
                 new MoneyDto(1400m, "SEK"),
                 "Manual",
                 null,
@@ -113,7 +113,7 @@ public sealed class LogbookApiTests(PropertyApiFixture fixture) : IAsyncLifetime
                 household.Id.Value,
                 suggested.Date,
                 suggested.Title,
-                suggested.Area,
+                suggested.AreaId,
                 suggested.Cost,
                 suggested.Type,
                 suggested.SourceProjectId,
@@ -168,7 +168,7 @@ public sealed class LogbookApiTests(PropertyApiFixture fixture) : IAsyncLifetime
                 targetHousehold.Id.Value,
                 new DateOnly(2026, 8, 3),
                 "Copied photo",
-                "Kitchen",
+                null,
                 null,
                 "Manual",
                 null,
@@ -195,7 +195,7 @@ public sealed class LogbookApiTests(PropertyApiFixture fixture) : IAsyncLifetime
     {
         var response = await client.PostAsJsonAsync(
             "/v1/property/projects",
-            new ProjectRequest(householdId, "Project", null, "Planning", "Kitchen", null, null, null, null));
+            new ProjectRequest(householdId, "Project", null, "Planning", null, null, null, null, null, null));
         response.EnsureSuccessStatusCode();
         var project = await response.Content.ReadFromJsonAsync<ProjectResponse>();
         Assert.NotNull(project);

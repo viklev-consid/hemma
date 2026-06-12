@@ -88,5 +88,5 @@ public sealed class MaintenancePlanTests
     }
 
     private static MaintenancePlan CreatePlan(MaintenanceRecurrenceUnit unit, int interval, DateOnly anchor) =>
-        MaintenancePlan.Create(Guid.NewGuid(), "Service boiler", null, "Utility", unit, interval, anchor, 14).Value;
+        MaintenancePlan.Create(Guid.NewGuid(), "Service boiler", null, null, unit, interval, anchor, 14).Value;
 }
