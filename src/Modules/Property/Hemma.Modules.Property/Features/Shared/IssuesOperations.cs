@@ -1,4 +1,5 @@
 using ErrorOr;
+using Hemma.Modules.Notifications.Contracts.Dtos;
 using Hemma.Modules.Property.Domain;
 using Hemma.Modules.Property.Errors;
 using Hemma.Modules.Property.Features.AddAttachment;
@@ -54,6 +55,7 @@ using Hemma.Modules.Property.Features.UpdateProject;
 using Hemma.Modules.Property.Features.UpdateTag;
 using Hemma.Modules.Property.Features.UpdateTask;
 using Hemma.Modules.Property.Integration;
+using Hemma.Modules.Property.Jobs;
 using Hemma.Modules.Property.Persistence;
 using Hemma.Shared.Contracts;
 using Hemma.Shared.Kernel.Domain;
@@ -62,7 +64,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Property.Features.Shared;
 
-public sealed class IssuesOperations(PropertyDbContext db, PropertyAuditPublisher audit, IClock clock, ActivityOperations activity)
+public sealed class IssuesOperations(
+    PropertyDbContext db,
+    PropertyAuditPublisher audit,
+    IClock clock,
+    ActivityOperations activity,
+    PropertyNotificationDispatcher notifications)
 {
     public async Task<ErrorOr<IssueResponse>> ReportIssueAsync(ReportIssueCommand cmd, CancellationToken ct)
     {
@@ -111,6 +118,7 @@ public sealed class IssuesOperations(PropertyDbContext db, PropertyAuditPublishe
 
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.issue.reported", "PropertyIssue", issue.Value.Id.Value, null, ct);
+        await NotifyHighSeverityIssueAsync(issue.Value, "reported", ct);
         return IssueResponse.FromIssue(issue.Value, Today);
     }
 
@@ -148,6 +156,7 @@ public sealed class IssuesOperations(PropertyDbContext db, PropertyAuditPublishe
 
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.issue.updated", "PropertyIssue", issue.Id.Value, null, ct);
+        await NotifyHighSeverityIssueAsync(issue, "updated", ct);
         return IssueResponse.FromIssue(issue, Today);
     }
 
@@ -415,6 +424,30 @@ public sealed class IssuesOperations(PropertyDbContext db, PropertyAuditPublishe
     }
 
     private DateOnly Today => DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+
+    private async Task NotifyHighSeverityIssueAsync(PropertyIssue issue, string kind, CancellationToken ct)
+    {
+        if (issue.Severity is not (PropertyIssueSeverity.High or PropertyIssueSeverity.Critical)
+            || issue.Status is not (PropertyIssueStatus.Open or PropertyIssueStatus.InProgress))
+        {
+            return;
+        }
+
+        var critical = issue.Severity == PropertyIssueSeverity.Critical;
+        await notifications.NotifyHouseholdAsync(
+            new PropertyNotification(
+                "PropertyIssue",
+                issue.Id.Value,
+                issue.HouseholdId,
+                $"severity_{kind}",
+                Today,
+                $"property.issue.severity_{kind}",
+                critical ? NotificationSeverity.Critical : NotificationSeverity.Warning,
+                critical ? $"Critical issue {kind}: {issue.Title}" : $"High priority issue {kind}: {issue.Title}",
+                $"\"{issue.Title}\" is marked {issue.Severity}.",
+                new NotificationLinkDto($"/property/issues/{issue.Id.Value}", "View issue")),
+            ct);
+    }
 
     private static PropertyIssueSeverity? ParseSeverity(string? severity)
     {

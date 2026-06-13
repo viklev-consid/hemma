@@ -25,18 +25,18 @@ using Hemma.Modules.Property.Features.GetAttachmentContent;
 using Hemma.Modules.Property.Features.GetHistoryPhoto;
 using Hemma.Modules.Property.Features.GetIssue;
 using Hemma.Modules.Property.Features.GetMaintenancePlan;
-using Hemma.Modules.Property.Features.GetPropertyActivitySummary;
 using Hemma.Modules.Property.Features.GetProject;
 using Hemma.Modules.Property.Features.GetProjectBudget;
 using Hemma.Modules.Property.Features.GetProjectTasks;
+using Hemma.Modules.Property.Features.GetPropertyActivitySummary;
 using Hemma.Modules.Property.Features.LinkIssueToMaintenanceOccurrence;
 using Hemma.Modules.Property.Features.LinkIssueToMaintenancePlan;
 using Hemma.Modules.Property.Features.ListAreas;
 using Hemma.Modules.Property.Features.ListHistory;
 using Hemma.Modules.Property.Features.ListIssues;
 using Hemma.Modules.Property.Features.ListMaintenancePlans;
-using Hemma.Modules.Property.Features.ListPropertyActivity;
 using Hemma.Modules.Property.Features.ListProjects;
+using Hemma.Modules.Property.Features.ListPropertyActivity;
 using Hemma.Modules.Property.Features.ListTags;
 using Hemma.Modules.Property.Features.ListTimeline;
 using Hemma.Modules.Property.Features.ListUpcomingOccurrences;
@@ -112,6 +112,7 @@ public static class PropertyModule
         services.AddScoped<LogbookOperations>();
         services.AddScoped<MaintenanceOperations>();
         services.AddScoped<ProjectsOperations>();
+        services.AddScoped<PropertyNotificationDispatcher>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<PropertyDbContext>("property-db", tags: ["ready"]);

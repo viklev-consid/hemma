@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Hemma.Modules.Households.Domain;
 using Hemma.Modules.Households.Persistence;
+using Hemma.Modules.Notifications.Persistence;
 using Hemma.Modules.Property.Features.AddLink;
 using Hemma.Modules.Property.Features.AddTask;
 using Hemma.Modules.Property.Features.AssignTags;
@@ -107,6 +108,38 @@ public sealed class IssueApiTests(PropertyApiFixture fixture) : IAsyncLifetime
         var deleted = await client.DeleteAsync(
             $"/v1/property/issues/{issue.IssueId}?householdId={household.Id.Value}");
         Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+    }
+
+    [Fact]
+    public async Task HighAndCriticalIssueReportAndUpdate_SendHouseholdNotifications()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "IssueNotify", "issue-notify");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        fixture.Clock.Set(new DateTimeOffset(2026, 6, 13, 8, 0, 0, TimeSpan.Zero));
+
+        var created = await client.PostAsJsonAsync(
+            "/v1/property/issues",
+            new IssueRequest(household.Id.Value, "Panel sparking", null, null, "High", null, null));
+        created.EnsureSuccessStatusCode();
+        var issue = await created.Content.ReadFromJsonAsync<IssueResponse>();
+        Assert.NotNull(issue);
+
+        var updated = await client.PutAsJsonAsync(
+            $"/v1/property/issues/{issue.IssueId}",
+            new IssueRequest(household.Id.Value, "Panel sparking", null, null, "Critical", null, null));
+        updated.EnsureSuccessStatusCode();
+
+        var notifications = await fixture.QueryDbAsync<NotificationsDbContext, string[]>((db, ct) =>
+            db.UserNotifications
+                .Where(n => n.RecipientUserId == ownerId)
+                .OrderBy(n => n.Type)
+                .Select(n => n.Type)
+                .ToArrayAsync(ct));
+
+        Assert.Contains("property.issue.severity_reported", notifications);
+        Assert.Contains("property.issue.severity_updated", notifications);
+        Assert.Equal(2, notifications.Length);
     }
 
     [Fact]

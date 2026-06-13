@@ -1,12 +1,11 @@
 using System.Security.Cryptography;
+using System.Text;
 
 namespace Hemma.Modules.Property.Jobs;
 
 /// <summary>
-/// Derives a stable, reproducible <see cref="Guid"/> from two source GUIDs (SHA-256 based,
-/// truncated to 128 bits). Used to build deterministic notification idempotency keys from
-/// (occurrenceId, recipientUserId) so the daily materialise job never double-notifies. This is
-/// a name-to-id mapping, not a security primitive.
+/// Derives a stable, reproducible <see cref="Guid"/> from notification identity parts
+/// (SHA-256 based, truncated to 128 bits). This is a name-to-id mapping, not a security primitive.
 /// </summary>
 internal static class DeterministicGuid
 {
@@ -16,6 +15,17 @@ internal static class DeterministicGuid
         first.TryWriteBytes(input[..16]);
         second.TryWriteBytes(input[16..]);
 
+        return CreateFromBytes(input);
+    }
+
+    public static Guid Create(params string[] parts)
+    {
+        var input = Encoding.UTF8.GetBytes(string.Join('\u001f', parts));
+        return CreateFromBytes(input);
+    }
+
+    private static Guid CreateFromBytes(ReadOnlySpan<byte> input)
+    {
         Span<byte> hash = stackalloc byte[32];
         SHA256.HashData(input, hash);
 

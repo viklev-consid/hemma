@@ -237,6 +237,65 @@ public sealed class MaintenanceApiTests(PropertyApiFixture fixture) : IAsyncLife
     }
 
     [Fact]
+    public async Task MaterializeJob_NotifiesForPhase9PropertySources_AndIsIdempotentPerDay()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Phase9Notify", "phase9-notify");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        var today = new DateOnly(2026, 6, 20);
+
+        fixture.Clock.Set(new DateTimeOffset(2026, 6, 10, 8, 0, 0, TimeSpan.Zero));
+        var snoozedPlan = await CreatePlanAsync(client, household.Id.Value, "Month", 1, new DateOnly(2026, 6, 18), leadTimeDays: 7);
+
+        fixture.Clock.Set(new DateTimeOffset(2026, 6, 19, 8, 0, 0, TimeSpan.Zero));
+        var snooze = await client.PostAsJsonAsync(
+            $"/v1/property/maintenance/occurrences/{snoozedPlan.NextOccurrence!.OccurrenceId}/snooze",
+            new SnoozeOccurrenceRequest(household.Id.Value, today, null));
+        snooze.EnsureSuccessStatusCode();
+
+        fixture.Clock.Set(new DateTimeOffset(2026, 6, 20, 8, 0, 0, TimeSpan.Zero));
+        await CreatePlanAsync(client, household.Id.Value, "Month", 1, today.AddDays(3), leadTimeDays: 7);
+        var project = await CreateProjectAsync(client, household.Id.Value, today.AddDays(-1));
+        await AddTaskAsync(client, household.Id.Value, project.ProjectId, "Order parts", today.AddDays(2));
+
+        var issue = await client.PostAsJsonAsync(
+            "/v1/property/issues",
+            new IssueRequest(household.Id.Value, "Loose railing", null, null, "Medium", today.AddDays(-3), null));
+        issue.EnsureSuccessStatusCode();
+
+        await RunMaterializeJobAsync(today);
+        await RunMaterializeJobAsync(today);
+
+        var types = await fixture.QueryDbAsync<NotificationsDbContext, string[]>((db, ct) =>
+            db.UserNotifications
+                .Where(n => n.RecipientUserId == ownerId)
+                .OrderBy(n => n.Type)
+                .Select(n => n.Type)
+                .ToArrayAsync(ct));
+
+        Assert.Contains("property.maintenance.due", types);
+        Assert.Contains("property.maintenance.snooze_due", types);
+        Assert.Contains("property.project.overdue", types);
+        Assert.Contains("property.project_task.due", types);
+        Assert.Contains("property.issue.overdue", types);
+
+        var idempotencyKeys = await fixture.QueryDbAsync<NotificationsDbContext, Guid[]>((db, ct) =>
+            db.UserNotifications
+                .Where(n => n.RecipientUserId == ownerId)
+                .Select(n => n.IdempotencyKey)
+                .ToArrayAsync(ct));
+        Assert.Equal(idempotencyKeys.Length, idempotencyKeys.Distinct().Count());
+
+        fixture.Clock.Set(new DateTimeOffset(2026, 6, 21, 8, 0, 0, TimeSpan.Zero));
+        await RunMaterializeJobAsync(today.AddDays(1));
+
+        var overdueProjectCount = await fixture.QueryDbAsync<NotificationsDbContext, int>((db, ct) =>
+            db.UserNotifications.CountAsync(n => n.RecipientUserId == ownerId && n.Type == "property.project.overdue", ct));
+
+        Assert.Equal(2, overdueProjectCount);
+    }
+
+    [Fact]
     public async Task DeactivatedPlan_DoesNotScheduleNextOnCompletion()
     {
         var ownerId = Guid.NewGuid();
@@ -350,6 +409,28 @@ public sealed class MaintenanceApiTests(PropertyApiFixture fixture) : IAsyncLife
         var plan = await response.Content.ReadFromJsonAsync<GetMaintenancePlanResponse>();
         Assert.NotNull(plan);
         return plan;
+    }
+
+    private static async Task<ProjectResponse> CreateProjectAsync(HttpClient client, Guid householdId, DateOnly? targetEndDate)
+    {
+        var response = await client.PostAsJsonAsync(
+            "/v1/property/projects",
+            new ProjectRequest(householdId, "Project", null, "Active", null, null, null, targetEndDate, null, null));
+        response.EnsureSuccessStatusCode();
+        var project = await response.Content.ReadFromJsonAsync<ProjectResponse>();
+        Assert.NotNull(project);
+        return project;
+    }
+
+    private static async Task<ProjectTaskResponse> AddTaskAsync(HttpClient client, Guid householdId, Guid projectId, string title, DateOnly? dueDate)
+    {
+        var response = await client.PostAsJsonAsync(
+            $"/v1/property/projects/{projectId}/tasks",
+            new ProjectTaskRequest(householdId, title, "Todo", null, null, dueDate));
+        response.EnsureSuccessStatusCode();
+        var task = await response.Content.ReadFromJsonAsync<ProjectTaskResponse>();
+        Assert.NotNull(task);
+        return task;
     }
 
     private async Task RunMaterializeJobAsync(DateOnly today)
