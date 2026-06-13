@@ -136,6 +136,20 @@ public sealed class ProjectHandler(
             return changed.Errors;
         }
 
+        if (status.Value == ProjectStatus.Done)
+        {
+            var linkedIssues = await db.Issues
+                .Where(issue => issue.HouseholdId == cmd.HouseholdId
+                    && issue.LinkedProjectId == project.Id.Value
+                    && issue.Status != PropertyIssueStatus.Closed)
+                .ToListAsync(ct);
+
+            foreach (var issue in linkedIssues)
+            {
+                issue.CloseFromProject(clock);
+            }
+        }
+
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.project.status_changed", "Project", project.Id.Value, null, ct);
 

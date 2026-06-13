@@ -56,6 +56,10 @@ public sealed partial class PropertyPersonalDataEraser(
                 .Where(project => project.HouseholdId == householdId)
                 .ExecuteDeleteAsync(ct);
 
+            var issues = await db.Issues
+                .Where(issue => issue.HouseholdId == householdId)
+                .ExecuteDeleteAsync(ct);
+
             var history = await db.HistoryEntries
                 .Where(entry => entry.HouseholdId == householdId)
                 .ExecuteDeleteAsync(ct);
@@ -68,12 +72,24 @@ public sealed partial class PropertyPersonalDataEraser(
                 .Where(plan => plan.HouseholdId == householdId)
                 .ExecuteDeleteAsync(ct);
 
+            var tagAssignments = await db.TagAssignments
+                .Where(assignment => assignment.HouseholdId == householdId)
+                .ExecuteDeleteAsync(ct);
+
+            var tags = await db.Tags
+                .Where(tag => tag.HouseholdId == householdId)
+                .ExecuteDeleteAsync(ct);
+
+            var areas = await db.Areas
+                .Where(area => area.HouseholdId == householdId)
+                .ExecuteDeleteAsync(ct);
+
             foreach (var blob in projectBlobs.Concat(historyBlobs))
             {
                 await blobStore.DeleteAsync(blob, ct);
             }
 
-            return projects + history + occurrences + plans;
+            return projects + issues + history + occurrences + plans + tagAssignments + tags + areas;
         }
         catch (PostgresException ex) when (string.Equals(ex.SqlState, PostgresErrorCodes.UndefinedTable, StringComparison.Ordinal))
         {

@@ -13,6 +13,7 @@ public sealed class PropertyDbContext(DbContextOptions<PropertyDbContext> option
     public DbSet<PropertyArea> Areas => Set<PropertyArea>();
     public DbSet<PropertyTag> Tags => Set<PropertyTag>();
     public DbSet<PropertyTagAssignment> TagAssignments => Set<PropertyTagAssignment>();
+    public DbSet<PropertyIssue> Issues => Set<PropertyIssue>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

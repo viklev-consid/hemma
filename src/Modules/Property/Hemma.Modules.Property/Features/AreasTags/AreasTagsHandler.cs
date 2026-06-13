@@ -259,7 +259,7 @@ public sealed class AreasTagsHandler(PropertyDbContext db, PropertyAuditPublishe
             PropertyTagTargetType.MaintenancePlan => await db.MaintenancePlans.AnyAsync(plan => plan.HouseholdId == householdId && plan.Id == new MaintenancePlanId(targetId), ct),
             PropertyTagTargetType.MaintenanceOccurrence => await db.MaintenanceOccurrences.AnyAsync(occurrence => occurrence.HouseholdId == householdId && occurrence.Id == new MaintenanceOccurrenceId(targetId), ct),
             PropertyTagTargetType.HistoryEntry => await db.HistoryEntries.AnyAsync(entry => entry.HouseholdId == householdId && entry.Id == new HistoryEntryId(targetId), ct),
-            PropertyTagTargetType.Issue => false,
+            PropertyTagTargetType.Issue => await db.Issues.AnyAsync(issue => issue.HouseholdId == householdId && issue.Id == new PropertyIssueId(targetId), ct),
             _ => false
         };
 }

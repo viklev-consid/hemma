@@ -139,4 +139,25 @@ internal static class PropertyErrors
 
     public static readonly ErrorOr.Error TagAssignmentInvalid =
         ErrorOr.Error.Validation("Property.TagAssignment.Invalid", "All assigned tags must belong to the same household.");
+
+    public static readonly ErrorOr.Error IssueNotFound =
+        ErrorOr.Error.NotFound("Property.Issue.NotFound", "Issue was not found.");
+
+    public static readonly ErrorOr.Error IssueTitleInvalid =
+        ErrorOr.Error.Validation("Property.Issue.TitleInvalid", "Issue title is required and cannot exceed 160 characters.");
+
+    public static readonly ErrorOr.Error IssueDescriptionInvalid =
+        ErrorOr.Error.Validation("Property.Issue.DescriptionInvalid", "Issue description cannot exceed 2,000 characters.");
+
+    public static readonly ErrorOr.Error IssueNotesInvalid =
+        ErrorOr.Error.Validation("Property.Issue.NotesInvalid", "Issue notes cannot exceed 4,000 characters.");
+
+    public static readonly ErrorOr.Error IssueSeverityInvalid =
+        ErrorOr.Error.Validation("Property.Issue.SeverityInvalid", "Issue severity is invalid.");
+
+    public static readonly ErrorOr.Error IssueStatusInvalid =
+        ErrorOr.Error.Validation("Property.Issue.StatusInvalid", "Issue status is invalid.");
+
+    public static readonly ErrorOr.Error IssueLinkTargetInvalid =
+        ErrorOr.Error.NotFound("Property.Issue.LinkTargetNotFound", "Issue link target was not found.");
 }
