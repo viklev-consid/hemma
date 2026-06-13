@@ -275,6 +275,8 @@ SuggestedHistoryEntry {
 
 ## Phase 6 — Issue / defect tracker
 
+**Status:** Completed in `968ac80` (`feat: add property issue tracker`).
+
 **Goal:** add a lightweight capture workflow for property problems before they become projects, maintenance work, or logbook history. Issues are durable household-scoped aggregates and feed later timeline, activity, and notification phases.
 
 **Entity:** `PropertyIssue`
