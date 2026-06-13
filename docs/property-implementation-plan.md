@@ -386,6 +386,8 @@ Return `IsOverdue`, `OverdueSince?`, and `DaysOverdue` in affected response DTOs
 
 ## Phase 9 — Property notification expansion
 
+**Status:** Completed in `c3e8b4b` (`feat: expand property notifications`).
+
 **Goal:** make Property proactive while reusing the global Notifications module. Property does not own notification delivery, inbox state, or transport. It sends `CreateNotificationCommand` from `Notifications.Contracts` with deterministic idempotency keys.
 
 **Notification sources:**
@@ -400,8 +402,8 @@ Return `IsOverdue`, `OverdueSince?`, and `DaysOverdue` in affected response DTOs
 **Recipients:** all household members from `Households.Contracts` `ListHouseholdMembers`. Do not query household tables or add cross-schema joins.
 
 **Scheduling:**
-- Extend the existing Property TickerQ job or add narrowly named jobs for due/overdue notification scans.
-- Generate idempotency keys from `(NotificationSource, SourceId, RecipientUserId, NotificationKind, RelevantDate)` so daily reruns do not duplicate notifications but materially new reminders can still be sent.
+- The existing `property.materialize-maintenance` TickerQ job now also scans due/overdue Property work queues.
+- Generate idempotency keys from `(NotificationSource, SourceId, RecipientUserId, NotificationKind, RelevantDate)` so daily reruns do not duplicate notifications but materially new reminders can still be sent. High/Critical issue report/update notifications use the same key shape and are sent immediately from the issue mutation path.
 - Notification links should target the relevant property route (project, task, occurrence, issue, or timeline entry) when known.
 
 **No Property-specific notification system:** preference storage, inbox reads, read/archive state, SSE, and delivery remain in the Notifications module. Add new notification categories only through existing Notifications contracts if that module already supports category/preference extensibility.
