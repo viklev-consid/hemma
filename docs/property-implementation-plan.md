@@ -314,6 +314,8 @@ SuggestedHistoryEntry {
 
 ## Phase 7 — Snooze and overdue state
 
+**Status:** Completed in working tree (adds maintenance occurrence snooze commands, persisted snooze metadata, and computed overdue state/filters for maintenance occurrences, projects, tasks, and issues).
+
 **Goal:** make maintenance and work queues operational without corrupting their original due dates. Snooze is a first-class backend mutation; overdue is returned as computed response state.
 
 **Maintenance occurrence updates:**

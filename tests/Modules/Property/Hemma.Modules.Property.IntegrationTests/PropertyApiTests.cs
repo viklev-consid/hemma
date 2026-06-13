@@ -5,8 +5,25 @@ using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Persistence;
 using Hemma.Modules.Households.Domain;
 using Hemma.Modules.Households.Persistence;
-using Hemma.Modules.Property.Features.AreasTags;
-using Hemma.Modules.Property.Features.Projects;
+using Hemma.Modules.Property.Features.AddLink;
+using Hemma.Modules.Property.Features.AddTask;
+using Hemma.Modules.Property.Features.AssignTags;
+using Hemma.Modules.Property.Features.ChangeIssueStatus;
+using Hemma.Modules.Property.Features.ChangeProjectStatus;
+using Hemma.Modules.Property.Features.CompleteOccurrence;
+using Hemma.Modules.Property.Features.CreateArea;
+using Hemma.Modules.Property.Features.CreateHistoryEntry;
+using Hemma.Modules.Property.Features.CreateMaintenancePlan;
+using Hemma.Modules.Property.Features.CreateProject;
+using Hemma.Modules.Property.Features.CreateTag;
+using Hemma.Modules.Property.Features.LinkIssueToMaintenancePlan;
+using Hemma.Modules.Property.Features.PromoteIssueToProject;
+using Hemma.Modules.Property.Features.PromoteOccurrenceToProject;
+using Hemma.Modules.Property.Features.ReorderAreas;
+using Hemma.Modules.Property.Features.ReorderTasks;
+using Hemma.Modules.Property.Features.ReportIssue;
+using Hemma.Modules.Property.Features.Shared;
+using Hemma.Modules.Property.Features.SkipOccurrence;
 using Hemma.Shared.Contracts;
 using Hemma.Shared.Kernel.Domain;
 using Hemma.Shared.Kernel.Interfaces;
@@ -91,6 +108,54 @@ public sealed class PropertyApiTests(PropertyApiFixture fixture) : IAsyncLifetim
             $"/v1/property/projects/{project.ProjectId}/tasks/reorder",
             new ReorderTasksRequest(household.Id.Value, [first.TaskId]));
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+    }
+
+    [Fact]
+    public async Task ProjectsAndTasks_ReturnOverdueStateAndFilter()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "OverdueWork", "overdue-work");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        fixture.Clock.Set(new DateTimeOffset(2026, 6, 20, 8, 0, 0, TimeSpan.Zero));
+
+        var created = await client.PostAsJsonAsync(
+            "/v1/property/projects",
+            new ProjectRequest(
+                household.Id.Value,
+                "Paint trim",
+                null,
+                "Active",
+                null,
+                null,
+                null,
+                new DateOnly(2026, 6, 10),
+                null,
+                null));
+        created.EnsureSuccessStatusCode();
+        var project = await created.Content.ReadFromJsonAsync<ProjectResponse>();
+        Assert.NotNull(project);
+        Assert.True(project.IsOverdue);
+        Assert.Equal(new DateOnly(2026, 6, 10), project.OverdueSince);
+        Assert.Equal(10, project.DaysOverdue);
+
+        var task = await AddTaskAsync(client, household.Id.Value, project.ProjectId, "Buy paint", new DateOnly(2026, 6, 15));
+        Assert.True(task.IsOverdue);
+        Assert.Equal(new DateOnly(2026, 6, 15), task.OverdueSince);
+        Assert.Equal(5, task.DaysOverdue);
+
+        var overdueProjects = await client.GetFromJsonAsync<ListProjectsResponse>(
+            $"/v1/property/projects?householdId={household.Id.Value}&isOverdue=true");
+        Assert.NotNull(overdueProjects);
+        Assert.Single(overdueProjects.Projects);
+        Assert.Equal(project.ProjectId, overdueProjects.Projects[0].ProjectId);
+        Assert.Equal(10, overdueProjects.Projects[0].DaysOverdue);
+
+        var overdueTasks = await client.GetFromJsonAsync<GetProjectTasksResponse>(
+            $"/v1/property/projects/{project.ProjectId}/tasks?householdId={household.Id.Value}&isOverdue=true");
+        Assert.NotNull(overdueTasks);
+        var listedTask = Assert.Single(overdueTasks.Tasks);
+        Assert.Equal(task.TaskId, listedTask.TaskId);
+        Assert.Equal(5, listedTask.DaysOverdue);
     }
 
     [Fact]
@@ -347,11 +412,11 @@ public sealed class PropertyApiTests(PropertyApiFixture fixture) : IAsyncLifetim
         return project;
     }
 
-    private static async Task<ProjectTaskResponse> AddTaskAsync(HttpClient client, Guid householdId, Guid projectId, string title)
+    private static async Task<ProjectTaskResponse> AddTaskAsync(HttpClient client, Guid householdId, Guid projectId, string title, DateOnly? dueDate = null)
     {
         var response = await client.PostAsJsonAsync(
             $"/v1/property/projects/{projectId}/tasks",
-            new ProjectTaskRequest(householdId, title, "Todo", null, null, null));
+            new ProjectTaskRequest(householdId, title, "Todo", null, null, dueDate));
         response.EnsureSuccessStatusCode();
         var task = await response.Content.ReadFromJsonAsync<ProjectTaskResponse>();
         Assert.NotNull(task);

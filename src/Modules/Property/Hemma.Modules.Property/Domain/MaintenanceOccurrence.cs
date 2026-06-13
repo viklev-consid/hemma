@@ -16,6 +16,7 @@ public sealed class MaintenanceOccurrence : AggregateRoot<MaintenanceOccurrenceI
         PlanId = planId;
         HouseholdId = householdId;
         DueDate = dueDate;
+        OriginalDueDate = dueDate;
         Status = MaintenanceOccurrenceStatus.Upcoming;
     }
 
@@ -24,6 +25,10 @@ public sealed class MaintenanceOccurrence : AggregateRoot<MaintenanceOccurrenceI
     public MaintenancePlanId PlanId { get; private set; } = null!;
     public Guid HouseholdId { get; private set; }
     public DateOnly DueDate { get; private set; }
+    public DateOnly OriginalDueDate { get; private set; }
+    public DateOnly? SnoozedUntil { get; private set; }
+    public DateTimeOffset? SnoozedAt { get; private set; }
+    public string? SnoozeReason { get; private set; }
     public MaintenanceOccurrenceStatus Status { get; private set; }
     public DateTimeOffset? CompletedAt { get; private set; }
     public string? Notes { get; private set; }
@@ -68,6 +73,38 @@ public sealed class MaintenanceOccurrence : AggregateRoot<MaintenanceOccurrenceI
         Status = MaintenanceOccurrenceStatus.Done;
         CompletedAt = clock.UtcNow;
         SpawnedProjectId = projectId;
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> Snooze(DateOnly snoozedUntil, string? reason, IClock clock)
+    {
+        if (Status != MaintenanceOccurrenceStatus.Upcoming)
+        {
+            return PropertyErrors.MaintenanceOccurrenceNotOpen;
+        }
+
+        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        if (snoozedUntil <= today)
+        {
+            return PropertyErrors.MaintenanceOccurrenceSnoozeInvalid;
+        }
+
+        SnoozedUntil = snoozedUntil;
+        SnoozedAt = clock.UtcNow;
+        SnoozeReason = NormalizeNotes(reason);
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> ClearSnooze()
+    {
+        if (Status != MaintenanceOccurrenceStatus.Upcoming)
+        {
+            return PropertyErrors.MaintenanceOccurrenceNotOpen;
+        }
+
+        SnoozedUntil = null;
+        SnoozedAt = null;
+        SnoozeReason = null;
         return Result.Success;
     }
 

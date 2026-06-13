@@ -138,9 +138,26 @@ namespace Hemma.Modules.Property.Persistence.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("notes");
 
+                    b.Property<DateOnly>("OriginalDueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("original_due_date");
+
                     b.Property<Guid>("PlanId")
                         .HasColumnType("uuid")
                         .HasColumnName("plan_id");
+
+                    b.Property<string>("SnoozeReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("snooze_reason");
+
+                    b.Property<DateTimeOffset?>("SnoozedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("snoozed_at");
+
+                    b.Property<DateOnly?>("SnoozedUntil")
+                        .HasColumnType("date")
+                        .HasColumnName("snoozed_until");
 
                     b.Property<Guid?>("SpawnedProjectId")
                         .HasColumnType("uuid")
@@ -423,6 +440,68 @@ namespace Hemma.Modules.Property.Persistence.Migrations
                         .HasDatabaseName("ix_project_tasks_project_id_sort_order");
 
                     b.ToTable("project_tasks", "property");
+                });
+
+            modelBuilder.Entity("Hemma.Modules.Property.Domain.PropertyActivityEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ActorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_id");
+
+                    b.Property<Guid>("HouseholdId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("household_id");
+
+                    b.Property<string>("MetadataJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("metadata")
+                        .HasDefaultValueSql("'{}'::jsonb");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(240)
+                        .HasColumnType("character varying(240)")
+                        .HasColumnName("summary");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_id");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("target_type");
+
+                    b.Property<string>("Verb")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("verb");
+
+                    b.HasKey("Id")
+                        .HasName("pk_activity_events");
+
+                    b.HasIndex("HouseholdId", "OccurredAt")
+                        .HasDatabaseName("ix_activity_events_household_id_occurred_at");
+
+                    b.HasIndex("HouseholdId", "Verb")
+                        .HasDatabaseName("ix_activity_events_household_id_verb");
+
+                    b.HasIndex("HouseholdId", "TargetType", "TargetId")
+                        .HasDatabaseName("ix_activity_events_household_id_target_type_target_id");
+
+                    b.ToTable("activity_events", "property");
                 });
 
             modelBuilder.Entity("Hemma.Modules.Property.Domain.PropertyArea", b =>

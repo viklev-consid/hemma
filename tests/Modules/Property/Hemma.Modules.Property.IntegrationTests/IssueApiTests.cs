@@ -2,10 +2,25 @@ using System.Net;
 using System.Net.Http.Json;
 using Hemma.Modules.Households.Domain;
 using Hemma.Modules.Households.Persistence;
-using Hemma.Modules.Property.Features.AreasTags;
-using Hemma.Modules.Property.Features.Issues;
-using Hemma.Modules.Property.Features.Maintenance;
-using Hemma.Modules.Property.Features.Projects;
+using Hemma.Modules.Property.Features.AddLink;
+using Hemma.Modules.Property.Features.AddTask;
+using Hemma.Modules.Property.Features.AssignTags;
+using Hemma.Modules.Property.Features.ChangeIssueStatus;
+using Hemma.Modules.Property.Features.ChangeProjectStatus;
+using Hemma.Modules.Property.Features.CompleteOccurrence;
+using Hemma.Modules.Property.Features.CreateArea;
+using Hemma.Modules.Property.Features.CreateHistoryEntry;
+using Hemma.Modules.Property.Features.CreateMaintenancePlan;
+using Hemma.Modules.Property.Features.CreateProject;
+using Hemma.Modules.Property.Features.CreateTag;
+using Hemma.Modules.Property.Features.LinkIssueToMaintenancePlan;
+using Hemma.Modules.Property.Features.PromoteIssueToProject;
+using Hemma.Modules.Property.Features.PromoteOccurrenceToProject;
+using Hemma.Modules.Property.Features.ReorderAreas;
+using Hemma.Modules.Property.Features.ReorderTasks;
+using Hemma.Modules.Property.Features.ReportIssue;
+using Hemma.Modules.Property.Features.Shared;
+using Hemma.Modules.Property.Features.SkipOccurrence;
 using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,6 +73,9 @@ public sealed class IssueApiTests(PropertyApiFixture fixture) : IAsyncLifetime
         Assert.NotNull(filtered);
         Assert.Single(filtered.Issues);
         Assert.Equal(issue.IssueId, filtered.Issues[0].IssueId);
+        Assert.True(filtered.Issues[0].IsOverdue);
+        Assert.Equal(new DateOnly(2026, 6, 12), filtered.Issues[0].OverdueSince);
+        Assert.Equal(1, filtered.Issues[0].DaysOverdue);
 
         var updated = await client.PutAsJsonAsync(
             $"/v1/property/issues/{issue.IssueId}",
@@ -73,6 +91,9 @@ public sealed class IssueApiTests(PropertyApiFixture fixture) : IAsyncLifetime
         var updatedIssue = await updated.Content.ReadFromJsonAsync<IssueResponse>();
         Assert.NotNull(updatedIssue);
         Assert.Equal("Critical", updatedIssue.Severity);
+        Assert.False(updatedIssue.IsOverdue);
+        Assert.Null(updatedIssue.OverdueSince);
+        Assert.Equal(0, updatedIssue.DaysOverdue);
 
         var resolved = await client.PostAsJsonAsync(
             $"/v1/property/issues/{issue.IssueId}/status",

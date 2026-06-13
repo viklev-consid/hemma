@@ -25,6 +25,16 @@ internal sealed class MaintenanceOccurrenceConfiguration : IEntityTypeConfigurat
         builder.Property(occurrence => occurrence.DueDate)
             .IsRequired();
 
+        builder.Property(occurrence => occurrence.OriginalDueDate)
+            .IsRequired();
+
+        builder.Property(occurrence => occurrence.SnoozedUntil);
+
+        builder.Property(occurrence => occurrence.SnoozedAt);
+
+        builder.Property(occurrence => occurrence.SnoozeReason)
+            .HasMaxLength(2000);
+
         builder.Property(occurrence => occurrence.Status)
             .HasConversion<string>()
             .HasMaxLength(16)

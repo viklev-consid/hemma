@@ -80,6 +80,9 @@ internal static class PropertyErrors
     public static readonly ErrorOr.Error MaintenanceOccurrenceNotOpen =
         ErrorOr.Error.Validation("Property.MaintenanceOccurrence.NotOpen", "Maintenance occurrence is not upcoming and cannot be changed.");
 
+    public static readonly ErrorOr.Error MaintenanceOccurrenceSnoozeInvalid =
+        ErrorOr.Error.Validation("Property.MaintenanceOccurrence.SnoozeInvalid", "Snooze date must be later than today.");
+
     public static readonly ErrorOr.Error HistoryEntryNotFound =
         ErrorOr.Error.NotFound("Property.HistoryEntry.NotFound", "History entry was not found.");
 
@@ -160,4 +163,13 @@ internal static class PropertyErrors
 
     public static readonly ErrorOr.Error IssueLinkTargetInvalid =
         ErrorOr.Error.NotFound("Property.Issue.LinkTargetNotFound", "Issue link target was not found.");
+
+    public static readonly ErrorOr.Error ActivitySummaryInvalid =
+        ErrorOr.Error.Validation("Property.Activity.SummaryInvalid", "Activity summary is required and cannot exceed 240 characters.");
+
+    public static readonly ErrorOr.Error ActivityVerbInvalid =
+        ErrorOr.Error.Validation("Property.Activity.VerbInvalid", "Activity verb is invalid.");
+
+    public static readonly ErrorOr.Error ActivityTargetTypeInvalid =
+        ErrorOr.Error.Validation("Property.Activity.TargetTypeInvalid", "Activity target type is invalid.");
 }

@@ -5,8 +5,28 @@ using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Persistence;
 using Hemma.Modules.Households.Domain;
 using Hemma.Modules.Households.Persistence;
-using Hemma.Modules.Property.Features.Logbook;
-using Hemma.Modules.Property.Features.Projects;
+using Hemma.Modules.Property.Features.AddLink;
+using Hemma.Modules.Property.Features.AddTask;
+using Hemma.Modules.Property.Features.AssignTags;
+using Hemma.Modules.Property.Features.ChangeIssueStatus;
+using Hemma.Modules.Property.Features.ChangeProjectStatus;
+using Hemma.Modules.Property.Features.CompleteOccurrence;
+using Hemma.Modules.Property.Features.CreateArea;
+using Hemma.Modules.Property.Features.CreateHistoryEntry;
+using Hemma.Modules.Property.Features.CreateMaintenancePlan;
+using Hemma.Modules.Property.Features.CreateProject;
+using Hemma.Modules.Property.Features.CreateTag;
+using Hemma.Modules.Property.Features.GetPropertyActivitySummary;
+using Hemma.Modules.Property.Features.LinkIssueToMaintenancePlan;
+using Hemma.Modules.Property.Features.ListPropertyActivity;
+using Hemma.Modules.Property.Features.ListTimeline;
+using Hemma.Modules.Property.Features.PromoteIssueToProject;
+using Hemma.Modules.Property.Features.PromoteOccurrenceToProject;
+using Hemma.Modules.Property.Features.ReorderAreas;
+using Hemma.Modules.Property.Features.ReorderTasks;
+using Hemma.Modules.Property.Features.ReportIssue;
+using Hemma.Modules.Property.Features.Shared;
+using Hemma.Modules.Property.Features.SkipOccurrence;
 using Hemma.Shared.Contracts;
 using Hemma.Shared.Kernel.Domain;
 using Hemma.Shared.Kernel.Interfaces;
@@ -189,6 +209,110 @@ public sealed class LogbookApiTests(PropertyApiFixture fixture) : IAsyncLifetime
         var response = await client.GetAsync($"/v1/property/history?householdId={household.Id.Value}");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task TimelineListsHistoryEntrySourceFieldsWithTags()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Timeline", "timeline");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+
+        var tagResponse = await client.PostAsJsonAsync(
+            "/v1/property/tags",
+            new PropertyTagRequest(household.Id.Value, "Exterior", "#345678"));
+        tagResponse.EnsureSuccessStatusCode();
+        var tag = await tagResponse.Content.ReadFromJsonAsync<PropertyTagResponse>();
+        Assert.NotNull(tag);
+
+        var created = await client.PostAsJsonAsync(
+            "/v1/property/history",
+            new HistoryEntryRequest(
+                household.Id.Value,
+                new DateOnly(2026, 6, 1),
+                "Repaired deck",
+                null,
+                new MoneyDto(900m, "SEK"),
+                "Manual",
+                null,
+                null,
+                []));
+        created.EnsureSuccessStatusCode();
+        var entry = await created.Content.ReadFromJsonAsync<HistoryEntryResponse>();
+        Assert.NotNull(entry);
+
+        var assigned = await client.PutAsJsonAsync(
+            "/v1/property/tags/assignments",
+            new AssignTagsRequest(household.Id.Value, "HistoryEntry", entry.HistoryEntryId, [tag.TagId]));
+        assigned.EnsureSuccessStatusCode();
+
+        var listed = await client.GetFromJsonAsync<ListTimelineResponse>(
+            $"/v1/property/timeline?householdId={household.Id.Value}&year=2026&type=Manual&tagIds={tag.TagId}");
+
+        Assert.NotNull(listed);
+        var item = Assert.Single(listed.Items);
+        Assert.Equal("HistoryEntry", item.SourceType);
+        Assert.Equal(entry.HistoryEntryId, item.SourceId);
+        Assert.Equal(new DateOnly(2026, 6, 1), item.Date);
+        Assert.Equal("Repaired deck", item.Title);
+        Assert.Equal(900m, item.Cost!.Amount);
+        Assert.Equal("Manual", item.Type);
+        Assert.Equal(0, item.PhotoCount);
+        var timelineTag = Assert.Single(item.Tags);
+        Assert.Equal(tag.TagId, timelineTag.TagId);
+        Assert.Equal("Exterior", timelineTag.Name);
+    }
+
+    [Fact]
+    public async Task ActivityFeedCapturesProductFacingMutationEvents()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Activity", "activity");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+
+        var project = await CreateProjectAsync(client, household.Id.Value);
+
+        var issueResponse = await client.PostAsJsonAsync(
+            "/v1/property/issues",
+            new IssueRequest(household.Id.Value, "Leaking tap", null, null, "Medium", null, null));
+        issueResponse.EnsureSuccessStatusCode();
+        var issue = await issueResponse.Content.ReadFromJsonAsync<IssueResponse>();
+        Assert.NotNull(issue);
+
+        var statusChanged = await client.PostAsJsonAsync(
+            $"/v1/property/issues/{issue.IssueId}/status",
+            new ChangeIssueStatusRequest(household.Id.Value, "Resolved"));
+        statusChanged.EnsureSuccessStatusCode();
+
+        var activity = await client.GetFromJsonAsync<ListPropertyActivityResponse>(
+            $"/v1/property/activity?householdId={household.Id.Value}&limit=10");
+
+        Assert.NotNull(activity);
+        Assert.Contains(activity.Items, item =>
+            string.Equals(item.Verb, "ProjectCreated", StringComparison.Ordinal)
+            && string.Equals(item.TargetType, "Project", StringComparison.Ordinal)
+            && item.TargetId == project.ProjectId
+            && item.ActorId == ownerId);
+        Assert.Contains(activity.Items, item =>
+            string.Equals(item.Verb, "IssueReported", StringComparison.Ordinal)
+            && string.Equals(item.TargetType, "PropertyIssue", StringComparison.Ordinal)
+            && item.TargetId == issue.IssueId
+            && item.ActorId == ownerId);
+        Assert.Contains(activity.Items, item =>
+            string.Equals(item.Verb, "IssueStatusChanged", StringComparison.Ordinal)
+            && string.Equals(item.TargetType, "PropertyIssue", StringComparison.Ordinal)
+            && item.TargetId == issue.IssueId
+            && string.Equals(item.Metadata["to"], "Resolved", StringComparison.Ordinal));
+
+        var summary = await client.GetFromJsonAsync<PropertyActivitySummaryResponse>(
+            $"/v1/property/activity/summary?householdId={household.Id.Value}");
+
+        Assert.NotNull(summary);
+        Assert.Contains(summary.ByVerb, item => string.Equals(item.Key, "ProjectCreated", StringComparison.Ordinal) && item.Count == 1);
+        Assert.Contains(summary.ByVerb, item => string.Equals(item.Key, "IssueReported", StringComparison.Ordinal) && item.Count == 1);
+        Assert.Contains(summary.ByVerb, item => string.Equals(item.Key, "IssueStatusChanged", StringComparison.Ordinal) && item.Count == 1);
+        Assert.Contains(summary.ByTargetType, item => string.Equals(item.Key, "Project", StringComparison.Ordinal) && item.Count == 1);
+        Assert.Contains(summary.ByTargetType, item => string.Equals(item.Key, "PropertyIssue", StringComparison.Ordinal) && item.Count == 2);
     }
 
     private static async Task<ProjectResponse> CreateProjectAsync(HttpClient client, Guid householdId)

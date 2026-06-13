@@ -14,6 +14,7 @@ public sealed class PropertyDbContext(DbContextOptions<PropertyDbContext> option
     public DbSet<PropertyTag> Tags => Set<PropertyTag>();
     public DbSet<PropertyTagAssignment> TagAssignments => Set<PropertyTagAssignment>();
     public DbSet<PropertyIssue> Issues => Set<PropertyIssue>();
+    public DbSet<PropertyActivityEvent> ActivityEvents => Set<PropertyActivityEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -4,8 +4,26 @@ using Hemma.Modules.Households.Domain;
 using Hemma.Modules.Households.Persistence;
 using Hemma.Modules.Notifications.Persistence;
 using Hemma.Modules.Property.Domain;
-using Hemma.Modules.Property.Features.Maintenance;
-using Hemma.Modules.Property.Features.Projects;
+using Hemma.Modules.Property.Features.AddLink;
+using Hemma.Modules.Property.Features.AddTask;
+using Hemma.Modules.Property.Features.AssignTags;
+using Hemma.Modules.Property.Features.ChangeIssueStatus;
+using Hemma.Modules.Property.Features.ChangeProjectStatus;
+using Hemma.Modules.Property.Features.CompleteOccurrence;
+using Hemma.Modules.Property.Features.CreateArea;
+using Hemma.Modules.Property.Features.CreateHistoryEntry;
+using Hemma.Modules.Property.Features.CreateMaintenancePlan;
+using Hemma.Modules.Property.Features.CreateProject;
+using Hemma.Modules.Property.Features.CreateTag;
+using Hemma.Modules.Property.Features.LinkIssueToMaintenancePlan;
+using Hemma.Modules.Property.Features.PromoteIssueToProject;
+using Hemma.Modules.Property.Features.PromoteOccurrenceToProject;
+using Hemma.Modules.Property.Features.ReorderAreas;
+using Hemma.Modules.Property.Features.ReorderTasks;
+using Hemma.Modules.Property.Features.ReportIssue;
+using Hemma.Modules.Property.Features.Shared;
+using Hemma.Modules.Property.Features.SkipOccurrence;
+using Hemma.Modules.Property.Features.SnoozeOccurrence;
 using Hemma.Modules.Property.Jobs;
 using Hemma.Modules.Property.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
@@ -93,6 +111,71 @@ public sealed class MaintenanceApiTests(PropertyApiFixture fixture) : IAsyncLife
         Assert.NotNull(skip);
         Assert.Equal("Skipped", skip.Occurrence.Status);
         Assert.NotNull(skip.NextOccurrence);
+    }
+
+    [Fact]
+    public async Task SnoozeOccurrence_PreservesDueDateAndCanBeCleared()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Snooze", "snooze");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        fixture.Clock.Set(new DateTimeOffset(2026, 6, 11, 8, 0, 0, TimeSpan.Zero));
+
+        var plan = await CreatePlanAsync(client, household.Id.Value, "Month", 1, new DateOnly(2026, 6, 1));
+        var occurrenceId = plan.NextOccurrence!.OccurrenceId;
+        var dueDate = plan.NextOccurrence.DueDate;
+
+        var response = await client.PostAsJsonAsync(
+            $"/v1/property/maintenance/occurrences/{occurrenceId}/snooze",
+            new SnoozeOccurrenceRequest(household.Id.Value, new DateOnly(2026, 7, 20), "Waiting for parts"));
+        response.EnsureSuccessStatusCode();
+
+        var snoozed = await response.Content.ReadFromJsonAsync<MaintenanceOccurrenceResponse>();
+        Assert.NotNull(snoozed);
+        Assert.Equal(dueDate, snoozed.DueDate);
+        Assert.Equal(dueDate, snoozed.OriginalDueDate);
+        Assert.Equal(new DateOnly(2026, 7, 20), snoozed.SnoozedUntil);
+        Assert.Equal(new DateOnly(2026, 7, 20), snoozed.EffectiveReminderDate);
+        Assert.Equal("Waiting for parts", snoozed.SnoozeReason);
+
+        var cleared = await client.DeleteAsync(
+            $"/v1/property/maintenance/occurrences/{occurrenceId}/snooze?householdId={household.Id.Value}");
+        cleared.EnsureSuccessStatusCode();
+
+        var active = await cleared.Content.ReadFromJsonAsync<MaintenanceOccurrenceResponse>();
+        Assert.NotNull(active);
+        Assert.Null(active.SnoozedUntil);
+        Assert.Null(active.SnoozedAt);
+        Assert.Null(active.SnoozeReason);
+        Assert.Equal(active.DueDate, active.EffectiveReminderDate);
+    }
+
+    [Fact]
+    public async Task UpcomingOccurrences_ReturnOverdueStateWhileSnoozed()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Overdue", "overdue");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        fixture.Clock.Set(new DateTimeOffset(2026, 6, 11, 8, 0, 0, TimeSpan.Zero));
+
+        var plan = await CreatePlanAsync(client, household.Id.Value, "Month", 1, new DateOnly(2026, 6, 1));
+        var occurrenceId = plan.NextOccurrence!.OccurrenceId;
+
+        fixture.Clock.Set(new DateTimeOffset(2026, 7, 10, 8, 0, 0, TimeSpan.Zero));
+        var snooze = await client.PostAsJsonAsync(
+            $"/v1/property/maintenance/occurrences/{occurrenceId}/snooze",
+            new SnoozeOccurrenceRequest(household.Id.Value, new DateOnly(2026, 7, 20), null));
+        snooze.EnsureSuccessStatusCode();
+
+        var upcoming = await client.GetFromJsonAsync<ListUpcomingOccurrencesResponse>(
+            $"/v1/property/maintenance/occurrences?householdId={household.Id.Value}&isOverdue=true");
+
+        Assert.NotNull(upcoming);
+        var item = Assert.Single(upcoming.Occurrences);
+        Assert.True(item.IsOverdue);
+        Assert.Equal(new DateOnly(2026, 7, 1), item.OverdueSince);
+        Assert.Equal(9, item.DaysOverdue);
+        Assert.Equal(new DateOnly(2026, 7, 20), item.EffectiveReminderDate);
     }
 
     [Fact]
