@@ -53,7 +53,7 @@ and `c9f06e8` (`test: cover property project api`).
 | `Name` | string |
 | `Description?` | string |
 | `Status` | enum: `Planning` / `Active` / `OnHold` / `Done` |
-| `Area?` | string label (e.g. "Kitchen", "Exterior") |
+| `AreaId?` | uuid; nullable reference to `PropertyArea` (Phase 5 replaced the original free-text label) |
 | `TargetStartDate?`, `TargetEndDate?` | date; open-ended, no cycle/period semantics |
 | `BudgetEstimate?` | `Money` (SEK) — the *estimate* only; actuals come from Economy |
 | `CompletedAt?` | datetime; set on transition to `Done` |
@@ -85,7 +85,7 @@ and `c9f06e8` (`test: cover property project api`).
 
 **Completion behaviour:** `ChangeProjectStatus -> Done` sets `CompletedAt` and the response includes a **suggested Logbook payload** (see Phase 4 shape). Phase 4 added the `HistoryEntry` aggregate that consumes this payload. Project completion now snapshots linked Economy spend into `cost` and offers project attachment blob refs for copy-on-claim.
 
-**Queries:** `GetProject`, `ListProjects` (filter by status/area), `GetProjectTasks`.
+**Queries:** `GetProject`, `ListProjects` (filter by status, area id, priority, and tags), `GetProjectTasks`.
 
 **Publish:** OpenAPI for the above.
 
@@ -136,7 +136,7 @@ and `34add9f` (`test: cover property maintenance api and scheduling`).
 | `Id`, `HouseholdId` | uuid |
 | `Title` | string |
 | `Description?` | string |
-| `Area?` | string |
+| `AreaId?` | uuid; nullable reference to `PropertyArea` (Phase 5 replaced the original free-text label) |
 | `RecurrenceUnit` | enum: `Month` / `Year` |
 | `RecurrenceInterval` | int (e.g. 6 + `Month` = twice a year; 1 + `Year` anchored on a date = "every autumn") |
 | `AnchorDate` | date — basis for computing the next due date |
@@ -165,7 +165,7 @@ and `34add9f` (`test: cover property maintenance api and scheduling`).
 - On `CompleteOccurrence`/`SkipOccurrence`, schedule the next occurrence the same way (next future due date, not anchored to the completion date).
 - Fire reminders through the **Notifications** module as occurrences enter the lead-time window. **Recipients are all household members.** Households does not currently expose a members query (only member events), so **add a `ListHouseholdMembers { HouseholdId } -> [{ UserId, … }]` query to `Households.Contracts`** and invoke it via `IMessageBus`; send one `CreateNotificationCommand` per member (`Category = Product`, `Severity = Info`/`Warning`, optional `Link` to the occurrence). Because the job runs daily, derive each command's `IdempotencyKey` **deterministically** from `(OccurrenceId, RecipientUserId)` so re-runs never double-notify.
 
-**Completion payload:** `CompleteOccurrence` (non-promoted) returns a suggested Logbook payload (type `Maintenance`, no cost, title/area from the plan).
+**Completion payload:** `CompleteOccurrence` (non-promoted) returns a suggested Logbook payload (type `Maintenance`, no cost, title/area id from the plan).
 
 **Queries:** `ListMaintenancePlans`, `GetPlan`, `ListUpcomingOccurrences { HouseholdId, Horizon }`.
 
@@ -182,7 +182,7 @@ and `34add9f` (`test: cover property maintenance api and scheduling`).
 | `Id`, `HouseholdId` | uuid |
 | `Date` | date — UI groups by year |
 | `Title` | string |
-| `Area?` | string |
+| `AreaId?` | uuid; nullable reference to `PropertyArea` (Phase 5 replaced the original free-text label) |
 | `Cost?` | `Money` **snapshot** — captured at creation, never recomputed from live transactions |
 | `Type` | enum: `Project` / `Maintenance` / `Manual` |
 | `SourceProjectId?` | uuid — provenance only; nullable; no cross-schema FK |
@@ -194,7 +194,8 @@ and `34add9f` (`test: cover property maintenance api and scheduling`).
 SuggestedHistoryEntry {
   date: Date            // CompletedAt
   title: string         // project/plan name
-  area?: string
+  areaId?: uuid
+  areaName?: string
   cost?: MoneyDto       // project linked-spend snapshot at completion; null for maintenance
   type: "Project" | "Maintenance"
   sourceProjectId?: uuid
@@ -209,7 +210,7 @@ SuggestedHistoryEntry {
 
 **Durability rule:** `CreateHistoryEntry` snapshots `cost` (the `LinkedTotal` value at completion) and **physically copies** `photoRefs` into entry-owned blobs. Because the entry owns independent copies, it never recomputes from live Economy data and is unaffected by later edits/deletion of the source project.
 
-**Queries:** `ListHistory { HouseholdId, Year?, Area?, Type? }` returning entries newest-first (frontend groups by year). Serving a `HistoryEntry` photo reuses the Phase 1 stream-through-API pattern — add a `GetHistoryPhoto { HistoryEntryId, BlobKey }` endpoint backed by `IBlobStore.GetAsync`.
+**Queries:** `ListHistory { HouseholdId, Year?, AreaId?, Type?, TagIds? }` returning entries newest-first (frontend groups by year). Serving a `HistoryEntry` photo reuses the Phase 1 stream-through-API pattern — add a `GetHistoryPhoto { HistoryEntryId, BlobKey }` endpoint backed by `IBlobStore.GetAsync`.
 
 **Blob ownership (why copy, not reference):** `IBlobStore` has no reference-counting or two-phase lifecycle, and deletion is unconditional. Copy-on-claim sidesteps all of it — Project/attachment deletion stays simple and unconditional (it only ever touches its own blobs), and the `HistoryEntry` copies survive independently. **Do not** build ref-aware deletion or a shared retention mechanism.
 
@@ -217,12 +218,198 @@ SuggestedHistoryEntry {
 
 ---
 
+## Phase 5 — Areas, tags, and urgency foundations
+
+**Status:** Completed in `788c2af` (`feat: add property areas tags and priority`).
+
+**Goal:** replace free-text area usage with canonical household-scoped records and add reusable tags plus structured urgency fields. There is no existing production API usage, so this phase may directly replace the `Area?` string fields with nullable area references instead of carrying fallback text or migration compatibility paths.
+
+**Entities:**
+
+`PropertyArea`
+
+| Field | Type / notes |
+|---|---|
+| `Id`, `HouseholdId` | uuid |
+| `Name` | string; unique per household, case-insensitive |
+| `Description?` | string |
+| `SortOrder` | int |
+| `IsArchived` | bool; archive instead of hard-delete when referenced |
+
+`PropertyTag`
+
+| Field | Type / notes |
+|---|---|
+| `Id`, `HouseholdId` | uuid |
+| `Name` | string; unique per household, case-insensitive |
+| `Color?` | string token or hex value; presentation hint only |
+| `IsArchived` | bool; archived tags stay attached to existing records but are hidden from default pickers |
+
+`PropertyTagAssignment`
+
+| Field | Type / notes |
+|---|---|
+| `Id`, `HouseholdId`, `TagId` | uuid |
+| `TargetType` | enum: `Project` / `MaintenancePlan` / `MaintenanceOccurrence` / `Issue` / `HistoryEntry` |
+| `TargetId` | uuid; no FK because targets span aggregate tables |
+
+**Existing aggregate updates:**
+- Replace `Project.Area`, `MaintenancePlan.Area`, and `HistoryEntry.Area` with nullable `AreaId`.
+- Add `Project.Priority` enum: `Low` / `Medium` / `High` / `Critical` (default `Medium`).
+- Keep `MaintenanceOccurrence` taggable for completed/skipped occurrence history, but do not add priority/severity to maintenance in v1.
+
+**Commands / handlers:**
+- `CreateArea`, `UpdateArea`, `ArchiveArea`, `ReorderAreas`
+- `CreateTag`, `UpdateTag`, `ArchiveTag`
+- `AssignTags { TargetType, TargetId, TagIds[] }` — validate all tag IDs belong to the same household and that the target exists in that household.
+- Extend project, maintenance plan, and history entry create/update commands to accept `AreaId?` and project commands to accept `Priority`.
+
+**Queries:**
+- `ListAreas { HouseholdId, IncludeArchived? }`
+- `ListTags { HouseholdId, IncludeArchived? }`
+- Extend project, maintenance plan, and history list queries with `AreaId?`, `TagIds?`, and project `Priority?` filters.
+
+**Publish:** OpenAPI for area/tag CRUD, tag assignment, and updated project/maintenance/logbook contracts.
+
+---
+
+## Phase 6 — Issue / defect tracker
+
+**Goal:** add a lightweight capture workflow for property problems before they become projects, maintenance work, or logbook history. Issues are durable household-scoped aggregates and feed later timeline, activity, and notification phases.
+
+**Entity:** `PropertyIssue`
+
+| Field | Type / notes |
+|---|---|
+| `Id`, `HouseholdId` | uuid |
+| `Title` | string |
+| `Description?` | string |
+| `AreaId?` | uuid; no FK outside the property schema boundary concern, but EF FK inside property is allowed |
+| `Severity` | enum: `Low` / `Medium` / `High` / `Critical` (default `Medium`) |
+| `Status` | enum: `Open` / `InProgress` / `Resolved` / `Closed` |
+| `ReportedAt` | datetime |
+| `DueDate?` | date; used by overdue queries and notifications |
+| `ResolvedAt?`, `ClosedAt?` | datetime |
+| `LinkedProjectId?` | uuid; provenance/link only, no cross-aggregate invariant beyond explicit handler checks |
+| `LinkedMaintenancePlanId?`, `LinkedMaintenanceOccurrenceId?` | uuid nullable links |
+| `Notes?` | string |
+
+**Commands / handlers:**
+- `ReportIssue`, `UpdateIssue`, `ChangeIssueStatus`, `DeleteIssue`
+- `LinkIssueToMaintenancePlan`, `LinkIssueToMaintenanceOccurrence`, `UnlinkIssue`
+- `PromoteIssueToProject { IssueId, <CreateProject fields> }` — creates a project, sets `LinkedProjectId`, and moves the issue to `InProgress`.
+- When a linked project transitions to `Done`, automatically close linked issues for that project. This belongs in the Property module handler path that changes project status, not in the frontend.
+
+**Tagging:** `PropertyIssue` is taggable through `PropertyTagAssignment`.
+
+**No logbook suggestion:** resolving or closing an issue does **not** return a suggested history entry in v1.
+
+**Queries:** `GetIssue`, `ListIssues { HouseholdId, Status?, AreaId?, Severity?, TagIds?, IsOverdue?, LinkedProjectId? }`.
+
+**Publish:** OpenAPI for issue CRUD, linking, promotion, and issue filters.
+
+---
+
+## Phase 7 — Snooze and overdue state
+
+**Goal:** make maintenance and work queues operational without corrupting their original due dates. Snooze is a first-class backend mutation; overdue is returned as computed response state.
+
+**Maintenance occurrence updates:**
+
+| Field | Type / notes |
+|---|---|
+| `OriginalDueDate` | date; initialized from `DueDate` when existing occurrences are created |
+| `SnoozedUntil?` | date; reminder/postponement date, must be later than today |
+| `SnoozedAt?` | datetime |
+| `SnoozeReason?` | string |
+
+Keep `DueDate` as the planned due date. Do **not** mutate it when snoozing. Query responses calculate `EffectiveReminderDate = SnoozedUntil ?? DueDate`.
+
+**Commands / handlers:**
+- `SnoozeOccurrence { OccurrenceId, SnoozedUntil, Reason? }`
+- `ClearOccurrenceSnooze { OccurrenceId }`
+
+**Overdue response state:**
+- Maintenance occurrence: overdue when `Status == Upcoming` and `DueDate < today`. Snoozing suppresses reminder urgency until `SnoozedUntil`, but does not make the occurrence no longer overdue.
+- Project task: overdue when `Status != Done` and `DueDate < today`.
+- Issue: overdue when `Status` is `Open` or `InProgress` and `DueDate < today`.
+- Project: overdue when `Status` is not `Done` and `TargetEndDate < today`.
+
+Return `IsOverdue`, `OverdueSince?`, and `DaysOverdue` in affected response DTOs. Do not persist an `Overdue` status enum; scheduled jobs use deterministic notification idempotency keys instead.
+
+**Queries:** extend maintenance occurrence, project, task, and issue list/read responses and filters with computed overdue fields.
+
+**Publish:** OpenAPI for snooze commands and overdue fields.
+
+---
+
+## Phase 8 — Property timeline and activity feed
+
+**Goal:** expose two related but distinct read surfaces:
+
+- **Timeline:** the household's long-term property memory. Initially read from `HistoryEntry` only, matching the brief's first backend step. Later timeline sources can include issues and activity events without changing Logbook durability. General documents and warranties remain out of scope for these phases.
+- **Activity feed:** recent operational activity across Property records, backed by a Property-owned durable table rather than Audit. Audit remains compliance-focused; activity is product-facing.
+
+**Entity:** `PropertyActivityEvent`
+
+| Field | Type / notes |
+|---|---|
+| `Id`, `HouseholdId` | uuid |
+| `OccurredAt` | datetime |
+| `ActorId?` | user id from `ICurrentUser`, nullable for jobs/system actions |
+| `Verb` | enum/string token such as `ProjectCreated`, `ProjectStatusChanged`, `MaintenanceCompleted`, `IssueReported`, `IssueStatusChanged`, `HistoryEntryCreated`, `OccurrenceSnoozed` |
+| `TargetType`, `TargetId` | property target |
+| `Summary` | short product-facing sentence |
+| `Metadata` | jsonb with non-sensitive display metadata only |
+
+**Activity publishing:**
+- Mutating Property handlers append activity events in the same transaction as the state change.
+- Continue publishing `PropertyMutationRecordedV1` for Audit separately. Do not try to derive product activity from Audit rows.
+- Scheduled jobs may append system activity where useful, e.g. maintenance reminder materialized, but avoid noisy daily duplicates.
+
+**Timeline query:**
+- `ListTimeline { HouseholdId, Year?, AreaId?, Type?, TagIds? }`
+- v1 source: `HistoryEntry` only, newest-first.
+- Response shape includes stable source fields (`SourceType = HistoryEntry`, `SourceId`, `Date`, `Title`, `Area`, `Cost`, `Tags`, `PhotoCount`) so future sources can be added without replacing the endpoint.
+
+**Activity queries:**
+- `ListPropertyActivity { HouseholdId, Since?, TargetType?, TargetId?, Limit }`, newest-first.
+- `GetPropertyActivitySummary { HouseholdId, Since? }` for dashboard counts by verb/target type if needed by the frontend.
+
+**Publish:** OpenAPI for timeline and activity feed endpoints.
+
+---
+
+## Phase 9 — Property notification expansion
+
+**Goal:** make Property proactive while reusing the global Notifications module. Property does not own notification delivery, inbox state, or transport. It sends `CreateNotificationCommand` from `Notifications.Contracts` with deterministic idempotency keys.
+
+**Notification sources:**
+- Upcoming maintenance occurrences (existing Phase 3 path, updated to respect `SnoozedUntil` for reminder timing).
+- Overdue maintenance occurrences.
+- Project tasks approaching due date or overdue.
+- Projects approaching `TargetEndDate` or overdue.
+- Snoozed occurrences whose `SnoozedUntil` date has arrived.
+- High/Critical issues when reported or updated.
+- Issues approaching due date or overdue.
+
+**Recipients:** all household members from `Households.Contracts` `ListHouseholdMembers`. Do not query household tables or add cross-schema joins.
+
+**Scheduling:**
+- Extend the existing Property TickerQ job or add narrowly named jobs for due/overdue notification scans.
+- Generate idempotency keys from `(NotificationSource, SourceId, RecipientUserId, NotificationKind, RelevantDate)` so daily reruns do not duplicate notifications but materially new reminders can still be sent.
+- Notification links should target the relevant property route (project, task, occurrence, issue, or timeline entry) when known.
+
+**No Property-specific notification system:** preference storage, inbox reads, read/archive state, SSE, and delivery remain in the Notifications module. Add new notification categories only through existing Notifications contracts if that module already supports category/preference extensibility.
+
+**Publish:** OpenAPI changes only where Property exposes notification-affecting fields or commands; notification delivery remains global Notifications API surface.
+
 ## GDPR
 
 Property data is **household-scoped, not user-scoped**, so user erasure and household deletion are handled differently — do not conflate them:
 
 - **User erasure** (`UserErasureRequestedV1`, via `PropertyPersonalDataEraser` — see Economy's `OnUserErasureRequestedHandler`): a single member leaving must **not** delete the household's projects/maintenance/logbook. Only scrub that user's personal footprint — null `ProjectTask.AssigneeId` where it equals the user. (Property stores no other per-user PII; attachments/photos belong to the household, not the uploading user.)
-- **Household deletion** (`HouseholdDeletedV1` from `Households.Contracts`, via an `Integration/` subscriber): this is the cascade — delete **all** `property` aggregates for that household and **all blobs they own**, both `ProjectAttachment` blobs *and* the independently-copied `HistoryEntry.PhotoRefs`.
+- **Household deletion** (`HouseholdDeletedV1` from `Households.Contracts`, via an `Integration/` subscriber): this is the cascade — delete **all** `property` aggregates for that household and **all blobs they own**, both `ProjectAttachment` blobs *and* the independently-copied `HistoryEntry.PhotoRefs`. Areas, tags, issues, activity events, snooze metadata, and notification bookkeeping owned by Property are deleted with the household; global notification inbox rows remain owned by the Notifications module lifecycle.
 
 ## Definition of done (per phase)
 

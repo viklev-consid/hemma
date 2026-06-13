@@ -28,6 +28,11 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
             ["SubscriptionMatchState"] = ["actual", "predicted", "suggested"],
             ["Currency"] = ["SEK"],
             ["HouseholdAccessMode"] = ["ScopedPermission", "PlatformOverride"],
+            ["ProjectStatus"] = ["Planning", "Active", "OnHold", "Done"],
+            ["ProjectTaskStatus"] = ["Todo", "Doing", "Done"],
+            ["MaintenanceRecurrenceUnit"] = ["Month", "Year"],
+            ["MaintenanceOccurrenceStatus"] = ["Upcoming", "Done", "Skipped"],
+            ["HistoryEntryType"] = ["Project", "Maintenance", "Manual"],
         };
 
     private static readonly (string SchemaName, string PropertyName, string EnumSchemaName)[] enumProperties =
@@ -86,12 +91,38 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
         ("CreateEconomySettingsRequest", "defaultCurrency", "Currency"),
         ("CreateEconomySettingsResponse", "defaultCurrency", "Currency"),
         ("ImportRowResponse", "currency", "Currency"),
+        ("MoneyDto", "currency", "Currency"),
         ("MoneyRequest", "currency", "Currency"),
         ("MoneyResponse", "currency", "Currency"),
         ("NormalizedImportRowRequest", "currency", "Currency"),
 
         ("GetHouseholdAuditResponse", "accessMode", "HouseholdAccessMode"),
         ("GetHouseholdResponse", "accessMode", "HouseholdAccessMode"),
+
+        ("ProjectRequest", "status", "ProjectStatus"),
+        ("ChangeProjectStatusRequest", "status", "ProjectStatus"),
+        ("ProjectResponse", "status", "ProjectStatus"),
+        ("ProjectListItemResponse", "status", "ProjectStatus"),
+        ("PromoteOccurrenceRequest", "status", "ProjectStatus"),
+
+        ("ProjectTaskRequest", "status", "ProjectTaskStatus"),
+        ("ProjectTaskResponse", "status", "ProjectTaskStatus"),
+
+        ("MaintenancePlanRequest", "recurrenceUnit", "MaintenanceRecurrenceUnit"),
+        ("MaintenancePlanResponse", "recurrenceUnit", "MaintenanceRecurrenceUnit"),
+
+        ("MaintenanceOccurrenceResponse", "status", "MaintenanceOccurrenceStatus"),
+        ("UpcomingOccurrenceItem", "status", "MaintenanceOccurrenceStatus"),
+
+        ("HistoryEntryRequest", "type", "HistoryEntryType"),
+        ("HistoryEntryResponse", "type", "HistoryEntryType"),
+        ("SuggestedHistoryEntryResponse", "type", "HistoryEntryType"),
+    ];
+
+    private static readonly (string Path, string Method, string ParameterName, string EnumSchemaName)[] enumParameters =
+    [
+        ("/v1/property/projects", "get", "status", "ProjectStatus"),
+        ("/v1/property/history", "get", "type", "HistoryEntryType"),
     ];
 
     private static readonly (string SchemaName, string PropertyName)[] integerProperties =
@@ -122,6 +153,11 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
             ReplaceProperty(document, schemaName, propertyName, new OpenApiSchemaReference(enumSchemaName, document));
         }
 
+        foreach (var (path, method, parameterName, enumSchemaName) in enumParameters)
+        {
+            ReplaceParameter(document, path, method, parameterName, new OpenApiSchemaReference(enumSchemaName, document));
+        }
+
         foreach (var (schemaName, propertyName) in integerProperties)
         {
             ReplaceProperty(document, schemaName, propertyName, new OpenApiSchema
@@ -133,6 +169,7 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
 
         ReplaceProperty(document, "MoneyRequest", "amount", CreateDecimalStringSchema());
         ReplaceProperty(document, "MoneyResponse", "amount", CreateDecimalStringSchema());
+        ReplaceProperty(document, "MoneyDto", "amount", CreateDecimalStringSchema());
 
         return Task.CompletedTask;
     }
@@ -166,5 +203,47 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
         }
 
         schema.Properties[propertyName] = propertySchema;
+    }
+
+    private static void ReplaceParameter(
+        OpenApiDocument document,
+        string path,
+        string method,
+        string parameterName,
+        IOpenApiSchema parameterSchema)
+    {
+        if (document.Paths is null ||
+            !document.Paths.TryGetValue(path, out var pathItem) ||
+            pathItem.Operations is null)
+        {
+            return;
+        }
+
+        var operationType = method.ToLowerInvariant() switch
+        {
+            "get" => HttpMethod.Get,
+            "post" => HttpMethod.Post,
+            "put" => HttpMethod.Put,
+            "patch" => HttpMethod.Patch,
+            "delete" => HttpMethod.Delete,
+            _ => (HttpMethod?)null
+        };
+
+        if (operationType is null ||
+            !pathItem.Operations.TryGetValue(operationType, out var operation) ||
+            operation.Parameters is null)
+        {
+            return;
+        }
+
+        var parameter = operation.Parameters
+            .OfType<OpenApiParameter>()
+            .FirstOrDefault(p => string.Equals(p.Name, parameterName, StringComparison.Ordinal));
+        if (parameter is null)
+        {
+            return;
+        }
+
+        parameter.Schema = parameterSchema;
     }
 }

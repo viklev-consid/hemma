@@ -153,6 +153,11 @@ public sealed class SmokeTests(SmokeTestFixture fixture) : IAsyncLifetime
         AssertEnumSchema(schemas, "PlatformRole", ["admin", "user"]);
         AssertEnumSchema(schemas, "SubscriptionMatchState", ["actual", "predicted", "suggested"]);
         AssertEnumSchema(schemas, "Currency", ["SEK"]);
+        AssertEnumSchema(schemas, "ProjectStatus", ["Planning", "Active", "OnHold", "Done"]);
+        AssertEnumSchema(schemas, "ProjectTaskStatus", ["Todo", "Doing", "Done"]);
+        AssertEnumSchema(schemas, "MaintenanceRecurrenceUnit", ["Month", "Year"]);
+        AssertEnumSchema(schemas, "MaintenanceOccurrenceStatus", ["Upcoming", "Done", "Skipped"]);
+        AssertEnumSchema(schemas, "HistoryEntryType", ["Project", "Maintenance", "Manual"]);
         Assert.Equal(
             "#/components/schemas/HouseholdRole",
             schemas.GetProperty("MyHouseholdItem").GetProperty("properties").GetProperty("role").GetProperty("$ref").GetString());
@@ -165,6 +170,34 @@ public sealed class SmokeTests(SmokeTestFixture fixture) : IAsyncLifetime
         AssertSchemaType(
             schemas.GetProperty(nameof(MoneyDto)).GetProperty("properties").GetProperty("amount"),
             "string");
+        Assert.Equal(
+            "#/components/schemas/Currency",
+            schemas.GetProperty(nameof(MoneyDto)).GetProperty("properties").GetProperty("currency").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/ProjectStatus",
+            schemas.GetProperty("ProjectRequest").GetProperty("properties").GetProperty("status").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/ProjectTaskStatus",
+            schemas.GetProperty("ProjectTaskRequest").GetProperty("properties").GetProperty("status").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/MaintenanceRecurrenceUnit",
+            schemas.GetProperty("MaintenancePlanRequest").GetProperty("properties").GetProperty("recurrenceUnit").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/MaintenanceOccurrenceStatus",
+            schemas.GetProperty("MaintenanceOccurrenceResponse").GetProperty("properties").GetProperty("status").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/HistoryEntryType",
+            schemas.GetProperty("HistoryEntryRequest").GetProperty("properties").GetProperty("type").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/ProjectStatus",
+            paths.GetProperty("/v1/property/projects").GetProperty("get").GetProperty("parameters")
+                .EnumerateArray().Single(parameter => string.Equals(parameter.GetProperty("name").GetString(), "status", StringComparison.Ordinal))
+                .GetProperty("schema").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/HistoryEntryType",
+            paths.GetProperty("/v1/property/history").GetProperty("get").GetProperty("parameters")
+                .EnumerateArray().Single(parameter => string.Equals(parameter.GetProperty("name").GetString(), "type", StringComparison.Ordinal))
+                .GetProperty("schema").GetProperty("$ref").GetString());
 
         var loginStatusEnum = loginResponseSchema
             .GetProperty("properties")
