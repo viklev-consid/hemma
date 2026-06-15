@@ -151,7 +151,7 @@ public sealed class MaintenanceApiTests(PropertyApiFixture fixture) : IAsyncLife
     }
 
     [Fact]
-    public async Task UpcomingOccurrences_ReturnOverdueStateWhileSnoozed()
+    public async Task UpcomingOccurrences_DoNotReturnOverdueStateWhileSnoozed()
     {
         var ownerId = Guid.NewGuid();
         var household = await CreateHouseholdAsync(ownerId, "Overdue", "overdue");
@@ -171,10 +171,16 @@ public sealed class MaintenanceApiTests(PropertyApiFixture fixture) : IAsyncLife
             $"/v1/property/maintenance/occurrences?householdId={household.Id.Value}&isOverdue=true");
 
         Assert.NotNull(upcoming);
-        var item = Assert.Single(upcoming.Occurrences);
-        Assert.True(item.IsOverdue);
-        Assert.Equal(new DateOnly(2026, 7, 1), item.OverdueSince);
-        Assert.Equal(9, item.DaysOverdue);
+        Assert.Empty(upcoming.Occurrences);
+
+        var active = await client.GetFromJsonAsync<ListUpcomingOccurrencesResponse>(
+            $"/v1/property/maintenance/occurrences?householdId={household.Id.Value}&isOverdue=false");
+
+        Assert.NotNull(active);
+        var item = Assert.Single(active.Occurrences);
+        Assert.False(item.IsOverdue);
+        Assert.Null(item.OverdueSince);
+        Assert.Equal(0, item.DaysOverdue);
         Assert.Equal(new DateOnly(2026, 7, 20), item.EffectiveReminderDate);
     }
 

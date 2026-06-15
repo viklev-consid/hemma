@@ -16,13 +16,16 @@ public sealed record AssignTagsRequest(Guid HouseholdId, string TargetType, Guid
 
 internal sealed class AssignTagsValidator : AbstractValidator<AssignTagsRequest>
 {
+    public const int MaxTagIds = 50;
+
     public AssignTagsValidator()
     {
         RuleFor(x => x.HouseholdId).NotEmpty();
         RuleFor(x => x.TargetId).NotEmpty();
         RuleFor(x => x.TargetType).NotEmpty().Must(type =>
             Enum.TryParse<Hemma.Modules.Property.Domain.PropertyTagTargetType>(type, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed));
-        RuleFor(x => x.TagIds).NotNull();
+        RuleFor(x => x.TagIds).NotNull().Must(ids => ids.Count <= MaxTagIds);
+        RuleForEach(x => x.TagIds).NotEmpty();
     }
 }
 

@@ -38,6 +38,8 @@ using Hemma.Modules.Households.Contracts.Events;
 using Hemma.Modules.Households.Domain;
 using Hemma.Modules.Households.Persistence;
 using Hemma.Modules.Property.Contracts.Events;
+using Hemma.Modules.Property.Features.CreateProject;
+using Hemma.Modules.Property.Features.Shared;
 using Hemma.Modules.Users.Contracts.Events;
 using Hemma.Shared.Contracts;
 using Hemma.Shared.Kernel.Interfaces;
@@ -1331,7 +1333,8 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         await CreateSettingsAsync(client, household.Id.Value);
         var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
         var transaction = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 250, new DateOnly(2026, 6, 5), "Tiles");
-        var projectId = Guid.NewGuid();
+        var project = await CreateProjectAsync(client, household.Id.Value, "Kitchen");
+        var projectId = project.ProjectId;
 
         var assigned = await AssignTransactionToProjectAsync(client, household.Id.Value, transaction.TransactionId, projectId);
         Assert.Equal(HttpStatusCode.OK, assigned.StatusCode);
@@ -1358,7 +1361,8 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
         await CreateSettingsAsync(client, household.Id.Value);
         var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 5000);
-        var projectId = Guid.NewGuid();
+        var project = await CreateProjectAsync(client, household.Id.Value, "Renovation");
+        var projectId = project.ProjectId;
 
         var first = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 3000, new DateOnly(2026, 6, 5), "Counters");
         var second = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 500, new DateOnly(2026, 6, 6), "Paint");
@@ -1378,6 +1382,21 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         Assert.Equal("SEK", item.LinkedTotal.Currency);
         Assert.Equal(2, item.TransactionCount);
         Assert.NotEqual(unlinked.TransactionId, first.TransactionId);
+    }
+
+    [Fact]
+    public async Task Transactions_RejectUnknownProjectLink()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "unknown-project");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var transaction = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 250, new DateOnly(2026, 6, 5), "Tiles");
+
+        var assigned = await AssignTransactionToProjectAsync(client, household.Id.Value, transaction.TransactionId, Guid.NewGuid());
+
+        Assert.Equal(HttpStatusCode.NotFound, assigned.StatusCode);
     }
 
     [Fact]
@@ -1565,6 +1584,17 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         var transaction = await response.Content.ReadFromJsonAsync<TransactionResponse>();
         Assert.NotNull(transaction);
         return transaction;
+    }
+
+    private static async Task<ProjectResponse> CreateProjectAsync(HttpClient client, Guid householdId, string name)
+    {
+        var response = await client.PostAsJsonAsync(
+            "/v1/property/projects",
+            new ProjectRequest(householdId, name, null, "Planning", null, null, null, null, null, null));
+        response.EnsureSuccessStatusCode();
+        var project = await response.Content.ReadFromJsonAsync<ProjectResponse>();
+        Assert.NotNull(project);
+        return project;
     }
 
     private static async Task AttachReceiptAsync(HttpClient client, Guid householdId, Guid transactionId)

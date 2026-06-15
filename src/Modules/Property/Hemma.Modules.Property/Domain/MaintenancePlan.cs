@@ -105,15 +105,56 @@ public sealed class MaintenancePlan : AggregateRoot<MaintenancePlanId>
     /// </summary>
     public DateOnly NextDueOnOrAfter(DateOnly floor)
     {
+        if (!Enum.IsDefined(RecurrenceUnit) || RecurrenceInterval < 1)
+        {
+            return floor;
+        }
+
         var candidate = AnchorDate;
+        var iterations = 0;
         while (candidate < floor)
         {
+            if (++iterations > 2400)
+            {
+                return floor;
+            }
+
+            var next = candidate;
             candidate = RecurrenceUnit == MaintenanceRecurrenceUnit.Year
-                ? candidate.AddYears(RecurrenceInterval)
-                : candidate.AddMonths(RecurrenceInterval);
+                ? TryAddYears(candidate, RecurrenceInterval)
+                : TryAddMonths(candidate, RecurrenceInterval);
+
+            if (candidate <= next)
+            {
+                return floor;
+            }
         }
 
         return candidate;
+    }
+
+    private static DateOnly TryAddMonths(DateOnly value, int months)
+    {
+        try
+        {
+            return value.AddMonths(months);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return DateOnly.MaxValue;
+        }
+    }
+
+    private static DateOnly TryAddYears(DateOnly value, int years)
+    {
+        try
+        {
+            return value.AddYears(years);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return DateOnly.MaxValue;
+        }
     }
 
     private static ErrorOr<PlanDetails> ValidateDetails(

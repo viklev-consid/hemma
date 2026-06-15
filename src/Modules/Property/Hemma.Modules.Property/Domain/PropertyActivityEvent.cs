@@ -8,6 +8,8 @@ namespace Hemma.Modules.Property.Domain;
 
 public sealed class PropertyActivityEvent : Entity<PropertyActivityEventId>
 {
+    public const int MaxMetadataLength = 4000;
+
     private PropertyActivityEvent(
         PropertyActivityEventId id,
         Guid householdId,
@@ -66,6 +68,12 @@ public sealed class PropertyActivityEvent : Entity<PropertyActivityEventId>
             return PropertyErrors.ActivityTargetTypeInvalid;
         }
 
+        var metadataJson = JsonSerializer.Serialize(metadata ?? new Dictionary<string, string?>(StringComparer.Ordinal));
+        if (metadataJson.Length > MaxMetadataLength)
+        {
+            return PropertyErrors.ActivityMetadataInvalid;
+        }
+
         return new PropertyActivityEvent(
             PropertyActivityEventId.New(),
             householdId,
@@ -75,6 +83,6 @@ public sealed class PropertyActivityEvent : Entity<PropertyActivityEventId>
             targetType,
             targetId,
             normalizedSummary,
-            JsonSerializer.Serialize(metadata ?? new Dictionary<string, string?>(StringComparer.Ordinal)));
+            metadataJson);
     }
 }

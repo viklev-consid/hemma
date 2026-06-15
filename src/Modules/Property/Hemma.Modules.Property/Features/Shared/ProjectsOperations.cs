@@ -75,6 +75,7 @@ public sealed class ProjectsOperations(
     ActivityOperations activity)
 {
     private const string defaultCurrency = "SEK";
+    private const int maxListItems = 100;
 
     public async Task<ErrorOr<ProjectResponse>> CreateProjectAsync(CreateProjectCommand cmd, CancellationToken ct)
     {
@@ -216,7 +217,11 @@ public sealed class ProjectsOperations(
 
             foreach (var issue in linkedIssues)
             {
-                issue.CloseFromProject(clock);
+                var closed = issue.CloseFromProject(clock);
+                if (closed.IsError)
+                {
+                    return closed.Errors;
+                }
             }
         }
 
@@ -354,6 +359,7 @@ public sealed class ProjectsOperations(
         var items = await projects
             .OrderBy(project => project.Status)
             .ThenBy(project => project.Name)
+            .Take(maxListItems)
             .Select(project => new ProjectListItemResponse(
                 project.Id.Value,
                 project.HouseholdId,
@@ -475,7 +481,7 @@ public sealed class ProjectsOperations(
                 : tasks.Where(task => task.DueDate is null || task.DueDate >= today || task.Status == ProjectTaskStatus.Done);
         }
 
-        return new GetProjectTasksResponse(tasks.OrderBy(task => task.SortOrder).Select(task => ProjectTaskResponse.FromTask(task, today)).ToArray());
+        return new GetProjectTasksResponse(tasks.OrderBy(task => task.SortOrder).Take(maxListItems).Select(task => ProjectTaskResponse.FromTask(task, today)).ToArray());
     }
 
     public async Task<ErrorOr<GetProjectTasksResponse>> ReorderTasksAsync(ReorderTasksCommand cmd, CancellationToken ct)
@@ -537,7 +543,7 @@ public sealed class ProjectsOperations(
 
     public async Task<ErrorOr<ProjectAttachmentResponse>> AddAttachmentAsync(AddAttachmentCommand cmd, CancellationToken ct)
     {
-        if (!ProjectAttachmentRules.IsAllowed(cmd.ContentType, cmd.Content.LongLength))
+        if (!ProjectAttachmentRules.HasAllowedSignature(cmd.ContentType, cmd.Content))
         {
             return PropertyErrors.AttachmentFileInvalid;
         }

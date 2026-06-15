@@ -2,6 +2,7 @@ using Hemma.Modules.Audit.Persistence;
 using Hemma.Modules.Economy.Persistence;
 using Hemma.Modules.Households.Persistence;
 using Hemma.Modules.Notifications.Persistence;
+using Hemma.Modules.Property.Persistence;
 using Hemma.Modules.Users.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
 using Hemma.TestSupport;
@@ -28,8 +29,9 @@ public sealed class EconomyApiFixture : ApiTestFixture
         await services.GetRequiredService<HouseholdsDbContext>().Database.MigrateAsync();
         await services.GetRequiredService<AuditDbContext>().Database.MigrateAsync();
         await services.GetRequiredService<NotificationsDbContext>().Database.MigrateAsync();
+        await services.GetRequiredService<PropertyDbContext>().Database.MigrateAsync();
         await services.GetRequiredService<EconomyDbContext>().Database.MigrateAsync();
     }
 
-    protected override string[] GetSchemasToReset() => ["users", "households", "audit", "notifications", "economy"];
+    protected override string[] GetSchemasToReset() => ["users", "households", "audit", "notifications", "property", "economy"];
 }

@@ -116,6 +116,40 @@ public sealed class PropertyGdprTests(PropertyApiFixture fixture) : IAsyncLifeti
             Assert.False(await db.Areas.AnyAsync(areaEntity => areaEntity.HouseholdId == household.Value, ct));
             Assert.False(await db.Tags.AnyAsync(tagEntity => tagEntity.HouseholdId == household.Value, ct));
             Assert.False(await db.TagAssignments.AnyAsync(assignment => assignment.HouseholdId == household.Value, ct));
+            Assert.False(await db.ActivityEvents.AnyAsync(activity => activity.HouseholdId == household.Value, ct));
+
+            return new object();
+        });
+    }
+
+    [Fact]
+    public async Task ErasePersonalData_AnonymizesAssignedTasksAndActivityActors()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Home", "activity-home");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+
+        var project = await CreateProjectAsync(client, household.Value, "Kitchen refresh");
+        await AddTaskAsync(client, household.Value, project.ProjectId, "Paint the walls", ownerId, null);
+
+        await fixture.ExecuteDbAsync<PropertyDbContext>(async (db, ct) =>
+        {
+            Assert.True(await db.ActivityEvents.AnyAsync(activity => activity.ActorId == ownerId, ct));
+
+            var eraser = new PropertyPersonalDataEraser(
+                db,
+                fixture.Services.GetRequiredService<IBlobStore>(),
+                NullLogger<PropertyPersonalDataEraser>.Instance);
+
+            var result = await eraser.EraseAsync(new UserRef(ownerId), ErasureStrategy.Anonymize, ct);
+
+            Assert.True(result.RecordsAffected >= 2);
+        });
+
+        await fixture.QueryDbAsync<PropertyDbContext, object>(async (db, ct) =>
+        {
+            Assert.False(await db.Set<ProjectTask>().AnyAsync(task => task.AssigneeId == ownerId, ct));
+            Assert.False(await db.ActivityEvents.AnyAsync(activity => activity.ActorId == ownerId, ct));
 
             return new object();
         });

@@ -134,6 +134,15 @@ public sealed class ActivityOperations(PropertyDbContext db, IClock clock, ICurr
             ? parsed
             : null;
 
-    private static Dictionary<string, string?> DeserializeMetadata(string metadataJson) =>
-        JsonSerializer.Deserialize<Dictionary<string, string?>>(metadataJson) ?? new Dictionary<string, string?>(StringComparer.Ordinal);
+    private static Dictionary<string, string?> DeserializeMetadata(string metadataJson)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<Dictionary<string, string?>>(metadataJson) ?? new Dictionary<string, string?>(StringComparer.Ordinal);
+        }
+        catch (JsonException)
+        {
+            return new Dictionary<string, string?>(StringComparer.Ordinal);
+        }
+    }
 }

@@ -58,6 +58,7 @@ using Hemma.Modules.Property.Features.UpdateMaintenancePlan;
 using Hemma.Modules.Property.Features.UpdateProject;
 using Hemma.Modules.Property.Features.UpdateTag;
 using Hemma.Modules.Property.Features.UpdateTask;
+using Hemma.Modules.Property.Features.ValidateProjectReference;
 using Hemma.Modules.Property.Gdpr;
 using Hemma.Modules.Property.Integration;
 using Hemma.Modules.Property.Integration.Subscribers;
@@ -162,6 +163,7 @@ public static class PropertyModule
         opts.Discovery.IncludeType<GetProjectHandler>();
         opts.Discovery.IncludeType<GetProjectBudgetHandler>();
         opts.Discovery.IncludeType<GetProjectTasksHandler>();
+        opts.Discovery.IncludeType<ValidateProjectReferenceHandler>();
         opts.Discovery.IncludeType<LinkIssueToMaintenanceOccurrenceHandler>();
         opts.Discovery.IncludeType<LinkIssueToMaintenancePlanHandler>();
         opts.Discovery.IncludeType<ListAreasHandler>();

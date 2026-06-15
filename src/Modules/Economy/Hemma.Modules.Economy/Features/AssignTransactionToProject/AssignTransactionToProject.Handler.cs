@@ -3,11 +3,13 @@ using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
 using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
+using Hemma.Modules.Property.Contracts.Queries;
 using Microsoft.EntityFrameworkCore;
+using Wolverine;
 
 namespace Hemma.Modules.Economy.Features.AssignTransactionToProject;
 
-public sealed class AssignTransactionToProjectHandler(EconomyDbContext db, EconomyAuditPublisher audit)
+public sealed class AssignTransactionToProjectHandler(EconomyDbContext db, EconomyAuditPublisher audit, IMessageBus bus)
 {
     public async Task<ErrorOr<TransactionResponse>> Handle(AssignTransactionToProjectCommand cmd, CancellationToken ct)
     {
@@ -17,6 +19,18 @@ public sealed class AssignTransactionToProjectHandler(EconomyDbContext db, Econo
         if (transaction is null)
         {
             return EconomyErrors.TransactionNotFound;
+        }
+
+        if (cmd.ProjectId is { } projectId)
+        {
+            var project = await bus.InvokeAsync<ValidateProjectReferenceResult>(
+                new ValidateProjectReferenceQuery(cmd.HouseholdId, projectId),
+                ct);
+
+            if (!project.Exists)
+            {
+                return EconomyErrors.ProjectNotFound;
+            }
         }
 
         transaction.AssignToProject(cmd.ProjectId);

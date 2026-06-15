@@ -366,8 +366,8 @@ public sealed record HistoryPhotoRefRequest(string Container, string Key);
 internal sealed record OverdueState(bool IsOverdue, DateOnly? OverdueSince, int DaysOverdue)
 {
     public static OverdueState ForMaintenanceOccurrence(MaintenanceOccurrence occurrence, DateOnly today) =>
-        occurrence.Status == MaintenanceOccurrenceStatus.Upcoming && occurrence.DueDate < today
-            ? Create(occurrence.DueDate, today)
+        occurrence.Status == MaintenanceOccurrenceStatus.Upcoming && (occurrence.SnoozedUntil ?? occurrence.DueDate) < today
+            ? Create(occurrence.SnoozedUntil ?? occurrence.DueDate, today)
             : None;
 
     public static OverdueState ForProject(Project project, DateOnly today) =>

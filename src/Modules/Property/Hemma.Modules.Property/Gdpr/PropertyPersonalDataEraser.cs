@@ -19,11 +19,19 @@ public sealed partial class PropertyPersonalDataEraser(
         int affected;
         try
         {
-            affected = await db.Set<ProjectTask>()
+            var taskRows = await db.Set<ProjectTask>()
                 .Where(task => task.AssigneeId == user.UserId)
                 .ExecuteUpdateAsync(
                     setters => setters.SetProperty(task => task.AssigneeId, (Guid?)null),
                     ct);
+
+            var activityRows = await db.ActivityEvents
+                .Where(activity => activity.ActorId == user.UserId)
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(activity => activity.ActorId, (Guid?)null),
+                    ct);
+
+            affected = taskRows + activityRows;
         }
         catch (PostgresException ex) when (string.Equals(ex.SqlState, PostgresErrorCodes.UndefinedTable, StringComparison.Ordinal))
         {
@@ -51,6 +59,12 @@ public sealed partial class PropertyPersonalDataEraser(
                 .SelectMany(entry => entry.Photos)
                 .Select(photo => new BlobRef(photo.BlobContainer, photo.BlobKey))
                 .ToArrayAsync(ct);
+
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+            var activity = await db.ActivityEvents
+                .Where(activity => activity.HouseholdId == householdId)
+                .ExecuteDeleteAsync(ct);
 
             var projects = await db.Projects
                 .Where(project => project.HouseholdId == householdId)
@@ -84,12 +98,21 @@ public sealed partial class PropertyPersonalDataEraser(
                 .Where(area => area.HouseholdId == householdId)
                 .ExecuteDeleteAsync(ct);
 
+            await transaction.CommitAsync(ct);
+
             foreach (var blob in projectBlobs.Concat(historyBlobs))
             {
-                await blobStore.DeleteAsync(blob, ct);
+                try
+                {
+                    await blobStore.DeleteAsync(blob, ct);
+                }
+                catch (Exception ex)
+                {
+                    LogBlobDeleteFailed(logger, householdId, blob.Container, blob.Key, ex);
+                }
             }
 
-            return projects + issues + history + occurrences + plans + tagAssignments + tags + areas;
+            return activity + projects + issues + history + occurrences + plans + tagAssignments + tags + areas;
         }
         catch (PostgresException ex) when (string.Equals(ex.SqlState, PostgresErrorCodes.UndefinedTable, StringComparison.Ordinal))
         {
@@ -109,4 +132,10 @@ public sealed partial class PropertyPersonalDataEraser(
         Level = LogLevel.Warning,
         Message = "Property household erasure for household {HouseholdId} skipped: a Property table is missing. If Property migrations have run on this host, this indicates a real deployment error and personal data was NOT erased.")]
     private static partial void LogHouseholdErasureSkippedMissingTable(ILogger logger, Guid householdId, Exception exception);
+
+    [LoggerMessage(
+        EventId = 3,
+        Level = LogLevel.Warning,
+        Message = "Property household erasure deleted database rows for household {HouseholdId}, but blob deletion failed for {BlobContainer}/{BlobKey}. The blob delete operation is idempotent and should be retried.")]
+    private static partial void LogBlobDeleteFailed(ILogger logger, Guid householdId, string blobContainer, string blobKey, Exception exception);
 }

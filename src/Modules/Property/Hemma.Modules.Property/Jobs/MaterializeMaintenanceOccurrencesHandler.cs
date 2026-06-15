@@ -103,8 +103,9 @@ public sealed partial class MaterializeMaintenanceOccurrencesHandler(
         var result = new List<PropertyNotification>();
         foreach (var reminder in upcoming)
         {
-            var effectiveReminderDate = reminder.SnoozedUntil ?? reminder.DueDate;
-            if (effectiveReminderDate >= today && effectiveReminderDate.DayNumber - today.DayNumber <= reminder.LeadTimeDays)
+            var scheduledReminderDate = reminder.DueDate.AddDays(-reminder.LeadTimeDays);
+            var effectiveReminderDate = reminder.SnoozedUntil ?? scheduledReminderDate;
+            if (effectiveReminderDate <= today && reminder.DueDate >= today)
             {
                 result.Add(new PropertyNotification(
                     "MaintenanceOccurrence",

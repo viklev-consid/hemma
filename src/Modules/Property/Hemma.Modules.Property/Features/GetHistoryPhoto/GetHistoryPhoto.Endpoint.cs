@@ -2,6 +2,7 @@ using Hemma.Modules.Households.Contracts.Authorization;
 using Hemma.Modules.Property.Contracts.Authorization;
 using Hemma.Modules.Property.Features.Shared;
 using Hemma.Shared.Infrastructure.Authorization;
+using Hemma.Shared.Infrastructure.Http;
 using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -20,7 +21,9 @@ internal static class GetHistoryPhotoEndpoint
                 if (forbidden is not null) { return forbidden; }
 
                 var result = await bus.InvokeAsync<ErrorOr.ErrorOr<HistoryPhotoContentResponse>>(new GetHistoryPhotoQuery(historyEntryId, blobKey, householdId), ct);
-                return result.Match<IResult>(photo => Results.File(photo.Content, photo.ContentType, photo.FileName), errors => Results.Problem(statusCode: StatusCodes.Status404NotFound));
+                return result.Match<IResult>(
+                    photo => Results.File(photo.Content, photo.ContentType, photo.FileName),
+                    Problems.FromErrors);
             })
             .WithName("GetPropertyHistoryPhotoContent")
             .WithTags(PropertyRoutes.GroupTag)

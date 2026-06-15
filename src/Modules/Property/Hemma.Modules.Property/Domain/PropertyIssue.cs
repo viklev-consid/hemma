@@ -120,47 +120,73 @@ public sealed class PropertyIssue : AggregateRoot<PropertyIssueId>
         return Result.Success;
     }
 
-    public void LinkProject(Guid projectId)
+    public ErrorOr<Success> LinkProject(Guid projectId)
     {
+        if (projectId == Guid.Empty)
+        {
+            return PropertyErrors.IssueLinkTargetInvalid;
+        }
+
         LinkedProjectId = projectId;
         LinkedMaintenancePlanId = null;
         LinkedMaintenanceOccurrenceId = null;
+        return Result.Success;
     }
 
-    public void LinkMaintenancePlan(Guid planId)
+    public ErrorOr<Success> LinkMaintenancePlan(Guid planId)
     {
+        if (planId == Guid.Empty)
+        {
+            return PropertyErrors.IssueLinkTargetInvalid;
+        }
+
         LinkedMaintenancePlanId = planId;
         LinkedProjectId = null;
         LinkedMaintenanceOccurrenceId = null;
+        return Result.Success;
     }
 
-    public void LinkMaintenanceOccurrence(Guid occurrenceId)
+    public ErrorOr<Success> LinkMaintenanceOccurrence(Guid occurrenceId)
     {
+        if (occurrenceId == Guid.Empty)
+        {
+            return PropertyErrors.IssueLinkTargetInvalid;
+        }
+
         LinkedMaintenanceOccurrenceId = occurrenceId;
         LinkedProjectId = null;
         LinkedMaintenancePlanId = null;
+        return Result.Success;
     }
 
-    public void Unlink()
+    public ErrorOr<Success> Unlink()
     {
         LinkedProjectId = null;
         LinkedMaintenancePlanId = null;
         LinkedMaintenanceOccurrenceId = null;
+        return Result.Success;
     }
 
-    public void PromoteToProject(Guid projectId)
+    public ErrorOr<Success> PromoteToProject(Guid projectId)
     {
-        LinkProject(projectId);
+        var linked = LinkProject(projectId);
+        if (linked.IsError)
+        {
+            return linked.Errors;
+        }
+
         Status = PropertyIssueStatus.InProgress;
         ResolvedAt = null;
         ClosedAt = null;
+        return Result.Success;
     }
 
-    public void CloseFromProject(IClock clock)
+    public ErrorOr<Success> CloseFromProject(IClock clock)
     {
         Status = PropertyIssueStatus.Closed;
         ClosedAt = clock.UtcNow;
         ResolvedAt = null;
+        return Result.Success;
     }
 
     private static ErrorOr<IssueDetails> ValidateDetails(string title, string? description, string? notes)

@@ -111,7 +111,7 @@ public sealed class LogbookApiTests(PropertyApiFixture fixture) : IAsyncLifetime
         var project = await CreateProjectAsync(client, household.Id.Value);
         await SeedLinkedTransactionsAsync(household.Id.Value, project.ProjectId, [2500m]);
 
-        var bytes = new byte[] { 0x89, 0x50, 0x4E, 0x47 };
+        var bytes = ValidPngBytes();
         var attachment = await UploadAttachmentAsync(client, household.Id.Value, project.ProjectId, bytes);
 
         fixture.Clock.Set(new DateTimeOffset(2026, 8, 2, 10, 0, 0, TimeSpan.Zero));
@@ -168,7 +168,7 @@ public sealed class LogbookApiTests(PropertyApiFixture fixture) : IAsyncLifetime
         using var targetClient = fixture.CreateAuthenticatedClient(targetOwnerId, "target@example.com", "Target");
 
         var project = await CreateProjectAsync(sourceClient, sourceHousehold.Id.Value);
-        await UploadAttachmentAsync(sourceClient, sourceHousehold.Id.Value, project.ProjectId, [0x89, 0x50, 0x4E, 0x47]);
+        await UploadAttachmentAsync(sourceClient, sourceHousehold.Id.Value, project.ProjectId, ValidPngBytes());
 
         fixture.Clock.Set(new DateTimeOffset(2026, 8, 2, 10, 0, 0, TimeSpan.Zero));
         var completed = await sourceClient.PostAsJsonAsync(
@@ -390,4 +390,13 @@ public sealed class LogbookApiTests(PropertyApiFixture fixture) : IAsyncLifetime
 
         return (householdId, slug);
     }
+
+    private static byte[] ValidPngBytes() =>
+    [
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+        0x89
+    ];
 }

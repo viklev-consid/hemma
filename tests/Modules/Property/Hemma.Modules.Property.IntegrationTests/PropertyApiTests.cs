@@ -165,7 +165,7 @@ public sealed class PropertyApiTests(PropertyApiFixture fixture) : IAsyncLifetim
         var household = await CreateHouseholdAsync(ownerId, "Files", "files");
         using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
         var project = await CreateProjectAsync(client, household.Id.Value);
-        var bytes = new byte[] { 0x89, 0x50, 0x4E, 0x47 };
+        var bytes = ValidPngBytes();
 
         using var content = new MultipartFormDataContent();
         var file = new ByteArrayContent(bytes);
@@ -463,4 +463,13 @@ public sealed class PropertyApiTests(PropertyApiFixture fixture) : IAsyncLifetim
 
         return (householdId, slug);
     }
+
+    private static byte[] ValidPngBytes() =>
+    [
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+        0x89
+    ];
 }

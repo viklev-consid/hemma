@@ -9,6 +9,8 @@ namespace Hemma.Modules.Property.Features.ListTimeline;
 
 public sealed class ListTimelineHandler(PropertyDbContext db)
 {
+    private const int maxItems = 100;
+
     public async Task<ErrorOr<ListTimelineResponse>> Handle(ListTimelineQuery query, CancellationToken ct)
     {
         var entries = db.HistoryEntries
@@ -59,6 +61,7 @@ public sealed class ListTimelineHandler(PropertyDbContext db)
         var rows = await entries
             .OrderByDescending(entry => entry.Date)
             .ThenByDescending(entry => entry.Id)
+            .Take(maxItems)
             .Select(entry => new
             {
                 entry.Id,

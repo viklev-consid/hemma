@@ -44,5 +44,6 @@ internal sealed class ProjectTaskConfiguration : IEntityTypeConfiguration<Projec
         builder.Property(task => task.SortOrder).IsRequired();
 
         builder.HasIndex(task => new { task.ProjectId, task.SortOrder });
+        builder.HasIndex(task => task.AssigneeId);
     }
 }

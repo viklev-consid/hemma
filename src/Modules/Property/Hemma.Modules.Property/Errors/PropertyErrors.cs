@@ -167,6 +167,9 @@ internal static class PropertyErrors
     public static readonly ErrorOr.Error ActivitySummaryInvalid =
         ErrorOr.Error.Validation("Property.Activity.SummaryInvalid", "Activity summary is required and cannot exceed 240 characters.");
 
+    public static readonly ErrorOr.Error ActivityMetadataInvalid =
+        ErrorOr.Error.Validation("Property.Activity.MetadataInvalid", "Activity metadata cannot exceed 4000 characters.");
+
     public static readonly ErrorOr.Error ActivityVerbInvalid =
         ErrorOr.Error.Validation("Property.Activity.VerbInvalid", "Activity verb is invalid.");
 

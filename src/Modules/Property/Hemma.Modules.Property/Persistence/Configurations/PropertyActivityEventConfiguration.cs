@@ -43,9 +43,11 @@ internal sealed class PropertyActivityEventConfiguration : IEntityTypeConfigurat
         builder.Property(activity => activity.MetadataJson)
             .HasColumnName("metadata")
             .HasColumnType("jsonb")
+            .HasMaxLength(4000)
             .HasDefaultValueSql("'{}'::jsonb");
 
         builder.HasIndex(activity => new { activity.HouseholdId, activity.OccurredAt });
+        builder.HasIndex(activity => activity.ActorId);
         builder.HasIndex(activity => new { activity.HouseholdId, activity.Verb });
         builder.HasIndex(activity => new { activity.HouseholdId, activity.TargetType, activity.TargetId });
     }

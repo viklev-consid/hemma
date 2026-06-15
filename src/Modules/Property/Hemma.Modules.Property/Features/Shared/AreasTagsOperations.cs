@@ -61,6 +61,8 @@ namespace Hemma.Modules.Property.Features.Shared;
 
 public sealed class AreasTagsOperations(PropertyDbContext db, PropertyAuditPublisher audit)
 {
+    private const int maxListItems = 100;
+
     public async Task<ErrorOr<PropertyAreaResponse>> CreateAreaAsync(CreateAreaCommand cmd, CancellationToken ct)
     {
         if (await AreaNameExistsAsync(cmd.HouseholdId, cmd.Name, null, ct))
@@ -158,6 +160,7 @@ public sealed class AreasTagsOperations(PropertyDbContext db, PropertyAuditPubli
         var items = await areas
             .OrderBy(area => area.SortOrder)
             .ThenBy(area => area.Name)
+            .Take(maxListItems)
             .Select(area => PropertyAreaResponse.FromArea(area))
             .ToArrayAsync(ct);
 
@@ -231,6 +234,7 @@ public sealed class AreasTagsOperations(PropertyDbContext db, PropertyAuditPubli
 
         var items = await tags
             .OrderBy(tag => tag.Name)
+            .Take(maxListItems)
             .Select(tag => PropertyTagResponse.FromTag(tag))
             .ToArrayAsync(ct);
 

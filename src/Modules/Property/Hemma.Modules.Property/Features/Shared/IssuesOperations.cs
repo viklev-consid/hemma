@@ -71,6 +71,8 @@ public sealed class IssuesOperations(
     ActivityOperations activity,
     PropertyNotificationDispatcher notifications)
 {
+    private const int maxListItems = 100;
+
     public async Task<ErrorOr<IssueResponse>> ReportIssueAsync(ReportIssueCommand cmd, CancellationToken ct)
     {
         var severity = ParseSeverity(cmd.Severity);
@@ -237,7 +239,12 @@ public sealed class IssuesOperations(
             return PropertyErrors.IssueLinkTargetInvalid;
         }
 
-        issue.LinkMaintenancePlan(cmd.MaintenancePlanId);
+        var linked = issue.LinkMaintenancePlan(cmd.MaintenancePlanId);
+        if (linked.IsError)
+        {
+            return linked.Errors;
+        }
+
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.issue.linked", "PropertyIssue", issue.Id.Value, null, ct);
         return IssueResponse.FromIssue(issue, Today);
@@ -258,7 +265,12 @@ public sealed class IssuesOperations(
             return PropertyErrors.IssueLinkTargetInvalid;
         }
 
-        issue.LinkMaintenanceOccurrence(cmd.MaintenanceOccurrenceId);
+        var linked = issue.LinkMaintenanceOccurrence(cmd.MaintenanceOccurrenceId);
+        if (linked.IsError)
+        {
+            return linked.Errors;
+        }
+
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.issue.linked", "PropertyIssue", issue.Id.Value, null, ct);
         return IssueResponse.FromIssue(issue, Today);
@@ -272,7 +284,12 @@ public sealed class IssuesOperations(
             return PropertyErrors.IssueNotFound;
         }
 
-        issue.Unlink();
+        var unlinked = issue.Unlink();
+        if (unlinked.IsError)
+        {
+            return unlinked.Errors;
+        }
+
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.issue.unlinked", "PropertyIssue", issue.Id.Value, null, ct);
         return IssueResponse.FromIssue(issue, Today);
@@ -326,7 +343,12 @@ public sealed class IssuesOperations(
             return project.Errors;
         }
 
-        issue.PromoteToProject(project.Value.Id.Value);
+        var promoted = issue.PromoteToProject(project.Value.Id.Value);
+        if (promoted.IsError)
+        {
+            return promoted.Errors;
+        }
+
         db.Projects.Add(project.Value);
 
         await db.SaveChangesAsync(ct);
@@ -406,6 +428,7 @@ public sealed class IssuesOperations(
         var items = await issues
             .OrderByDescending(issue => issue.ReportedAt)
             .ThenBy(issue => issue.Title)
+            .Take(maxListItems)
             .Select(issue => IssueResponse.FromIssue(issue, Today))
             .ToArrayAsync(ct);
 

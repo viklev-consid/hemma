@@ -50,6 +50,9 @@ internal static class EconomyErrors
     public static readonly ErrorOr.Error TransactionNotFound =
         ErrorOr.Error.NotFound("Economy.Transaction.NotFound", "Transaction was not found.");
 
+    public static readonly ErrorOr.Error ProjectNotFound =
+        ErrorOr.Error.NotFound("Economy.Project.NotFound", "Project was not found.");
+
     public static readonly ErrorOr.Error TransactionKindInvalid =
         ErrorOr.Error.Validation("Economy.Transaction.KindInvalid", "Transaction kind must be Expense or Income.");
 

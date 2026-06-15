@@ -472,9 +472,9 @@ public sealed class MaintenanceOperations(
 
         occurrencesQuery = query.IsOverdue switch
         {
-            true => occurrencesQuery.Where(o => o.DueDate < today),
-            false => occurrencesQuery.Where(o => o.DueDate >= today && o.DueDate <= horizon),
-            _ => occurrencesQuery.Where(o => o.DueDate <= horizon),
+            true => occurrencesQuery.Where(o => (o.SnoozedUntil ?? o.DueDate) < today),
+            false => occurrencesQuery.Where(o => (o.SnoozedUntil ?? o.DueDate) >= today && (o.SnoozedUntil ?? o.DueDate) <= horizon),
+            _ => occurrencesQuery.Where(o => (o.SnoozedUntil ?? o.DueDate) <= horizon),
         };
 
         var occurrences = await occurrencesQuery

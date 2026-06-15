@@ -436,6 +436,9 @@ namespace Hemma.Modules.Property.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_project_tasks");
 
+                    b.HasIndex("AssigneeId")
+                        .HasDatabaseName("ix_project_tasks_assignee_id");
+
                     b.HasIndex("ProjectId", "SortOrder")
                         .HasDatabaseName("ix_project_tasks_project_id_sort_order");
 
@@ -459,6 +462,7 @@ namespace Hemma.Modules.Property.Persistence.Migrations
                     b.Property<string>("MetadataJson")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
+                        .HasMaxLength(4000)
                         .HasColumnType("jsonb")
                         .HasColumnName("metadata")
                         .HasDefaultValueSql("'{}'::jsonb");
@@ -491,6 +495,9 @@ namespace Hemma.Modules.Property.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_activity_events");
+
+                    b.HasIndex("ActorId")
+                        .HasDatabaseName("ix_activity_events_actor_id");
 
                     b.HasIndex("HouseholdId", "OccurredAt")
                         .HasDatabaseName("ix_activity_events_household_id_occurred_at");
