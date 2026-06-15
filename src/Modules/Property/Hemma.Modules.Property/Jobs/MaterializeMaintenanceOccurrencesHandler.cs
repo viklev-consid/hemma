@@ -1,5 +1,6 @@
 using Hemma.Modules.Notifications.Contracts.Dtos;
 using Hemma.Modules.Property.Domain;
+using Hemma.Modules.Property.Gdpr;
 using Hemma.Modules.Property.Persistence;
 using Hemma.Shared.Infrastructure.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
@@ -12,6 +13,7 @@ public sealed partial class MaterializeMaintenanceOccurrencesHandler(
     PropertyDbContext db,
     IClock clock,
     PropertyNotificationDispatcher notifications,
+    PropertyPersonalDataEraser eraser,
     ILogger<MaterializeMaintenanceOccurrencesHandler> logger)
 {
     private const int workApproachingWindowDays = 7;
@@ -21,6 +23,7 @@ public sealed partial class MaterializeMaintenanceOccurrencesHandler(
         var today = command.Today ?? DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
 
         await HealMissingOccurrencesAsync(today, ct);
+        await eraser.ProcessPendingBlobDeletionsAsync(ct);
         await SendPropertyNotificationsAsync(today, ct);
     }
 
@@ -44,6 +47,11 @@ public sealed partial class MaterializeMaintenanceOccurrencesHandler(
             if (plansWithUpcoming.Contains(plan.Id))
             {
                 continue;
+            }
+
+            if (!plan.HasValidRecurrenceForScheduling)
+            {
+                LogInvalidRecurrence(logger, plan.Id.Value, plan.HouseholdId, plan.RecurrenceUnit.ToString(), plan.RecurrenceInterval);
             }
 
             db.MaintenanceOccurrences.Add(MaintenanceOccurrence.Schedule(plan, plan.NextDueOnOrAfter(today)));
@@ -105,6 +113,8 @@ public sealed partial class MaterializeMaintenanceOccurrencesHandler(
         {
             var scheduledReminderDate = reminder.DueDate.AddDays(-reminder.LeadTimeDays);
             var effectiveReminderDate = reminder.SnoozedUntil ?? scheduledReminderDate;
+            // This remains true throughout the lead window. The dispatcher uses RelevantDate
+            // in the idempotency key, so the same reminder is de-duped across daily job runs.
             if (effectiveReminderDate <= today && reminder.DueDate >= today)
             {
                 result.Add(new PropertyNotification(
@@ -267,4 +277,7 @@ public sealed partial class MaterializeMaintenanceOccurrencesHandler(
 
     [LoggerMessage(EventId = 1, Level = LogLevel.Warning, Message = "Duplicate maintenance occurrence skipped during materialisation.")]
     private static partial void LogDuplicateOccurrence(ILogger logger, Exception exception);
+
+    [LoggerMessage(EventId = 2, Level = LogLevel.Warning, Message = "Maintenance plan {PlanId} in household {HouseholdId} has invalid persisted recurrence {RecurrenceUnit}/{RecurrenceInterval}; scheduling defensively from today.")]
+    private static partial void LogInvalidRecurrence(ILogger logger, Guid planId, Guid householdId, string recurrenceUnit, int recurrenceInterval);
 }

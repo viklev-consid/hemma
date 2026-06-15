@@ -1,8 +1,8 @@
+using System.Text.Json;
 using ErrorOr;
 using Hemma.Modules.Property.Errors;
 using Hemma.Shared.Kernel.Domain;
 using Hemma.Shared.Kernel.Interfaces;
-using System.Text.Json;
 
 namespace Hemma.Modules.Property.Domain;
 

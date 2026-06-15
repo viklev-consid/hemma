@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ErrorOr;
 using Hemma.Modules.Property.Domain;
 using Hemma.Modules.Property.Errors;
@@ -6,7 +7,6 @@ using Hemma.Modules.Property.Features.ListPropertyActivity;
 using Hemma.Modules.Property.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 
 namespace Hemma.Modules.Property.Features.Shared;
 

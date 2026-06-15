@@ -155,7 +155,7 @@ public sealed class LogbookOperations(
         }
 
         await audit.PublishAsync(cmd.HouseholdId, "property.history.created", "HistoryEntry", entry.Value.Id.Value, null, ct);
-        return HistoryEntryResponse.FromEntry(entry.Value);
+        return await EnrichEntryAsync(HistoryEntryResponse.FromEntry(entry.Value), includeTags: false, ct);
     }
 
     public async Task<ErrorOr<HistoryEntryResponse>> UpdateHistoryEntryAsync(UpdateHistoryEntryCommand cmd, CancellationToken ct)
@@ -199,7 +199,7 @@ public sealed class LogbookOperations(
 
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.history.updated", "HistoryEntry", entry.Id.Value, null, ct);
-        return HistoryEntryResponse.FromEntry(entry);
+        return await EnrichEntryAsync(HistoryEntryResponse.FromEntry(entry), includeTags: false, ct);
     }
 
     public async Task<ErrorOr<Deleted>> DeleteHistoryEntryAsync(DeleteHistoryEntryCommand cmd, CancellationToken ct)
@@ -273,7 +273,23 @@ public sealed class LogbookOperations(
             .ThenByDescending(entry => entry.Id)
             .ToArrayAsync(ct);
 
-        return new ListHistoryResponse(items.Select(HistoryEntryResponse.FromEntry).ToArray());
+        var areaNames = await PropertyAreaTagEnrichment.AreaNameMapAsync(db, query.HouseholdId, ct);
+        var tagsByEntry = await PropertyAreaTagEnrichment.TagsByTargetAsync(
+            db, query.HouseholdId, PropertyTagTargetType.HistoryEntry, items.Select(entry => entry.Id.Value).ToArray(), ct);
+
+        var responses = items
+            .Select(entry =>
+            {
+                var response = HistoryEntryResponse.FromEntry(entry);
+                return response with
+                {
+                    AreaName = response.AreaId is null ? null : areaNames.GetValueOrDefault(response.AreaId.Value),
+                    Tags = tagsByEntry.GetValueOrDefault(entry.Id.Value, [])
+                };
+            })
+            .ToArray();
+
+        return new ListHistoryResponse(responses);
     }
 
     public async Task<ErrorOr<HistoryPhotoContentResponse>> GetHistoryPhotoAsync(GetHistoryPhotoQuery query, CancellationToken ct)
@@ -291,6 +307,15 @@ public sealed class LogbookOperations(
 
         var content = await blobStore.GetAsync(new BlobRef(photo.BlobContainer, photo.BlobKey), ct);
         return new HistoryPhotoContentResponse(content.Stream, photo.ContentType, photo.FileName);
+    }
+
+    private async Task<HistoryEntryResponse> EnrichEntryAsync(HistoryEntryResponse response, bool includeTags, CancellationToken ct)
+    {
+        var areaName = await PropertyAreaTagEnrichment.AreaNameAsync(db, response.HouseholdId, response.AreaId, ct);
+        var tags = includeTags
+            ? await PropertyAreaTagEnrichment.TagsForTargetAsync(db, response.HouseholdId, PropertyTagTargetType.HistoryEntry, response.HistoryEntryId, ct)
+            : response.Tags;
+        return response with { AreaName = areaName, Tags = tags };
     }
 
     private async Task<ErrorOr<CopiedPhoto>> CopyPhotoAsync(Guid householdId, HistoryPhotoRefRequest source, CancellationToken ct)

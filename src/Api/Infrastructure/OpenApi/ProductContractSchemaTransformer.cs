@@ -30,9 +30,15 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
             ["HouseholdAccessMode"] = ["ScopedPermission", "PlatformOverride"],
             ["ProjectStatus"] = ["Planning", "Active", "OnHold", "Done"],
             ["ProjectTaskStatus"] = ["Todo", "Doing", "Done"],
+            ["ProjectPriority"] = ["Low", "Medium", "High", "Critical"],
             ["MaintenanceRecurrenceUnit"] = ["Month", "Year"],
             ["MaintenanceOccurrenceStatus"] = ["Upcoming", "Done", "Skipped"],
             ["HistoryEntryType"] = ["Project", "Maintenance", "Manual"],
+            ["PropertyIssueStatus"] = ["Open", "InProgress", "Resolved", "Closed"],
+            ["PropertyIssueSeverity"] = ["Low", "Medium", "High", "Critical"],
+            ["PropertyTagTargetType"] = ["Project", "MaintenancePlan", "MaintenanceOccurrence", "Issue", "HistoryEntry"],
+            ["PropertyActivityTargetType"] = ["Project", "MaintenancePlan", "MaintenanceOccurrence", "PropertyIssue", "HistoryEntry"],
+            ["TimelineSourceType"] = ["HistoryEntry"],
         };
 
     private static readonly (string SchemaName, string PropertyName, string EnumSchemaName)[] enumProperties =
@@ -117,12 +123,34 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
         ("HistoryEntryRequest", "type", "HistoryEntryType"),
         ("HistoryEntryResponse", "type", "HistoryEntryType"),
         ("SuggestedHistoryEntryResponse", "type", "HistoryEntryType"),
+
+        ("ProjectRequest", "priority", "ProjectPriority"),
+        ("PromoteOccurrenceRequest", "priority", "ProjectPriority"),
+        ("PromoteIssueToProjectRequest", "priority", "ProjectPriority"),
+        ("ProjectResponse", "priority", "ProjectPriority"),
+        ("ProjectListItemResponse", "priority", "ProjectPriority"),
+
+        ("IssueRequest", "severity", "PropertyIssueSeverity"),
+        ("IssueResponse", "severity", "PropertyIssueSeverity"),
+        ("IssueResponse", "status", "PropertyIssueStatus"),
+        ("ChangeIssueStatusRequest", "status", "PropertyIssueStatus"),
+
+        ("AssignTagsRequest", "targetType", "PropertyTagTargetType"),
+        ("AssignTagsResponse", "targetType", "PropertyTagTargetType"),
+
+        ("PropertyActivityItemResponse", "targetType", "PropertyActivityTargetType"),
+
+        ("TimelineItemResponse", "sourceType", "TimelineSourceType"),
+        ("TimelineItemResponse", "type", "HistoryEntryType"),
     ];
 
     private static readonly (string Path, string Method, string ParameterName, string EnumSchemaName)[] enumParameters =
     [
         ("/v1/property/projects", "get", "status", "ProjectStatus"),
+        ("/v1/property/projects", "get", "priority", "ProjectPriority"),
         ("/v1/property/history", "get", "type", "HistoryEntryType"),
+        ("/v1/property/issues", "get", "status", "PropertyIssueStatus"),
+        ("/v1/property/issues", "get", "severity", "PropertyIssueSeverity"),
     ];
 
     private static readonly (string SchemaName, string PropertyName)[] integerProperties =
@@ -133,6 +161,27 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
         ("RecurringBillResponse", "cadenceDayOfMonth"),
         ("CreateSubscriptionRequest", "cadenceInterval"),
         ("SubscriptionResponse", "cadenceInterval"),
+
+        ("ProjectResponse", "daysOverdue"),
+        ("ProjectListItemResponse", "daysOverdue"),
+        ("ProjectTaskResponse", "daysOverdue"),
+        ("ProjectTaskResponse", "sortOrder"),
+        ("IssueResponse", "daysOverdue"),
+        ("MaintenanceOccurrenceResponse", "daysOverdue"),
+        ("UpcomingOccurrenceItem", "daysOverdue"),
+        ("PropertyAreaResponse", "sortOrder"),
+        ("MaintenancePlanResponse", "recurrenceInterval"),
+        ("MaintenancePlanResponse", "leadTimeDays"),
+        ("MaintenancePlanRequest", "recurrenceInterval"),
+        ("MaintenancePlanRequest", "leadTimeDays"),
+        ("TimelineItemResponse", "photoCount"),
+        ("PropertyActivityCountResponse", "count"),
+        ("ListAreasResponse", "totalCount"),
+        ("ListTagsResponse", "totalCount"),
+        ("ListIssuesResponse", "totalCount"),
+        ("ListProjectsResponse", "totalCount"),
+        ("GetProjectTasksResponse", "totalCount"),
+        ("ListTimelineResponse", "totalCount"),
     ];
 
     public Task TransformAsync(

@@ -138,7 +138,7 @@ public sealed class ProjectsOperations(
 
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.project.created", "Project", project.Value.Id.Value, null, ct);
-        return ProjectResponse.FromProject(project.Value, Today);
+        return await EnrichProjectAsync(ProjectResponse.FromProject(project.Value, Today), includeTags: false, ct);
     }
 
     public async Task<ErrorOr<ProjectResponse>> UpdateProjectAsync(UpdateProjectCommand cmd, CancellationToken ct)
@@ -183,7 +183,7 @@ public sealed class ProjectsOperations(
 
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.project.updated", "Project", project.Id.Value, null, ct);
-        return ProjectResponse.FromProject(project, Today);
+        return await EnrichProjectAsync(ProjectResponse.FromProject(project, Today), includeTags: false, ct);
     }
 
     public async Task<ErrorOr<ChangeProjectStatusResponse>> ChangeProjectStatusAsync(ChangeProjectStatusCommand cmd, CancellationToken ct)
@@ -253,11 +253,12 @@ public sealed class ProjectsOperations(
                 return budget.Errors;
             }
 
+            var suggestedAreaName = await PropertyAreaTagEnrichment.AreaNameAsync(db, cmd.HouseholdId, project.AreaId?.Value, ct);
             suggested = new SuggestedHistoryEntryResponse(
                 DateOnly.FromDateTime(project.CompletedAt.Value.UtcDateTime),
                 project.Name,
                 project.AreaId?.Value,
-                null,
+                suggestedAreaName,
                 budget.Value.LinkedTotal,
                 "Project",
                 project.Id.Value,
@@ -265,7 +266,8 @@ public sealed class ProjectsOperations(
                 project.Attachments.Select(a => new SuggestedHistoryAttachmentResponse(a.BlobContainer, a.BlobKey)).ToArray());
         }
 
-        return new ChangeProjectStatusResponse(ProjectResponse.FromProject(project, Today), suggested);
+        var enriched = await EnrichProjectAsync(ProjectResponse.FromProject(project, Today), includeTags: false, ct);
+        return new ChangeProjectStatusResponse(enriched, suggested);
     }
 
     public async Task<ErrorOr<Deleted>> DeleteProjectAsync(DeleteProjectCommand cmd, CancellationToken ct)
@@ -296,7 +298,9 @@ public sealed class ProjectsOperations(
     public async Task<ErrorOr<ProjectResponse>> GetProjectAsync(GetProjectQuery query, CancellationToken ct)
     {
         var project = await LoadProjectAsync(query.HouseholdId, query.ProjectId, ct, tracking: false);
-        return project is null ? PropertyErrors.ProjectNotFound : ProjectResponse.FromProject(project, Today);
+        return project is null
+            ? PropertyErrors.ProjectNotFound
+            : await EnrichProjectAsync(ProjectResponse.FromProject(project, Today), includeTags: true, ct);
     }
 
     public async Task<ErrorOr<ListProjectsResponse>> ListProjectsAsync(ListProjectsQuery query, CancellationToken ct)
@@ -356,10 +360,11 @@ public sealed class ProjectsOperations(
                 : projects.Where(project => project.TargetEndDate == null || project.TargetEndDate >= today || project.Status == ProjectStatus.Done);
         }
 
-        var items = await projects
+        var totalCount = await projects.CountAsync(ct);
+        var rows = await projects
             .OrderBy(project => project.Status)
             .ThenBy(project => project.Name)
-            .Take(maxListItems)
+            .Take(maxListItems + 1)
             .Select(project => new ProjectListItemResponse(
                 project.Id.Value,
                 project.HouseholdId,
@@ -379,7 +384,20 @@ public sealed class ProjectsOperations(
                 project.Status != ProjectStatus.Done && project.TargetEndDate != null && project.TargetEndDate < today ? today.DayNumber - project.TargetEndDate.Value.DayNumber : 0))
             .ToArrayAsync(ct);
 
-        return new ListProjectsResponse(items);
+        var pageRows = rows.Take(maxListItems).ToArray();
+        var areaNames = await PropertyAreaTagEnrichment.AreaNameMapAsync(db, query.HouseholdId, ct);
+        var tagsByProject = await PropertyAreaTagEnrichment.TagsByTargetAsync(
+            db, query.HouseholdId, PropertyTagTargetType.Project, pageRows.Select(row => row.ProjectId).ToArray(), ct);
+
+        var items = pageRows
+            .Select(row => row with
+            {
+                AreaName = row.AreaId is null ? null : areaNames.GetValueOrDefault(row.AreaId.Value),
+                Tags = tagsByProject.GetValueOrDefault(row.ProjectId, [])
+            })
+            .ToArray();
+
+        return new ListProjectsResponse(items, rows.Length > maxListItems, totalCount);
     }
 
     public async Task<ErrorOr<ProjectTaskResponse>> AddTaskAsync(AddTaskCommand cmd, CancellationToken ct)
@@ -481,7 +499,11 @@ public sealed class ProjectsOperations(
                 : tasks.Where(task => task.DueDate is null || task.DueDate >= today || task.Status == ProjectTaskStatus.Done);
         }
 
-        return new GetProjectTasksResponse(tasks.OrderBy(task => task.SortOrder).Take(maxListItems).Select(task => ProjectTaskResponse.FromTask(task, today)).ToArray());
+        var orderedTasks = tasks.OrderBy(task => task.SortOrder).ToArray();
+        return new GetProjectTasksResponse(
+            orderedTasks.Take(maxListItems).Select(task => ProjectTaskResponse.FromTask(task, today)).ToArray(),
+            orderedTasks.Length > maxListItems,
+            orderedTasks.Length);
     }
 
     public async Task<ErrorOr<GetProjectTasksResponse>> ReorderTasksAsync(ReorderTasksCommand cmd, CancellationToken ct)
@@ -679,6 +701,15 @@ public sealed class ProjectsOperations(
 
     private static ProjectTaskStatus? ParseTaskStatus(string status) =>
         Enum.TryParse<ProjectTaskStatus>(status, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed) ? parsed : null;
+
+    private async Task<ProjectResponse> EnrichProjectAsync(ProjectResponse response, bool includeTags, CancellationToken ct)
+    {
+        var areaName = await PropertyAreaTagEnrichment.AreaNameAsync(db, response.HouseholdId, response.AreaId, ct);
+        var tags = includeTags
+            ? await PropertyAreaTagEnrichment.TagsForTargetAsync(db, response.HouseholdId, PropertyTagTargetType.Project, response.ProjectId, ct)
+            : response.Tags;
+        return response with { AreaName = areaName, Tags = tags };
+    }
 
     private DateOnly Today => DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
 

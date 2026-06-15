@@ -105,7 +105,7 @@ public sealed class MaintenancePlan : AggregateRoot<MaintenancePlanId>
     /// </summary>
     public DateOnly NextDueOnOrAfter(DateOnly floor)
     {
-        if (!Enum.IsDefined(RecurrenceUnit) || RecurrenceInterval < 1)
+        if (!HasValidRecurrenceForScheduling)
         {
             return floor;
         }
@@ -132,6 +132,9 @@ public sealed class MaintenancePlan : AggregateRoot<MaintenancePlanId>
 
         return candidate;
     }
+
+    public bool HasValidRecurrenceForScheduling =>
+        Enum.IsDefined(RecurrenceUnit) && RecurrenceInterval >= 1;
 
     private static DateOnly TryAddMonths(DateOnly value, int months)
     {

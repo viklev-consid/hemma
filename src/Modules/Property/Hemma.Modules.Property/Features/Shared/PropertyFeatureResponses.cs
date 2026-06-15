@@ -15,7 +15,7 @@ public sealed record PropertyAreaResponse(
         new(area.Id.Value, area.HouseholdId, area.Name, area.Description, area.SortOrder, area.IsArchived);
 }
 
-public sealed record ListAreasResponse(IReadOnlyList<PropertyAreaResponse> Areas);
+public sealed record ListAreasResponse(IReadOnlyList<PropertyAreaResponse> Areas, bool HasMore = false, int? TotalCount = null);
 
 public sealed record PropertyTagResponse(Guid TagId, Guid HouseholdId, string Name, string? Color, bool IsArchived)
 {
@@ -23,7 +23,7 @@ public sealed record PropertyTagResponse(Guid TagId, Guid HouseholdId, string Na
         new(tag.Id.Value, tag.HouseholdId, tag.Name, tag.Color, tag.IsArchived);
 }
 
-public sealed record ListTagsResponse(IReadOnlyList<PropertyTagResponse> Tags);
+public sealed record ListTagsResponse(IReadOnlyList<PropertyTagResponse> Tags, bool HasMore = false, int? TotalCount = null);
 
 public sealed record AssignTagsResponse(string TargetType, Guid TargetId, IReadOnlyList<PropertyTagResponse> Tags);
 
@@ -48,6 +48,8 @@ public sealed record IssueResponse(
     DateOnly? OverdueSince,
     int DaysOverdue)
 {
+    public IReadOnlyList<PropertyTagResponse> Tags { get; init; } = [];
+
     public static IssueResponse FromIssue(PropertyIssue issue, DateOnly? today = null)
     {
         var overdue = OverdueState.ForIssue(issue, ResponseClock.ResolveToday(today));
@@ -74,7 +76,7 @@ public sealed record IssueResponse(
     }
 }
 
-public sealed record ListIssuesResponse(IReadOnlyList<IssueResponse> Issues);
+public sealed record ListIssuesResponse(IReadOnlyList<IssueResponse> Issues, bool HasMore = false, int? TotalCount = null);
 
 public sealed record PromoteIssueToProjectResponse(IssueResponse Issue, ProjectResponse Project);
 
@@ -91,6 +93,8 @@ public sealed record HistoryEntryResponse(
     Guid? SourceMaintenanceOccurrenceId,
     IReadOnlyList<HistoryPhotoResponse> Photos)
 {
+    public IReadOnlyList<PropertyTagResponse> Tags { get; init; } = [];
+
     public static HistoryEntryResponse FromEntry(HistoryEntry entry) =>
         new(
             entry.Id.Value,
@@ -129,6 +133,8 @@ public sealed record MaintenancePlanResponse(
     int LeadTimeDays,
     bool IsActive)
 {
+    public IReadOnlyList<PropertyTagResponse> Tags { get; init; } = [];
+
     public static MaintenancePlanResponse FromPlan(MaintenancePlan plan) =>
         new(
             plan.Id.Value,
@@ -164,6 +170,8 @@ public sealed record MaintenanceOccurrenceResponse(
     DateOnly? OverdueSince,
     int DaysOverdue)
 {
+    public IReadOnlyList<PropertyTagResponse> Tags { get; init; } = [];
+
     public static MaintenanceOccurrenceResponse FromOccurrence(MaintenanceOccurrence occurrence, DateOnly? today = null)
     {
         var overdue = OverdueState.ForMaintenanceOccurrence(occurrence, ResponseClock.ResolveToday(today));
@@ -207,7 +215,10 @@ public sealed record UpcomingOccurrenceItem(
     string Status,
     bool IsOverdue,
     DateOnly? OverdueSince,
-    int DaysOverdue);
+    int DaysOverdue)
+{
+    public IReadOnlyList<PropertyTagResponse> Tags { get; init; } = [];
+}
 
 public sealed record ListUpcomingOccurrencesResponse(IReadOnlyList<UpcomingOccurrenceItem> Occurrences);
 
@@ -246,6 +257,8 @@ public sealed record ProjectResponse(
     IReadOnlyList<ProjectLinkResponse> Links,
     IReadOnlyList<ProjectAttachmentResponse> Attachments)
 {
+    public IReadOnlyList<PropertyTagResponse> Tags { get; init; } = [];
+
     public static ProjectResponse FromProject(Project project, DateOnly? today = null)
     {
         var current = ResponseClock.ResolveToday(today);
@@ -289,9 +302,12 @@ public sealed record ProjectListItemResponse(
     string? Notes,
     bool IsOverdue,
     DateOnly? OverdueSince,
-    int DaysOverdue);
+    int DaysOverdue)
+{
+    public IReadOnlyList<PropertyTagResponse> Tags { get; init; } = [];
+}
 
-public sealed record ListProjectsResponse(IReadOnlyList<ProjectListItemResponse> Projects);
+public sealed record ListProjectsResponse(IReadOnlyList<ProjectListItemResponse> Projects, bool HasMore = false, int? TotalCount = null);
 
 public sealed record ProjectTaskResponse(
     Guid TaskId,
@@ -324,7 +340,7 @@ public sealed record ProjectTaskResponse(
     }
 }
 
-public sealed record GetProjectTasksResponse(IReadOnlyList<ProjectTaskResponse> Tasks);
+public sealed record GetProjectTasksResponse(IReadOnlyList<ProjectTaskResponse> Tasks, bool HasMore = false, int? TotalCount = null);
 
 public sealed record ProjectLinkResponse(Guid LinkId, Guid ProjectId, string Label, string Url)
 {
@@ -365,9 +381,11 @@ public sealed record HistoryPhotoRefRequest(string Container, string Key);
 
 internal sealed record OverdueState(bool IsOverdue, DateOnly? OverdueSince, int DaysOverdue)
 {
+    // Overdue is measured against the planned DueDate only. Snoozing shifts the reminder
+    // (EffectiveReminderDate), not whether the occurrence is overdue — see Phase 7 of the plan.
     public static OverdueState ForMaintenanceOccurrence(MaintenanceOccurrence occurrence, DateOnly today) =>
-        occurrence.Status == MaintenanceOccurrenceStatus.Upcoming && (occurrence.SnoozedUntil ?? occurrence.DueDate) < today
-            ? Create(occurrence.SnoozedUntil ?? occurrence.DueDate, today)
+        occurrence.Status == MaintenanceOccurrenceStatus.Upcoming && occurrence.DueDate < today
+            ? Create(occurrence.DueDate, today)
             : None;
 
     public static OverdueState ForProject(Project project, DateOnly today) =>

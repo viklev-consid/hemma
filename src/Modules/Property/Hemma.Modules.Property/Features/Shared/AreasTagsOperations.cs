@@ -45,6 +45,8 @@ using Hemma.Modules.Property.Features.ReorderAreas;
 using Hemma.Modules.Property.Features.ReorderTasks;
 using Hemma.Modules.Property.Features.ReportIssue;
 using Hemma.Modules.Property.Features.SkipOccurrence;
+using Hemma.Modules.Property.Features.UnarchiveArea;
+using Hemma.Modules.Property.Features.UnarchiveTag;
 using Hemma.Modules.Property.Features.UnlinkIssue;
 using Hemma.Modules.Property.Features.UpdateArea;
 using Hemma.Modules.Property.Features.UpdateHistoryEntry;
@@ -121,6 +123,20 @@ public sealed class AreasTagsOperations(PropertyDbContext db, PropertyAuditPubli
         return PropertyAreaResponse.FromArea(area);
     }
 
+    public async Task<ErrorOr<PropertyAreaResponse>> UnarchiveAreaAsync(UnarchiveAreaCommand cmd, CancellationToken ct)
+    {
+        var area = await db.Areas.SingleOrDefaultAsync(area => area.HouseholdId == cmd.HouseholdId && area.Id == new PropertyAreaId(cmd.AreaId), ct);
+        if (area is null)
+        {
+            return PropertyErrors.AreaNotFound;
+        }
+
+        area.Unarchive();
+        await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(cmd.HouseholdId, "property.area.unarchived", "PropertyArea", area.Id.Value, null, ct);
+        return PropertyAreaResponse.FromArea(area);
+    }
+
     public async Task<ErrorOr<ListAreasResponse>> ReorderAreasAsync(ReorderAreasCommand cmd, CancellationToken ct)
     {
         var areas = await db.Areas
@@ -157,14 +173,15 @@ public sealed class AreasTagsOperations(PropertyDbContext db, PropertyAuditPubli
             areas = areas.Where(area => !area.IsArchived);
         }
 
-        var items = await areas
+        var totalCount = await areas.CountAsync(ct);
+        var rows = await areas
             .OrderBy(area => area.SortOrder)
             .ThenBy(area => area.Name)
-            .Take(maxListItems)
+            .Take(maxListItems + 1)
             .Select(area => PropertyAreaResponse.FromArea(area))
             .ToArrayAsync(ct);
 
-        return new ListAreasResponse(items);
+        return new ListAreasResponse(rows.Take(maxListItems).ToArray(), rows.Length > maxListItems, totalCount);
     }
 
     public async Task<ErrorOr<PropertyTagResponse>> CreateTagAsync(CreateTagCommand cmd, CancellationToken ct)
@@ -224,6 +241,20 @@ public sealed class AreasTagsOperations(PropertyDbContext db, PropertyAuditPubli
         return PropertyTagResponse.FromTag(tag);
     }
 
+    public async Task<ErrorOr<PropertyTagResponse>> UnarchiveTagAsync(UnarchiveTagCommand cmd, CancellationToken ct)
+    {
+        var tag = await db.Tags.SingleOrDefaultAsync(tag => tag.HouseholdId == cmd.HouseholdId && tag.Id == new PropertyTagId(cmd.TagId), ct);
+        if (tag is null)
+        {
+            return PropertyErrors.TagNotFound;
+        }
+
+        tag.Unarchive();
+        await db.SaveChangesAsync(ct);
+        await audit.PublishAsync(cmd.HouseholdId, "property.tag.unarchived", "PropertyTag", tag.Id.Value, null, ct);
+        return PropertyTagResponse.FromTag(tag);
+    }
+
     public async Task<ErrorOr<ListTagsResponse>> ListTagsAsync(ListTagsQuery query, CancellationToken ct)
     {
         var tags = db.Tags.AsNoTracking().Where(tag => tag.HouseholdId == query.HouseholdId);
@@ -232,13 +263,14 @@ public sealed class AreasTagsOperations(PropertyDbContext db, PropertyAuditPubli
             tags = tags.Where(tag => !tag.IsArchived);
         }
 
-        var items = await tags
+        var totalCount = await tags.CountAsync(ct);
+        var rows = await tags
             .OrderBy(tag => tag.Name)
-            .Take(maxListItems)
+            .Take(maxListItems + 1)
             .Select(tag => PropertyTagResponse.FromTag(tag))
             .ToArrayAsync(ct);
 
-        return new ListTagsResponse(items);
+        return new ListTagsResponse(rows.Take(maxListItems).ToArray(), rows.Length > maxListItems, totalCount);
     }
 
     public async Task<ErrorOr<AssignTagsResponse>> AssignTagsAsync(AssignTagsCommand cmd, CancellationToken ct)

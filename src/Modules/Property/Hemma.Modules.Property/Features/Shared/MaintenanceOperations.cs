@@ -107,7 +107,7 @@ public sealed class MaintenanceOperations(
         await audit.PublishAsync(cmd.HouseholdId, "property.maintenance.plan_created", "MaintenancePlan", plan.Value.Id.Value, null, ct);
 
         return new GetMaintenancePlanResponse(
-            MaintenancePlanResponse.FromPlan(plan.Value),
+            await EnrichPlanAsync(MaintenancePlanResponse.FromPlan(plan.Value), includeTags: false, ct),
             MaintenanceOccurrenceResponse.FromOccurrence(occurrence, Today));
     }
 
@@ -146,7 +146,7 @@ public sealed class MaintenanceOperations(
 
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.maintenance.plan_updated", "MaintenancePlan", plan.Id.Value, null, ct);
-        return MaintenancePlanResponse.FromPlan(plan);
+        return await EnrichPlanAsync(MaintenancePlanResponse.FromPlan(plan), includeTags: false, ct);
     }
 
     public async Task<ErrorOr<MaintenancePlanResponse>> DeactivatePlanAsync(DeactivatePlanCommand cmd, CancellationToken ct)
@@ -160,7 +160,7 @@ public sealed class MaintenanceOperations(
         plan.Deactivate();
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.maintenance.plan_deactivated", "MaintenancePlan", plan.Id.Value, null, ct);
-        return MaintenancePlanResponse.FromPlan(plan);
+        return await EnrichPlanAsync(MaintenancePlanResponse.FromPlan(plan), includeTags: false, ct);
     }
 
     public async Task<ErrorOr<Deleted>> DeletePlanAsync(DeletePlanCommand cmd, CancellationToken ct)
@@ -221,13 +221,16 @@ public sealed class MaintenanceOperations(
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.maintenance.occurrence_completed", "MaintenanceOccurrence", occurrence.Id.Value, null, ct);
 
+        var suggestedAreaName = plan is null
+            ? null
+            : await PropertyAreaTagEnrichment.AreaNameAsync(db, cmd.HouseholdId, plan.AreaId?.Value, ct);
         var suggested = plan is null
             ? null
             : new SuggestedHistoryEntryResponse(
                 DateOnly.FromDateTime(occurrence.CompletedAt!.Value.UtcDateTime),
                 plan.Title,
                 plan.AreaId?.Value,
-                null,
+                suggestedAreaName,
                 null,
                 "Maintenance",
                 null,
@@ -328,9 +331,10 @@ public sealed class MaintenanceOperations(
         await audit.PublishAsync(cmd.HouseholdId, "property.project.created", "Project", project.Value.Id.Value, null, ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.maintenance.occurrence_promoted", "MaintenanceOccurrence", occurrence.Id.Value, null, ct);
 
+        var promotedProjectAreaName = await PropertyAreaTagEnrichment.AreaNameAsync(db, cmd.HouseholdId, project.Value.AreaId?.Value, ct);
         return new PromoteOccurrenceResponse(
             MaintenanceOccurrenceResponse.FromOccurrence(occurrence, Today),
-            ProjectResponse.FromProject(project.Value, Today),
+            ProjectResponse.FromProject(project.Value, Today) with { AreaName = promotedProjectAreaName },
             next is null ? null : MaintenanceOccurrenceResponse.FromOccurrence(next, Today));
     }
 
@@ -404,8 +408,8 @@ public sealed class MaintenanceOperations(
             .FirstOrDefaultAsync(ct);
 
         return new GetMaintenancePlanResponse(
-            MaintenancePlanResponse.FromPlan(plan),
-            next is null ? null : MaintenanceOccurrenceResponse.FromOccurrence(next, Today));
+            await EnrichPlanAsync(MaintenancePlanResponse.FromPlan(plan), includeTags: true, ct),
+            await EnrichOccurrenceTagsAsync(next is null ? null : MaintenanceOccurrenceResponse.FromOccurrence(next, Today), ct));
     }
 
     public async Task<ErrorOr<ListMaintenancePlansResponse>> ListMaintenancePlansAsync(ListMaintenancePlansQuery query, CancellationToken ct)
@@ -457,7 +461,19 @@ public sealed class MaintenanceOperations(
                 plan.IsActive))
             .ToArrayAsync(ct);
 
-        return new ListMaintenancePlansResponse(items);
+        var areaNames = await PropertyAreaTagEnrichment.AreaNameMapAsync(db, query.HouseholdId, ct);
+        var tagsByPlan = await PropertyAreaTagEnrichment.TagsByTargetAsync(
+            db, query.HouseholdId, PropertyTagTargetType.MaintenancePlan, items.Select(plan => plan.PlanId).ToArray(), ct);
+
+        var enriched = items
+            .Select(plan => plan with
+            {
+                AreaName = plan.AreaId is null ? null : areaNames.GetValueOrDefault(plan.AreaId.Value),
+                Tags = tagsByPlan.GetValueOrDefault(plan.PlanId, [])
+            })
+            .ToArray();
+
+        return new ListMaintenancePlansResponse(enriched);
     }
 
     public async Task<ErrorOr<ListUpcomingOccurrencesResponse>> ListUpcomingOccurrencesAsync(ListUpcomingOccurrencesQuery query, CancellationToken ct)
@@ -472,8 +488,8 @@ public sealed class MaintenanceOperations(
 
         occurrencesQuery = query.IsOverdue switch
         {
-            true => occurrencesQuery.Where(o => (o.SnoozedUntil ?? o.DueDate) < today),
-            false => occurrencesQuery.Where(o => (o.SnoozedUntil ?? o.DueDate) >= today && (o.SnoozedUntil ?? o.DueDate) <= horizon),
+            true => occurrencesQuery.Where(o => o.DueDate < today),
+            false => occurrencesQuery.Where(o => o.DueDate >= today && (o.SnoozedUntil ?? o.DueDate) <= horizon),
             _ => occurrencesQuery.Where(o => (o.SnoozedUntil ?? o.DueDate) <= horizon),
         };
 
@@ -519,7 +535,39 @@ public sealed class MaintenanceOperations(
             .ThenBy(item => item.PlanTitle, StringComparer.Ordinal)
             .ToArray();
 
-        return new ListUpcomingOccurrencesResponse(items);
+        var areaNames = await PropertyAreaTagEnrichment.AreaNameMapAsync(db, query.HouseholdId, ct);
+        var tagsByOccurrence = await PropertyAreaTagEnrichment.TagsByTargetAsync(
+            db, query.HouseholdId, PropertyTagTargetType.MaintenanceOccurrence, items.Select(item => item.OccurrenceId).ToArray(), ct);
+
+        var enriched = items
+            .Select(item => item with
+            {
+                AreaName = item.AreaId is null ? null : areaNames.GetValueOrDefault(item.AreaId.Value),
+                Tags = tagsByOccurrence.GetValueOrDefault(item.OccurrenceId, [])
+            })
+            .ToArray();
+
+        return new ListUpcomingOccurrencesResponse(enriched);
+    }
+
+    private async Task<MaintenancePlanResponse> EnrichPlanAsync(MaintenancePlanResponse response, bool includeTags, CancellationToken ct)
+    {
+        var areaName = await PropertyAreaTagEnrichment.AreaNameAsync(db, response.HouseholdId, response.AreaId, ct);
+        var tags = includeTags
+            ? await PropertyAreaTagEnrichment.TagsForTargetAsync(db, response.HouseholdId, PropertyTagTargetType.MaintenancePlan, response.PlanId, ct)
+            : response.Tags;
+        return response with { AreaName = areaName, Tags = tags };
+    }
+
+    private async Task<MaintenanceOccurrenceResponse?> EnrichOccurrenceTagsAsync(MaintenanceOccurrenceResponse? response, CancellationToken ct)
+    {
+        if (response is null)
+        {
+            return null;
+        }
+
+        var tags = await PropertyAreaTagEnrichment.TagsForTargetAsync(db, response.HouseholdId, PropertyTagTargetType.MaintenanceOccurrence, response.OccurrenceId, ct);
+        return response with { Tags = tags };
     }
 
     private async Task<MaintenanceOccurrence?> ScheduleNextAsync(MaintenancePlan? plan, MaintenanceOccurrence completed, CancellationToken ct)

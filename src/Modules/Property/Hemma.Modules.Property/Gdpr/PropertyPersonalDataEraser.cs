@@ -19,6 +19,8 @@ public sealed partial class PropertyPersonalDataEraser(
         int affected;
         try
         {
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
             var taskRows = await db.Set<ProjectTask>()
                 .Where(task => task.AssigneeId == user.UserId)
                 .ExecuteUpdateAsync(
@@ -29,9 +31,10 @@ public sealed partial class PropertyPersonalDataEraser(
                 .Where(activity => activity.ActorId == user.UserId)
                 .ExecuteUpdateAsync(
                     setters => setters.SetProperty(activity => activity.ActorId, (Guid?)null),
-                    ct);
+                ct);
 
             affected = taskRows + activityRows;
+            await transaction.CommitAsync(ct);
         }
         catch (PostgresException ex) when (string.Equals(ex.SqlState, PostgresErrorCodes.UndefinedTable, StringComparison.Ordinal))
         {
@@ -61,6 +64,25 @@ public sealed partial class PropertyPersonalDataEraser(
                 .ToArrayAsync(ct);
 
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+            var blobRefs = projectBlobs
+                .Concat(historyBlobs)
+                .DistinctBy(blob => (blob.Container, blob.Key))
+                .ToArray();
+
+            var existingBlobRefs = (await db.PendingBlobDeletions
+                    .Where(deletion => deletion.HouseholdId == householdId)
+                    .Select(deletion => new { deletion.BlobContainer, deletion.BlobKey })
+                    .ToArrayAsync(ct))
+                .Select(deletion => (deletion.BlobContainer, deletion.BlobKey))
+                .ToHashSet();
+
+            var pendingBlobs = blobRefs
+                .Where(blob => !existingBlobRefs.Contains((blob.Container, blob.Key)))
+                .Select(blob => PropertyBlobDeletion.Create(householdId, blob.Container, blob.Key, DateTimeOffset.UtcNow))
+                .ToArray();
+
+            db.PendingBlobDeletions.AddRange(pendingBlobs);
 
             var activity = await db.ActivityEvents
                 .Where(activity => activity.HouseholdId == householdId)
@@ -100,17 +122,7 @@ public sealed partial class PropertyPersonalDataEraser(
 
             await transaction.CommitAsync(ct);
 
-            foreach (var blob in projectBlobs.Concat(historyBlobs))
-            {
-                try
-                {
-                    await blobStore.DeleteAsync(blob, ct);
-                }
-                catch (Exception ex)
-                {
-                    LogBlobDeleteFailed(logger, householdId, blob.Container, blob.Key, ex);
-                }
-            }
+            await ProcessPendingBlobDeletionsAsync(pendingBlobs, ct);
 
             return activity + projects + issues + history + occurrences + plans + tagAssignments + tags + areas;
         }
@@ -119,6 +131,38 @@ public sealed partial class PropertyPersonalDataEraser(
             LogHouseholdErasureSkippedMissingTable(logger, householdId, ex);
             return 0;
         }
+    }
+
+    public async Task<int> ProcessPendingBlobDeletionsAsync(CancellationToken ct)
+    {
+        var pending = await db.PendingBlobDeletions
+            .OrderBy(deletion => deletion.CreatedAt)
+            .Take(100)
+            .ToArrayAsync(ct);
+
+        return await ProcessPendingBlobDeletionsAsync(pending, ct);
+    }
+
+    private async Task<int> ProcessPendingBlobDeletionsAsync(IReadOnlyList<PropertyBlobDeletion> pending, CancellationToken ct)
+    {
+        var deleted = 0;
+        foreach (var deletion in pending)
+        {
+            deletion.MarkAttempt(DateTimeOffset.UtcNow);
+            try
+            {
+                await blobStore.DeleteAsync(new BlobRef(deletion.BlobContainer, deletion.BlobKey), ct);
+                db.PendingBlobDeletions.Remove(deletion);
+                deleted++;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                LogBlobDeleteFailed(logger, deletion.HouseholdId, deletion.BlobContainer, deletion.BlobKey, ex);
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+        return deleted;
     }
 
     [LoggerMessage(
@@ -136,6 +180,6 @@ public sealed partial class PropertyPersonalDataEraser(
     [LoggerMessage(
         EventId = 3,
         Level = LogLevel.Warning,
-        Message = "Property household erasure deleted database rows for household {HouseholdId}, but blob deletion failed for {BlobContainer}/{BlobKey}. The blob delete operation is idempotent and should be retried.")]
+        Message = "Property blob deletion failed for household {HouseholdId} and pending blob {BlobContainer}/{BlobKey}. The pending row was retained for retry.")]
     private static partial void LogBlobDeleteFailed(ILogger logger, Guid householdId, string blobContainer, string blobKey, Exception exception);
 }

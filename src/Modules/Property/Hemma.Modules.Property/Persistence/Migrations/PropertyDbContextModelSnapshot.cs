@@ -462,7 +462,6 @@ namespace Hemma.Modules.Property.Persistence.Migrations
                     b.Property<string>("MetadataJson")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
-                        .HasMaxLength(4000)
                         .HasColumnType("jsonb")
                         .HasColumnName("metadata")
                         .HasDefaultValueSql("'{}'::jsonb");
@@ -550,6 +549,53 @@ namespace Hemma.Modules.Property.Persistence.Migrations
                         .HasDatabaseName("ix_areas_household_id_name");
 
                     b.ToTable("areas", "property");
+                });
+
+            modelBuilder.Entity("Hemma.Modules.Property.Domain.PropertyBlobDeletion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt_count");
+
+                    b.Property<string>("BlobContainer")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("blob_container");
+
+                    b.Property<string>("BlobKey")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("blob_key");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("HouseholdId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("household_id");
+
+                    b.Property<DateTimeOffset?>("LastAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_attempt_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pending_blob_deletions");
+
+                    b.HasIndex("BlobContainer", "BlobKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pending_blob_deletions_blob_container_blob_key");
+
+                    b.HasIndex("HouseholdId", "CreatedAt")
+                        .HasDatabaseName("ix_pending_blob_deletions_household_id_created_at");
+
+                    b.ToTable("pending_blob_deletions", "property");
                 });
 
             modelBuilder.Entity("Hemma.Modules.Property.Domain.PropertyIssue", b =>

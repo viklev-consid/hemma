@@ -1,6 +1,7 @@
 using ErrorOr;
 using Hemma.Modules.Property.Domain;
 using Hemma.Modules.Property.Errors;
+using Hemma.Modules.Property.Features.Shared;
 using Hemma.Modules.Property.Persistence;
 using Hemma.Shared.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -58,10 +59,15 @@ public sealed class ListTimelineHandler(PropertyDbContext db)
             entries = entries.Where(entry => matchingEntryIds.Contains(entry.Id));
         }
 
+        var limit = Math.Clamp(query.Limit ?? maxItems, 1, maxItems);
+        var offset = Math.Max(0, query.Offset ?? 0);
+
+        var totalCount = await entries.CountAsync(ct);
         var rows = await entries
             .OrderByDescending(entry => entry.Date)
             .ThenByDescending(entry => entry.Id)
-            .Take(maxItems)
+            .Skip(offset)
+            .Take(limit + 1)
             .Select(entry => new
             {
                 entry.Id,
@@ -74,7 +80,8 @@ public sealed class ListTimelineHandler(PropertyDbContext db)
             })
             .ToArrayAsync(ct);
 
-        var sourceIds = rows.Select(row => row.Id.Value).ToArray();
+        var pageRows = rows.Take(limit).ToArray();
+        var sourceIds = pageRows.Select(row => row.Id.Value).ToArray();
         var tags = await db.TagAssignments
             .AsNoTracking()
             .Where(assignment => assignment.HouseholdId == query.HouseholdId
@@ -95,21 +102,23 @@ public sealed class ListTimelineHandler(PropertyDbContext db)
             .GroupBy(row => row.TargetId)
             .ToDictionary(group => group.Key, group => (IReadOnlyList<TimelineTagResponse>)group.Select(row => row.Tag).ToArray());
 
-        var items = rows
+        var areaNames = await PropertyAreaTagEnrichment.AreaNameMapAsync(db, query.HouseholdId, ct);
+
+        var items = pageRows
             .Select(row => new TimelineItemResponse(
                 "HistoryEntry",
                 row.Id.Value,
                 row.Date,
                 row.Title,
                 row.AreaId,
-                null,
+                row.AreaId is null ? null : areaNames.GetValueOrDefault(row.AreaId.Value),
                 row.Cost,
                 row.Type.ToString(),
                 tagsByTarget.GetValueOrDefault(row.Id.Value, []),
                 row.PhotoCount))
             .ToArray();
 
-        return new ListTimelineResponse(items);
+        return new ListTimelineResponse(items, rows.Length > limit, totalCount);
     }
 
     private static HistoryEntryType? ParseType(string type) =>

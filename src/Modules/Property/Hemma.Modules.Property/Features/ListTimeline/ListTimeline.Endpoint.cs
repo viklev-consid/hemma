@@ -23,6 +23,8 @@ internal static class ListTimelineEndpoint
                     Guid? areaId,
                     string? type,
                     [FromQuery] Guid[]? tagIds,
+                    int? offset,
+                    int? limit,
                     IScopedAuthorizationService<HouseholdScope> authorization,
                     ICurrentUser currentUser,
                     IMessageBus bus,
@@ -40,7 +42,7 @@ internal static class ListTimelineEndpoint
                     }
 
                     var result = await bus.InvokeAsync<ErrorOr.ErrorOr<ListTimelineResponse>>(
-                        new ListTimelineQuery(householdId, year, areaId, type, tagIds),
+                        new ListTimelineQuery(householdId, year, areaId, type, tagIds, offset, limit),
                         ct);
                     return result.ToProblemDetailsOr(Results.Ok);
                 })

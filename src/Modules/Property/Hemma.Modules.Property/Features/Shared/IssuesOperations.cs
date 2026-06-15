@@ -159,7 +159,7 @@ public sealed class IssuesOperations(
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.issue.updated", "PropertyIssue", issue.Id.Value, null, ct);
         await NotifyHighSeverityIssueAsync(issue, "updated", ct);
-        return IssueResponse.FromIssue(issue, Today);
+        return await EnrichIssueAsync(IssueResponse.FromIssue(issue, Today), includeTags: false, ct);
     }
 
     public async Task<ErrorOr<IssueResponse>> ChangeIssueStatusAsync(ChangeIssueStatusCommand cmd, CancellationToken ct)
@@ -201,7 +201,7 @@ public sealed class IssuesOperations(
 
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.issue.status_changed", "PropertyIssue", issue.Id.Value, null, ct);
-        return IssueResponse.FromIssue(issue, Today);
+        return await EnrichIssueAsync(IssueResponse.FromIssue(issue, Today), includeTags: false, ct);
     }
 
     public async Task<ErrorOr<Deleted>> DeleteIssueAsync(DeleteIssueCommand cmd, CancellationToken ct)
@@ -247,7 +247,7 @@ public sealed class IssuesOperations(
 
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.issue.linked", "PropertyIssue", issue.Id.Value, null, ct);
-        return IssueResponse.FromIssue(issue, Today);
+        return await EnrichIssueAsync(IssueResponse.FromIssue(issue, Today), includeTags: false, ct);
     }
 
     public async Task<ErrorOr<IssueResponse>> LinkIssueToMaintenanceOccurrenceAsync(LinkIssueToMaintenanceOccurrenceCommand cmd, CancellationToken ct)
@@ -273,7 +273,7 @@ public sealed class IssuesOperations(
 
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.issue.linked", "PropertyIssue", issue.Id.Value, null, ct);
-        return IssueResponse.FromIssue(issue, Today);
+        return await EnrichIssueAsync(IssueResponse.FromIssue(issue, Today), includeTags: false, ct);
     }
 
     public async Task<ErrorOr<IssueResponse>> UnlinkIssueAsync(UnlinkIssueCommand cmd, CancellationToken ct)
@@ -292,7 +292,7 @@ public sealed class IssuesOperations(
 
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.issue.unlinked", "PropertyIssue", issue.Id.Value, null, ct);
-        return IssueResponse.FromIssue(issue, Today);
+        return await EnrichIssueAsync(IssueResponse.FromIssue(issue, Today), includeTags: false, ct);
     }
 
     public async Task<ErrorOr<PromoteIssueToProjectResponse>> PromoteIssueToProjectAsync(PromoteIssueToProjectCommand cmd, CancellationToken ct)
@@ -354,13 +354,18 @@ public sealed class IssuesOperations(
         await db.SaveChangesAsync(ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.project.created", "Project", project.Value.Id.Value, null, ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.issue.promoted", "PropertyIssue", issue.Id.Value, null, ct);
-        return new PromoteIssueToProjectResponse(IssueResponse.FromIssue(issue, Today), ProjectResponse.FromProject(project.Value, Today));
+        var issueResponse = await EnrichIssueAsync(IssueResponse.FromIssue(issue, Today), includeTags: false, ct);
+        var projectAreaName = await PropertyAreaTagEnrichment.AreaNameAsync(db, cmd.HouseholdId, project.Value.AreaId?.Value, ct);
+        var projectResponse = ProjectResponse.FromProject(project.Value, Today) with { AreaName = projectAreaName };
+        return new PromoteIssueToProjectResponse(issueResponse, projectResponse);
     }
 
     public async Task<ErrorOr<IssueResponse>> GetIssueAsync(GetIssueQuery query, CancellationToken ct)
     {
         var issue = await LoadIssueAsync(query.HouseholdId, query.IssueId, ct, tracking: false);
-        return issue is null ? PropertyErrors.IssueNotFound : IssueResponse.FromIssue(issue, Today);
+        return issue is null
+            ? PropertyErrors.IssueNotFound
+            : await EnrichIssueAsync(IssueResponse.FromIssue(issue, Today), includeTags: true, ct);
     }
 
     public async Task<ErrorOr<ListIssuesResponse>> ListIssuesAsync(ListIssuesQuery query, CancellationToken ct)
@@ -425,14 +430,31 @@ public sealed class IssuesOperations(
             issues = issues.Where(issue => matchingIssueIds.Contains(issue.Id));
         }
 
-        var items = await issues
+        var totalCount = await issues.CountAsync(ct);
+        var rows = await issues
             .OrderByDescending(issue => issue.ReportedAt)
             .ThenBy(issue => issue.Title)
-            .Take(maxListItems)
-            .Select(issue => IssueResponse.FromIssue(issue, Today))
+            .Take(maxListItems + 1)
             .ToArrayAsync(ct);
 
-        return new ListIssuesResponse(items);
+        var pageRows = rows.Take(maxListItems).ToArray();
+        var areaNames = await PropertyAreaTagEnrichment.AreaNameMapAsync(db, query.HouseholdId, ct);
+        var tagsByIssue = await PropertyAreaTagEnrichment.TagsByTargetAsync(
+            db, query.HouseholdId, PropertyTagTargetType.Issue, pageRows.Select(issue => issue.Id.Value).ToArray(), ct);
+
+        var items = pageRows
+            .Select(issue =>
+            {
+                var response = IssueResponse.FromIssue(issue, Today);
+                return response with
+                {
+                    AreaName = response.AreaId is null ? null : areaNames.GetValueOrDefault(response.AreaId.Value),
+                    Tags = tagsByIssue.GetValueOrDefault(issue.Id.Value, [])
+                };
+            })
+            .ToArray();
+
+        return new ListIssuesResponse(items, rows.Length > maxListItems, totalCount);
     }
 
     private async Task<PropertyIssue?> LoadIssueAsync(Guid householdId, Guid issueId, CancellationToken ct, bool tracking = true)
@@ -447,6 +469,15 @@ public sealed class IssuesOperations(
     }
 
     private DateOnly Today => DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+
+    private async Task<IssueResponse> EnrichIssueAsync(IssueResponse response, bool includeTags, CancellationToken ct)
+    {
+        var areaName = await PropertyAreaTagEnrichment.AreaNameAsync(db, response.HouseholdId, response.AreaId, ct);
+        var tags = includeTags
+            ? await PropertyAreaTagEnrichment.TagsForTargetAsync(db, response.HouseholdId, PropertyTagTargetType.Issue, response.IssueId, ct)
+            : response.Tags;
+        return response with { AreaName = areaName, Tags = tags };
+    }
 
     private async Task NotifyHighSeverityIssueAsync(PropertyIssue issue, string kind, CancellationToken ct)
     {

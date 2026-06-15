@@ -15,6 +15,7 @@ public sealed class PropertyDbContext(DbContextOptions<PropertyDbContext> option
     public DbSet<PropertyTagAssignment> TagAssignments => Set<PropertyTagAssignment>();
     public DbSet<PropertyIssue> Issues => Set<PropertyIssue>();
     public DbSet<PropertyActivityEvent> ActivityEvents => Set<PropertyActivityEvent>();
+    public DbSet<PropertyBlobDeletion> PendingBlobDeletions => Set<PropertyBlobDeletion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

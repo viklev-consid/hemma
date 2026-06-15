@@ -47,6 +47,8 @@ public sealed class PropertyArea : AggregateRoot<PropertyAreaId>
 
     public void Archive() => IsArchived = true;
 
+    public void Unarchive() => IsArchived = false;
+
     private static ErrorOr<AreaDetails> Validate(string name, string? description)
     {
         var normalizedName = name.Trim();

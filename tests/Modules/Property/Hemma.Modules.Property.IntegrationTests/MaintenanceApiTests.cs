@@ -151,7 +151,7 @@ public sealed class MaintenanceApiTests(PropertyApiFixture fixture) : IAsyncLife
     }
 
     [Fact]
-    public async Task UpcomingOccurrences_DoNotReturnOverdueStateWhileSnoozed()
+    public async Task UpcomingOccurrences_StayOverdueWhileSnoozed_ButShiftReminderDate()
     {
         var ownerId = Guid.NewGuid();
         var household = await CreateHouseholdAsync(ownerId, "Overdue", "overdue");
@@ -160,28 +160,33 @@ public sealed class MaintenanceApiTests(PropertyApiFixture fixture) : IAsyncLife
 
         var plan = await CreatePlanAsync(client, household.Id.Value, "Month", 1, new DateOnly(2026, 6, 1));
         var occurrenceId = plan.NextOccurrence!.OccurrenceId;
+        var dueDate = plan.NextOccurrence!.DueDate;
 
+        // Advance past the due date, then snooze the reminder into the future.
         fixture.Clock.Set(new DateTimeOffset(2026, 7, 10, 8, 0, 0, TimeSpan.Zero));
         var snooze = await client.PostAsJsonAsync(
             $"/v1/property/maintenance/occurrences/{occurrenceId}/snooze",
             new SnoozeOccurrenceRequest(household.Id.Value, new DateOnly(2026, 7, 20), null));
         snooze.EnsureSuccessStatusCode();
 
-        var upcoming = await client.GetFromJsonAsync<ListUpcomingOccurrencesResponse>(
+        // Snoozing shifts the reminder but does not clear the overdue state (Phase 7 of the plan):
+        // the occurrence is still overdue against its planned DueDate.
+        var overdue = await client.GetFromJsonAsync<ListUpcomingOccurrencesResponse>(
             $"/v1/property/maintenance/occurrences?householdId={household.Id.Value}&isOverdue=true");
 
-        Assert.NotNull(upcoming);
-        Assert.Empty(upcoming.Occurrences);
+        Assert.NotNull(overdue);
+        var item = Assert.Single(overdue.Occurrences);
+        Assert.True(item.IsOverdue);
+        Assert.Equal(dueDate, item.OverdueSince);
+        Assert.Equal(new DateOnly(2026, 7, 10).DayNumber - dueDate.DayNumber, item.DaysOverdue);
+        Assert.Equal(new DateOnly(2026, 7, 20), item.EffectiveReminderDate);
 
-        var active = await client.GetFromJsonAsync<ListUpcomingOccurrencesResponse>(
+        // An overdue occurrence is not returned by the "not overdue" filter, even while snoozed.
+        var notOverdue = await client.GetFromJsonAsync<ListUpcomingOccurrencesResponse>(
             $"/v1/property/maintenance/occurrences?householdId={household.Id.Value}&isOverdue=false");
 
-        Assert.NotNull(active);
-        var item = Assert.Single(active.Occurrences);
-        Assert.False(item.IsOverdue);
-        Assert.Null(item.OverdueSince);
-        Assert.Equal(0, item.DaysOverdue);
-        Assert.Equal(new DateOnly(2026, 7, 20), item.EffectiveReminderDate);
+        Assert.NotNull(notOverdue);
+        Assert.Empty(notOverdue.Occurrences);
     }
 
     [Fact]

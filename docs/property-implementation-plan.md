@@ -259,15 +259,19 @@ SuggestedHistoryEntry {
 - Keep `MaintenanceOccurrence` taggable for completed/skipped occurrence history, but do not add priority/severity to maintenance in v1.
 
 **Commands / handlers:**
-- `CreateArea`, `UpdateArea`, `ArchiveArea`, `ReorderAreas`
-- `CreateTag`, `UpdateTag`, `ArchiveTag`
+- `CreateArea`, `UpdateArea`, `ArchiveArea`, `UnarchiveArea`, `ReorderAreas`
+- `CreateTag`, `UpdateTag`, `ArchiveTag`, `UnarchiveTag`
 - `AssignTags { TargetType, TargetId, TagIds[] }` — validate all tag IDs belong to the same household and that the target exists in that household.
 - Extend project, maintenance plan, and history entry create/update commands to accept `AreaId?` and project commands to accept `Priority`.
+
+> Archive is reversible — `UnarchiveArea`/`UnarchiveTag` (`POST …/areas|tags/{id}/unarchive`) flip `IsArchived` back. There is no separate `isArchived` field on the update commands.
 
 **Queries:**
 - `ListAreas { HouseholdId, IncludeArchived? }`
 - `ListTags { HouseholdId, IncludeArchived? }`
 - Extend project, maintenance plan, and history list queries with `AreaId?`, `TagIds?`, and project `Priority?` filters.
+
+**Response enrichment (applies module-wide):** every area-bearing response resolves `AreaName` server-side from the canonical `PropertyArea` (callers never resolve `areaId → name` client-side), and read surfaces (GET/List for projects, issues, maintenance plans/occurrences, history, timeline) return the record's assigned `Tags`. Mutation responses carry `AreaName` but an empty `Tags` set.
 
 **Publish:** OpenAPI for area/tag CRUD, tag assignment, and updated project/maintenance/logbook contracts.
 
@@ -349,6 +353,8 @@ Return `IsOverdue`, `OverdueSince?`, and `DaysOverdue` in affected response DTOs
 
 ## Phase 8 — Property timeline and activity feed
 
+**Status:** Completed in `a81a6bf` (`feat: add property timeline and activity feed`); timeline offset/limit paging and server-side `AreaName`/tag enrichment added in the working tree.
+
 **Goal:** expose two related but distinct read surfaces:
 
 - **Timeline:** the household's long-term property memory. Initially read from `HistoryEntry` only, matching the brief's first backend step. Later timeline sources can include issues and activity events without changing Logbook durability. General documents and warranties remain out of scope for these phases.
@@ -372,9 +378,9 @@ Return `IsOverdue`, `OverdueSince?`, and `DaysOverdue` in affected response DTOs
 - Scheduled jobs may append system activity where useful, e.g. maintenance reminder materialized, but avoid noisy daily duplicates.
 
 **Timeline query:**
-- `ListTimeline { HouseholdId, Year?, AreaId?, Type?, TagIds? }`
+- `ListTimeline { HouseholdId, Year?, AreaId?, Type?, TagIds?, Offset?, Limit? }` — paged via `Offset`/`Limit` (limit clamped to 100); the response carries `HasMore` and `TotalCount` so callers can page beyond the first 100.
 - v1 source: `HistoryEntry` only, newest-first.
-- Response shape includes stable source fields (`SourceType = HistoryEntry`, `SourceId`, `Date`, `Title`, `Area`, `Cost`, `Tags`, `PhotoCount`) so future sources can be added without replacing the endpoint.
+- Response shape includes stable source fields (`SourceType = HistoryEntry`, `SourceId`, `Date`, `Title`, `AreaId`, `AreaName`, `Cost`, `Tags`, `PhotoCount`) so future sources can be added without replacing the endpoint.
 
 **Activity queries:**
 - `ListPropertyActivity { HouseholdId, Since?, TargetType?, TargetId?, Limit }`, newest-first.

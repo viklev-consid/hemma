@@ -16,4 +16,4 @@ public sealed record TimelineItemResponse(
 
 public sealed record TimelineTagResponse(Guid TagId, string Name, string? Color);
 
-public sealed record ListTimelineResponse(IReadOnlyList<TimelineItemResponse> Items);
+public sealed record ListTimelineResponse(IReadOnlyList<TimelineItemResponse> Items, bool HasMore = false, int? TotalCount = null);

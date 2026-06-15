@@ -43,6 +43,8 @@ public sealed class PropertyTag : AggregateRoot<PropertyTagId>
 
     public void Archive() => IsArchived = true;
 
+    public void Unarchive() => IsArchived = false;
+
     private static ErrorOr<TagDetails> Validate(string name, string? color)
     {
         var normalizedName = name.Trim();

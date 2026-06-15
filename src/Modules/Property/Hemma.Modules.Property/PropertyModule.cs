@@ -50,6 +50,8 @@ using Hemma.Modules.Property.Features.ReportIssue;
 using Hemma.Modules.Property.Features.Shared;
 using Hemma.Modules.Property.Features.SkipOccurrence;
 using Hemma.Modules.Property.Features.SnoozeOccurrence;
+using Hemma.Modules.Property.Features.UnarchiveArea;
+using Hemma.Modules.Property.Features.UnarchiveTag;
 using Hemma.Modules.Property.Features.UnlinkIssue;
 using Hemma.Modules.Property.Features.UpdateArea;
 using Hemma.Modules.Property.Features.UpdateHistoryEntry;
@@ -254,6 +256,8 @@ public static class PropertyModule
         ReportIssueEndpoint.Map(app);
         SkipOccurrenceEndpoint.Map(app);
         SnoozeOccurrenceEndpoint.Map(app);
+        UnarchiveAreaEndpoint.Map(app);
+        UnarchiveTagEndpoint.Map(app);
         UnlinkIssueEndpoint.Map(app);
         UpdateAreaEndpoint.Map(app);
         UpdateHistoryEntryEndpoint.Map(app);

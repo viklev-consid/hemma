@@ -4,6 +4,7 @@ namespace Hemma.Shared.Kernel.Domain;
 
 public static class SharedKernelErrors
 {
+    // Keep the original Economy.Money.* error codes because clients may key off them.
     public static readonly Error CurrencyInvalid =
         Error.Validation("Economy.Money.CurrencyInvalid", "Currency must be SEK.");
 
