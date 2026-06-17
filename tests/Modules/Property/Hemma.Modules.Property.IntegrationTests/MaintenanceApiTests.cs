@@ -63,6 +63,50 @@ public sealed class MaintenanceApiTests(PropertyApiFixture fixture) : IAsyncLife
     }
 
     [Fact]
+    public async Task MaterializeJob_SchedulesNextCycle_WhenOnlyTerminalOccurrenceSitsAtComputedDueDate()
+    {
+        var householdId = Guid.NewGuid();
+        var planResult = MaintenancePlan.Create(
+            householdId,
+            "Furnace",
+            description: null,
+            areaId: null,
+            MaintenanceRecurrenceUnit.Month,
+            recurrenceInterval: 1,
+            anchorDate: new DateOnly(2026, 6, 15),
+            leadTimeDays: 0);
+        Assert.False(planResult.IsError);
+        var plan = planResult.Value;
+
+        // Seed a single completed occurrence at the plan's current-cycle due date and NO upcoming —
+        // the backstop state the heal job must recover from. The unique (plan_id, due_date) index
+        // means a naive NextDueOnOrAfter(today) recomputing 2026-06-15 would collide and be swallowed.
+        await fixture.SeedDbAsync<PropertyDbContext>((db, ct) =>
+        {
+            var occurrence = MaintenanceOccurrence.Schedule(plan, new DateOnly(2026, 6, 15));
+            occurrence.Complete("done early", fixture.Clock);
+            db.MaintenancePlans.Add(plan);
+            db.MaintenanceOccurrences.Add(occurrence);
+            return Task.CompletedTask;
+        });
+
+        // today is before the completed occurrence's due date.
+        await RunMaterializeJobAsync(new DateOnly(2026, 6, 1));
+
+        var upcoming = await fixture.QueryDbAsync<PropertyDbContext, List<DateOnly>>((db, ct) =>
+            db.MaintenanceOccurrences
+                .Where(o => o.PlanId == plan.Id && o.Status == MaintenanceOccurrenceStatus.Upcoming)
+                .Select(o => o.DueDate)
+                .ToListAsync(ct));
+        var total = await fixture.QueryDbAsync<PropertyDbContext, int>((db, ct) =>
+            db.MaintenanceOccurrences.CountAsync(o => o.PlanId == plan.Id, ct));
+
+        // The heal must create the next cycle (2026-07-15) rather than silently stalling.
+        Assert.Equal(new DateOnly(2026, 7, 15), Assert.Single(upcoming));
+        Assert.Equal(2, total);
+    }
+
+    [Fact]
     public async Task CompleteOccurrence_ReturnsMaintenanceSuggestedPayloadAndSchedulesNext()
     {
         var ownerId = Guid.NewGuid();

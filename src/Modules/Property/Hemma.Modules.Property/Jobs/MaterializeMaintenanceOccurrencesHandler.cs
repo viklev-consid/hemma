@@ -41,6 +41,16 @@ public sealed partial class MaterializeMaintenanceOccurrencesHandler(
             .Distinct()
             .ToListAsync(ct)).ToHashSet();
 
+        // The latest due date (any status) per plan. We must schedule the next occurrence strictly
+        // after it: a terminal (Done/Skipped) occurrence sitting at the computed next-due would
+        // otherwise collide with the unique (plan_id, due_date) index and get silently swallowed
+        // below, permanently stalling materialisation. This mirrors ScheduleNextAsync's floor.
+        var latestDueByPlan = (await db.MaintenanceOccurrences
+            .Select(o => new { o.PlanId, o.DueDate })
+            .ToListAsync(ct))
+            .GroupBy(o => o.PlanId)
+            .ToDictionary(group => group.Key, group => group.Max(o => o.DueDate));
+
         var added = false;
         foreach (var plan in activePlans)
         {
@@ -54,7 +64,13 @@ public sealed partial class MaterializeMaintenanceOccurrencesHandler(
                 LogInvalidRecurrence(logger, plan.Id.Value, plan.HouseholdId, plan.RecurrenceUnit.ToString(), plan.RecurrenceInterval);
             }
 
-            db.MaintenanceOccurrences.Add(MaintenanceOccurrence.Schedule(plan, plan.NextDueOnOrAfter(today)));
+            var floor = today;
+            if (latestDueByPlan.TryGetValue(plan.Id, out var latestDue) && latestDue >= today)
+            {
+                floor = latestDue.AddDays(1);
+            }
+
+            db.MaintenanceOccurrences.Add(MaintenanceOccurrence.Schedule(plan, plan.NextDueOnOrAfter(floor)));
             added = true;
         }
 
