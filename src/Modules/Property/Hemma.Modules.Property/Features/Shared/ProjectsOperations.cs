@@ -613,8 +613,16 @@ public sealed class ProjectsOperations(
             return PropertyErrors.AttachmentNotFound;
         }
 
-        var content = await blobStore.GetAsync(new BlobRef(attachment.BlobContainer, attachment.BlobKey), ct);
-        return new AttachmentContentResponse(content.Stream, attachment.ContentType, attachment.FileName);
+        try
+        {
+            var content = await blobStore.GetAsync(new BlobRef(attachment.BlobContainer, attachment.BlobKey), ct);
+            return new AttachmentContentResponse(content.Stream, attachment.ContentType, attachment.FileName);
+        }
+        catch (System.IO.FileNotFoundException)
+        {
+            // DB/blob drift: the ownership row exists but the underlying blob is gone. Serve 404, not 500.
+            return PropertyErrors.AttachmentNotFound;
+        }
     }
 
     public async Task<ErrorOr<Deleted>> RemoveAttachmentAsync(RemoveAttachmentCommand cmd, CancellationToken ct)

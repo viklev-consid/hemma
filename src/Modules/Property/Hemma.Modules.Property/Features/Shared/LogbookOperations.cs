@@ -305,8 +305,16 @@ public sealed class LogbookOperations(
             return PropertyErrors.HistoryPhotoNotFound;
         }
 
-        var content = await blobStore.GetAsync(new BlobRef(photo.BlobContainer, photo.BlobKey), ct);
-        return new HistoryPhotoContentResponse(content.Stream, photo.ContentType, photo.FileName);
+        try
+        {
+            var content = await blobStore.GetAsync(new BlobRef(photo.BlobContainer, photo.BlobKey), ct);
+            return new HistoryPhotoContentResponse(content.Stream, photo.ContentType, photo.FileName);
+        }
+        catch (System.IO.FileNotFoundException)
+        {
+            // DB/blob drift: the ownership row exists but the underlying blob is gone. Serve 404, not 500.
+            return PropertyErrors.HistoryPhotoNotFound;
+        }
     }
 
     private async Task<HistoryEntryResponse> EnrichEntryAsync(HistoryEntryResponse response, bool includeTags, CancellationToken ct)
