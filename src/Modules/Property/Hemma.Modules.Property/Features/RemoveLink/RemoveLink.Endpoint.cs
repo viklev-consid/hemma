@@ -1,4 +1,3 @@
-using FluentValidation;
 using Hemma.Modules.Households.Contracts.Authorization;
 using Hemma.Modules.Property.Contracts.Authorization;
 using Hemma.Modules.Property.Features.Shared;
@@ -14,11 +13,6 @@ namespace Hemma.Modules.Property.Features.RemoveLink;
 
 internal static class RemoveLinkEndpoint
 {
-    private const string areasPrefix = $"{PropertyRoutes.Prefix}/areas";
-    private const string tagsPrefix = $"{PropertyRoutes.Prefix}/tags";
-    private const string issuesPrefix = $"{PropertyRoutes.Prefix}/issues";
-    private const string plansPrefix = $"{PropertyRoutes.Prefix}/maintenance/plans";
-    private const string occurrencesPrefix = $"{PropertyRoutes.Prefix}/maintenance/occurrences";
 
     public static void Map(IEndpointRouteBuilder app)
     {
@@ -34,14 +28,6 @@ internal static class RemoveLinkEndpoint
                     .WithName("RemovePropertyProjectLink")
                     .WithTags(PropertyRoutes.GroupTag)
                     .RequireAuthorization();
-    }
-
-    private static async Task<IResult?> ValidateAsync<T>(T request, IValidator<T> validator, CancellationToken ct)
-    {
-        var validation = await validator.ValidateAsync(request, ct);
-        return validation.IsValid
-            ? null
-            : Results.ValidationProblem(validation.ToDictionary(), statusCode: StatusCodes.Status422UnprocessableEntity);
     }
 
     private static Task<IResult?> AuthorizeAsync(

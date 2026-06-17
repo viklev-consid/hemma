@@ -14,11 +14,7 @@ namespace Hemma.Modules.Property.Features.ChangeIssueStatus;
 
 internal static class ChangeIssueStatusEndpoint
 {
-    private const string areasPrefix = $"{PropertyRoutes.Prefix}/areas";
-    private const string tagsPrefix = $"{PropertyRoutes.Prefix}/tags";
     private const string issuesPrefix = $"{PropertyRoutes.Prefix}/issues";
-    private const string plansPrefix = $"{PropertyRoutes.Prefix}/maintenance/plans";
-    private const string occurrencesPrefix = $"{PropertyRoutes.Prefix}/maintenance/occurrences";
 
     public static void Map(IEndpointRouteBuilder app)
     {
