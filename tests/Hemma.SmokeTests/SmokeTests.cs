@@ -163,6 +163,7 @@ public sealed class SmokeTests(SmokeTestFixture fixture) : IAsyncLifetime
         AssertEnumSchema(schemas, "PropertyIssueSeverity", ["Low", "Medium", "High", "Critical"]);
         AssertEnumSchema(schemas, "PropertyTagTargetType", ["Project", "MaintenancePlan", "MaintenanceOccurrence", "Issue", "HistoryEntry"]);
         AssertEnumSchema(schemas, "PropertyActivityTargetType", ["Project", "MaintenancePlan", "MaintenanceOccurrence", "PropertyIssue", "HistoryEntry"]);
+        AssertEnumSchema(schemas, "PropertyActivityVerb", ["ProjectCreated", "ProjectStatusChanged", "MaintenanceCompleted", "IssueReported", "IssueStatusChanged", "HistoryEntryCreated", "OccurrenceSnoozed"]);
         AssertEnumSchema(schemas, "TimelineSourceType", ["HistoryEntry"]);
         Assert.Equal(
             "#/components/schemas/HouseholdRole",
@@ -209,6 +210,15 @@ public sealed class SmokeTests(SmokeTestFixture fixture) : IAsyncLifetime
         Assert.Equal(
             "#/components/schemas/TimelineSourceType",
             schemas.GetProperty("TimelineItemResponse").GetProperty("properties").GetProperty("sourceType").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/PropertyActivityVerb",
+            schemas.GetProperty("PropertyActivityItemResponse").GetProperty("properties").GetProperty("verb").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/PropertyActivityTargetType",
+            schemas.GetProperty("PropertyActivityItemResponse").GetProperty("properties").GetProperty("targetType").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/ProjectStatus",
+            schemas.GetProperty("PromoteIssueToProjectRequest").GetProperty("properties").GetProperty("status").GetProperty("$ref").GetString());
         AssertSchemaType(
             schemas.GetProperty("IssueResponse").GetProperty("properties").GetProperty("daysOverdue"),
             "integer");
@@ -220,6 +230,11 @@ public sealed class SmokeTests(SmokeTestFixture fixture) : IAsyncLifetime
         Assert.Equal(
             "#/components/schemas/HistoryEntryType",
             paths.GetProperty("/v1/property/history").GetProperty("get").GetProperty("parameters")
+                .EnumerateArray().Single(parameter => string.Equals(parameter.GetProperty("name").GetString(), "type", StringComparison.Ordinal))
+                .GetProperty("schema").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/HistoryEntryType",
+            paths.GetProperty("/v1/property/timeline").GetProperty("get").GetProperty("parameters")
                 .EnumerateArray().Single(parameter => string.Equals(parameter.GetProperty("name").GetString(), "type", StringComparison.Ordinal))
                 .GetProperty("schema").GetProperty("$ref").GetString());
 
