@@ -38,6 +38,7 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
             ["PropertyIssueSeverity"] = ["Low", "Medium", "High", "Critical"],
             ["PropertyTagTargetType"] = ["Project", "MaintenancePlan", "MaintenanceOccurrence", "Issue", "HistoryEntry"],
             ["PropertyActivityTargetType"] = ["Project", "MaintenancePlan", "MaintenanceOccurrence", "PropertyIssue", "HistoryEntry"],
+            ["PropertyActivityVerb"] = ["ProjectCreated", "ProjectStatusChanged", "MaintenanceCompleted", "IssueReported", "IssueStatusChanged", "HistoryEntryCreated", "OccurrenceSnoozed"],
             ["TimelineSourceType"] = ["HistoryEntry"],
         };
 
@@ -126,6 +127,7 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
 
         ("ProjectRequest", "priority", "ProjectPriority"),
         ("PromoteOccurrenceRequest", "priority", "ProjectPriority"),
+        ("PromoteIssueToProjectRequest", "status", "ProjectStatus"),
         ("PromoteIssueToProjectRequest", "priority", "ProjectPriority"),
         ("ProjectResponse", "priority", "ProjectPriority"),
         ("ProjectListItemResponse", "priority", "ProjectPriority"),
@@ -139,6 +141,7 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
         ("AssignTagsResponse", "targetType", "PropertyTagTargetType"),
 
         ("PropertyActivityItemResponse", "targetType", "PropertyActivityTargetType"),
+        ("PropertyActivityItemResponse", "verb", "PropertyActivityVerb"),
 
         ("TimelineItemResponse", "sourceType", "TimelineSourceType"),
         ("TimelineItemResponse", "type", "HistoryEntryType"),
@@ -151,6 +154,7 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
         ("/v1/property/history", "get", "type", "HistoryEntryType"),
         ("/v1/property/issues", "get", "status", "PropertyIssueStatus"),
         ("/v1/property/issues", "get", "severity", "PropertyIssueSeverity"),
+        ("/v1/property/timeline", "get", "type", "HistoryEntryType"),
     ];
 
     private static readonly (string SchemaName, string PropertyName)[] integerProperties =
