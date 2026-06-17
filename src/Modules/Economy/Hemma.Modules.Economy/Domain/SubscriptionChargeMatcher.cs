@@ -2,9 +2,9 @@ namespace Hemma.Modules.Economy.Domain;
 
 public static class SubscriptionChargeMatcher
 {
-    private const int maxDayDelta = 3;
-    private const decimal minAmountTolerance = 5m;
-    private const decimal amountToleranceRate = 0.10m;
+    private const int MaxDayDelta = 3;
+    private const decimal MinAmountTolerance = 5m;
+    private const decimal AmountToleranceRate = 0.10m;
 
     public static SubscriptionChargeMatch? Match(
         Subscription subscription,
@@ -21,9 +21,9 @@ public static class SubscriptionChargeMatcher
 
         var dayDelta = Math.Abs(subscription.Cadence.ChargeDay - occurredOn.Day);
         var amountDelta = Math.Abs(subscription.ExpectedAmount.Amount - amount);
-        var amountTolerance = Math.Max(minAmountTolerance, subscription.ExpectedAmount.Amount * amountToleranceRate);
+        var amountTolerance = Math.Max(MinAmountTolerance, subscription.ExpectedAmount.Amount * AmountToleranceRate);
 
-        return dayDelta <= maxDayDelta && amountDelta <= amountTolerance
+        return dayDelta <= MaxDayDelta && amountDelta <= amountTolerance
             ? new SubscriptionChargeMatch(dayDelta, amountDelta)
             : null;
     }
