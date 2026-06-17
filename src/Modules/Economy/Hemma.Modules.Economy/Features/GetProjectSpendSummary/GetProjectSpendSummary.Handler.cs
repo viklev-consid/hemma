@@ -1,4 +1,5 @@
 using Hemma.Modules.Economy.Contracts.Queries;
+using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Persistence;
 using Hemma.Shared.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,7 @@ namespace Hemma.Modules.Economy.Features.GetProjectSpendSummary;
 
 public sealed class GetProjectSpendSummaryHandler(EconomyDbContext db)
 {
-    private const string currency = "SEK";
+    private const string Currency = "SEK";
 
     public async Task<GetProjectSpendSummaryResult> Handle(GetProjectSpendSummaryQuery query, CancellationToken ct)
     {
@@ -22,7 +23,8 @@ public sealed class GetProjectSpendSummaryHandler(EconomyDbContext db)
             .AsNoTracking()
             .Where(transaction => transaction.HouseholdId == query.HouseholdId
                 && transaction.ProjectId != null
-                && projectIds.Contains(transaction.ProjectId.Value))
+                && projectIds.Contains(transaction.ProjectId.Value)
+                && transaction.Kind == TransactionKind.Expense)
             .GroupBy(transaction => transaction.ProjectId!.Value)
             .Select(group => new
             {
@@ -33,7 +35,7 @@ public sealed class GetProjectSpendSummaryHandler(EconomyDbContext db)
             .ToListAsync(ct);
 
         var summaries = grouped
-            .Select(row => new ProjectSpendSummary(row.ProjectId, new MoneyDto(row.Total, currency), row.Count))
+            .Select(row => new ProjectSpendSummary(row.ProjectId, new MoneyDto(row.Total, Currency), row.Count))
             .ToArray();
 
         return new GetProjectSpendSummaryResult(summaries);

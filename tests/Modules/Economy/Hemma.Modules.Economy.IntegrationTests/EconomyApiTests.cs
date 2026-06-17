@@ -1385,6 +1385,35 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ProjectSpendSummary_ExcludesNonExpenseKinds()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "spend-kinds");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 5000);
+        var project = await CreateProjectAsync(client, household.Id.Value, "Renovation");
+        var projectId = project.ProjectId;
+
+        var expense = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, 500, new DateOnly(2026, 6, 5), "Paint");
+        var income = await RecordTransactionAsync(client, household.Id.Value, account.AccountId, null, 1000, new DateOnly(2026, 6, 6), "Rebate", "Income");
+
+        await AssignTransactionToProjectAsync(client, household.Id.Value, expense.TransactionId, projectId);
+        await AssignTransactionToProjectAsync(client, household.Id.Value, income.TransactionId, projectId);
+
+        using var scope = fixture.Services.CreateScope();
+        var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
+        var summary = await bus.InvokeAsync<GetProjectSpendSummaryResult>(
+            new GetProjectSpendSummaryQuery(household.Id.Value, [projectId]));
+
+        // Money.Amount is always a non-negative magnitude, so summing an Income row
+        // would inflate spend. Only Expense rows count toward project spend.
+        var item = Assert.Single(summary.Summaries);
+        Assert.Equal(500m, item.LinkedTotal.Amount);
+        Assert.Equal(1, item.TransactionCount);
+    }
+
+    [Fact]
     public async Task Transactions_RejectUnknownProjectLink()
     {
         var ownerId = Guid.NewGuid();
