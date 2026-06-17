@@ -411,6 +411,27 @@ public sealed class MaintenanceApiTests(PropertyApiFixture fixture) : IAsyncLife
     }
 
     [Fact]
+    public async Task CrossHouseholdWrite_ByNonMember_ReturnsForbidden()
+    {
+        var ownerId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "WriteGuard", "write-guard");
+        // otherUserId is not a member of the household, so the endpoint's Write authorization
+        // must reject before any data lookup — a 403, distinct from the 404 data-scoping path
+        // covered by CrossHouseholdOccurrenceWrites_ReturnNotFound.
+        using var client = fixture.CreateAuthenticatedClient(otherUserId, "other@example.com", "Other");
+
+        var create = await client.PostAsJsonAsync(
+            "/v1/property/maintenance/plans",
+            new MaintenancePlanRequest(household.Id.Value, "Boiler", null, null, "Month", 1, new DateOnly(2026, 6, 1), 14));
+        Assert.Equal(HttpStatusCode.Forbidden, create.StatusCode);
+
+        var delete = await client.DeleteAsync(
+            $"/v1/property/maintenance/plans/{Guid.NewGuid()}?householdId={household.Id.Value}");
+        Assert.Equal(HttpStatusCode.Forbidden, delete.StatusCode);
+    }
+
+    [Fact]
     public async Task CrossHouseholdOccurrenceWrites_ReturnNotFound()
     {
         var ownerId = Guid.NewGuid();
