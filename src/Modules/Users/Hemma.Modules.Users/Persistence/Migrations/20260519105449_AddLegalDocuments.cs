@@ -34,33 +34,33 @@ public partial class AddLegalDocuments : Migration
             type: "uuid",
             nullable: true);
 
-        migrationBuilder.CreateTable(
-            name: "legal_documents",
-            schema: "users",
-        columns: table => new
-        {
-            id = table.Column<Guid>(type: "uuid", nullable: false),
-            document_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-            version = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-            title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-            markdown_content = table.Column<string>(type: "text", nullable: false),
-            content_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-            effective_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-            published_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-            superseded_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-            is_required_for_onboarding = table.Column<bool>(type: "boolean", nullable: false)
-        },
-        constraints: table =>
-        {
-            table.PrimaryKey("pk_legal_documents", x => x.id);
-        });
+            migrationBuilder.CreateTable(
+                name: "legal_documents",
+                schema: "users",
+            columns: table => new
+            {
+                id = table.Column<Guid>(type: "uuid", nullable: false),
+                document_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                version = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                markdown_content = table.Column<string>(type: "text", nullable: false),
+                content_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                effective_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                published_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                superseded_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                is_required_for_onboarding = table.Column<bool>(type: "boolean", nullable: false)
+            },
+            constraints: table =>
+            {
+                    table.PrimaryKey("pk_legal_documents", x => x.id);
+                });
 
-        migrationBuilder.InsertData(
-            schema: "users",
-            table: "legal_documents",
-            columns:
-            [
-                "id",
+            migrationBuilder.InsertData(
+                schema: "users",
+                table: "legal_documents",
+                columns:
+                [
+                    "id",
                     "document_type",
                     "version",
                     "title",
@@ -70,9 +70,9 @@ public partial class AddLegalDocuments : Migration
                     "published_at",
                     "superseded_at",
                     "is_required_for_onboarding",
-            ],
-            values: new object[,]
-            {
+                ],
+                values: new object[,]
+                {
                     {
                         new Guid("11111111-1111-4111-8111-111111111111"),
                         "TermsOfService",
@@ -115,13 +115,13 @@ public partial class AddLegalDocuments : Migration
                         null,
                         true,
                     },
-            });
+                });
 
-        migrationBuilder.CreateIndex(
-            name: "ix_terms_acceptances_legal_document_id",
-            schema: "users",
-        table: "terms_acceptances",
-        column: "legal_document_id");
+            migrationBuilder.CreateIndex(
+                name: "ix_terms_acceptances_legal_document_id",
+                schema: "users",
+            table: "terms_acceptances",
+            column: "legal_document_id");
 
         migrationBuilder.CreateIndex(
             name: "ix_legal_documents_document_type_is_required_for_onboarding_su",
