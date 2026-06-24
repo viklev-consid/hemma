@@ -24,6 +24,7 @@ using Hemma.Modules.Property.Features.ReorderTasks;
 using Hemma.Modules.Property.Features.ReportIssue;
 using Hemma.Modules.Property.Features.Shared;
 using Hemma.Modules.Property.Features.SkipOccurrence;
+using Hemma.Modules.Property.Persistence;
 using Hemma.Shared.Contracts;
 using Hemma.Shared.Kernel.Domain;
 using Hemma.Shared.Kernel.Interfaces;
@@ -191,6 +192,88 @@ public sealed class PropertyApiTests(PropertyApiFixture fixture) : IAsyncLifetim
         var missing = await client.GetAsync(
             $"/v1/property/projects/{project.ProjectId}/attachments/{attachment.AttachmentId}/content?householdId={household.Id.Value}");
         Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+    }
+
+    [Fact]
+    public async Task RemovingAttachment_QueuesBlobDeletionForRetry()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "RetryFiles", "retry-files");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        var project = await CreateProjectAsync(client, household.Id.Value);
+        var attachment = await UploadAttachmentAsync(client, household.Id.Value, project.ProjectId);
+
+        var deleted = await client.DeleteAsync(
+            $"/v1/property/projects/{project.ProjectId}/attachments/{attachment.AttachmentId}?householdId={household.Id.Value}");
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+
+        // The blob is deleted by the retry processor, not inline — so a pending row must
+        // survive the commit even though the request reported success.
+        var pending = await fixture.QueryDbAsync<PropertyDbContext, int>((db, ct) =>
+            db.PendingBlobDeletions.CountAsync(deletion => deletion.HouseholdId == household.Id.Value, ct));
+        Assert.Equal(1, pending);
+    }
+
+    [Fact]
+    public async Task DeletingProjectWithAttachment_QueuesBlobDeletionForRetry()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "RetryProjects", "retry-projects");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        var project = await CreateProjectAsync(client, household.Id.Value);
+        await UploadAttachmentAsync(client, household.Id.Value, project.ProjectId);
+
+        var deleted = await client.DeleteAsync(
+            $"/v1/property/projects/{project.ProjectId}?householdId={household.Id.Value}");
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+
+        var pending = await fixture.QueryDbAsync<PropertyDbContext, int>((db, ct) =>
+            db.PendingBlobDeletions.CountAsync(deletion => deletion.HouseholdId == household.Id.Value, ct));
+        Assert.Equal(1, pending);
+    }
+
+    [Fact]
+    public async Task ArchivingThenUnarchivingArea_RestoresIt()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "AreaArchive", "area-archive");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        var area = await CreateAreaAsync(client, household.Id.Value, "Garage");
+
+        var archived = await client.PostAsync(
+            $"/v1/property/areas/{area.AreaId}/archive?householdId={household.Id.Value}", null);
+        archived.EnsureSuccessStatusCode();
+        var archivedArea = await archived.Content.ReadFromJsonAsync<PropertyAreaResponse>();
+        Assert.True(archivedArea!.IsArchived);
+
+        // Regression guard: the unarchive handler must be registered with Wolverine, or
+        // this dispatch fails at runtime even though the route is mapped.
+        var unarchived = await client.PostAsync(
+            $"/v1/property/areas/{area.AreaId}/unarchive?householdId={household.Id.Value}", null);
+        unarchived.EnsureSuccessStatusCode();
+        var restored = await unarchived.Content.ReadFromJsonAsync<PropertyAreaResponse>();
+        Assert.False(restored!.IsArchived);
+    }
+
+    [Fact]
+    public async Task ArchivingThenUnarchivingTag_RestoresIt()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "TagArchive", "tag-archive");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        var tag = await CreateTagAsync(client, household.Id.Value, "Urgent", "#ff0000");
+
+        var archived = await client.PostAsync(
+            $"/v1/property/tags/{tag.TagId}/archive?householdId={household.Id.Value}", null);
+        archived.EnsureSuccessStatusCode();
+        var archivedTag = await archived.Content.ReadFromJsonAsync<PropertyTagResponse>();
+        Assert.True(archivedTag!.IsArchived);
+
+        var unarchived = await client.PostAsync(
+            $"/v1/property/tags/{tag.TagId}/unarchive?householdId={household.Id.Value}", null);
+        unarchived.EnsureSuccessStatusCode();
+        var restored = await unarchived.Content.ReadFromJsonAsync<PropertyTagResponse>();
+        Assert.False(restored!.IsArchived);
     }
 
     [Fact]
@@ -399,6 +482,22 @@ public sealed class PropertyApiTests(PropertyApiFixture fixture) : IAsyncLifetim
 
             await db.SaveChangesAsync(ct);
         });
+    }
+
+    private static async Task<ProjectAttachmentResponse> UploadAttachmentAsync(HttpClient client, Guid householdId, Guid projectId)
+    {
+        using var content = new MultipartFormDataContent();
+        var file = new ByteArrayContent(ValidPngBytes());
+        file.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+        content.Add(file, "file", "before.png");
+
+        var uploaded = await client.PostAsync(
+            $"/v1/property/projects/{projectId}/attachments?householdId={householdId}",
+            content);
+        uploaded.EnsureSuccessStatusCode();
+        var attachment = await uploaded.Content.ReadFromJsonAsync<ProjectAttachmentResponse>();
+        Assert.NotNull(attachment);
+        return attachment;
     }
 
     private static async Task<ProjectResponse> CreateProjectAsync(HttpClient client, Guid householdId)

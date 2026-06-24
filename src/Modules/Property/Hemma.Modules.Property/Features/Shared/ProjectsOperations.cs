@@ -283,12 +283,8 @@ public sealed class ProjectsOperations(
             .ToArray();
 
         db.Projects.Remove(project);
+        QueueBlobDeletions(cmd.HouseholdId, attachments);
         await db.SaveChangesAsync(ct);
-
-        foreach (var attachment in attachments)
-        {
-            await blobStore.DeleteAsync(attachment, ct);
-        }
 
         await bus.PublishAsync(new ProjectDeletedV1(cmd.HouseholdId, cmd.ProjectId, Guid.NewGuid()));
         await audit.PublishAsync(cmd.HouseholdId, "property.project.deleted", "Project", cmd.ProjectId, null, ct);
@@ -639,8 +635,8 @@ public sealed class ProjectsOperations(
             return attachment.Errors;
         }
 
+        QueueBlobDeletions(cmd.HouseholdId, [new BlobRef(attachment.Value.BlobContainer, attachment.Value.BlobKey)]);
         await db.SaveChangesAsync(ct);
-        await blobStore.DeleteAsync(new BlobRef(attachment.Value.BlobContainer, attachment.Value.BlobKey), ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.project.attachment_removed", "ProjectAttachment", cmd.AttachmentId, null, ct);
         return Result.Deleted;
     }
@@ -720,6 +716,18 @@ public sealed class ProjectsOperations(
     }
 
     private DateOnly Today => DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+
+    // Enqueue blob deletions in the same transaction as the owning-row removal so the
+    // external delete is retried by the recurring drain job if storage is transiently
+    // unavailable. Deleting the blob inline post-commit would orphan it on failure.
+    private void QueueBlobDeletions(Guid householdId, IEnumerable<BlobRef> blobs)
+    {
+        foreach (var blob in blobs)
+        {
+            db.PendingBlobDeletions.Add(
+                PropertyBlobDeletion.Create(householdId, blob.Container, blob.Key, clock.UtcNow));
+        }
+    }
 
     private static ErrorOr<OptionalMoney> ToMoney(MoneyDto? money)
     {

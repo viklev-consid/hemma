@@ -186,6 +186,8 @@ public static class PropertyModule
         opts.Discovery.IncludeType<ReportIssueHandler>();
         opts.Discovery.IncludeType<SkipOccurrenceHandler>();
         opts.Discovery.IncludeType<SnoozeOccurrenceHandler>();
+        opts.Discovery.IncludeType<UnarchiveAreaHandler>();
+        opts.Discovery.IncludeType<UnarchiveTagHandler>();
         opts.Discovery.IncludeType<UnlinkIssueHandler>();
         opts.Discovery.IncludeType<UpdateAreaHandler>();
         opts.Discovery.IncludeType<UpdateHistoryEntryHandler>();

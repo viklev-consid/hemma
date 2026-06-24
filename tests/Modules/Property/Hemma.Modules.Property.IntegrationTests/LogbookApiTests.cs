@@ -27,6 +27,7 @@ using Hemma.Modules.Property.Features.ReorderTasks;
 using Hemma.Modules.Property.Features.ReportIssue;
 using Hemma.Modules.Property.Features.Shared;
 using Hemma.Modules.Property.Features.SkipOccurrence;
+using Hemma.Modules.Property.Persistence;
 using Hemma.Shared.Contracts;
 using Hemma.Shared.Kernel.Domain;
 using Hemma.Shared.Kernel.Interfaces;
@@ -155,6 +156,54 @@ public sealed class LogbookApiTests(PropertyApiFixture fixture) : IAsyncLifetime
             $"/v1/property/history/{history.HistoryEntryId}/photos/{history.Photos[0].Key}/content?householdId={household.Id.Value}");
         downloaded.EnsureSuccessStatusCode();
         Assert.Equal(bytes, await downloaded.Content.ReadAsByteArrayAsync());
+    }
+
+    [Fact]
+    public async Task DeletingHistoryEntryWithPhoto_QueuesBlobDeletionForRetry()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "RetryHistory", "retry-history");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        var project = await CreateProjectAsync(client, household.Id.Value);
+        await UploadAttachmentAsync(client, household.Id.Value, project.ProjectId, ValidPngBytes());
+
+        fixture.Clock.Set(new DateTimeOffset(2026, 8, 2, 10, 0, 0, TimeSpan.Zero));
+        var completed = await client.PostAsJsonAsync(
+            $"/v1/property/projects/{project.ProjectId}/status",
+            new ChangeProjectStatusRequest(household.Id.Value, "Done"));
+        completed.EnsureSuccessStatusCode();
+        var completion = await completed.Content.ReadFromJsonAsync<ChangeProjectStatusResponse>();
+        Assert.NotNull(completion?.SuggestedHistoryEntry);
+
+        var suggested = completion.SuggestedHistoryEntry;
+        var historyCreated = await client.PostAsJsonAsync(
+            "/v1/property/history",
+            new HistoryEntryRequest(
+                household.Id.Value,
+                suggested.Date,
+                suggested.Title,
+                suggested.AreaId,
+                suggested.Cost,
+                suggested.Type,
+                suggested.SourceProjectId,
+                suggested.SourceMaintenanceOccurrenceId,
+                suggested.PhotoRefs.Select(photo => new HistoryPhotoRefRequest(photo.Container, photo.Key)).ToArray()));
+        historyCreated.EnsureSuccessStatusCode();
+        var history = await historyCreated.Content.ReadFromJsonAsync<HistoryEntryResponse>();
+        Assert.NotNull(history);
+        Assert.Single(history.Photos);
+
+        var deleted = await client.DeleteAsync(
+            $"/v1/property/history/{history.HistoryEntryId}?householdId={household.Id.Value}");
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+
+        // The history photo blob is deleted by the retry processor, not inline — a pending
+        // row must survive the commit so a transient storage failure cannot orphan it.
+        var pending = await fixture.QueryDbAsync<PropertyDbContext, int>((db, ct) =>
+            db.PendingBlobDeletions.CountAsync(
+                deletion => deletion.HouseholdId == household.Id.Value && deletion.BlobKey == history.Photos[0].Key,
+                ct));
+        Assert.Equal(1, pending);
     }
 
     [Fact]

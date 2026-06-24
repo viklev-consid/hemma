@@ -58,6 +58,7 @@ using Hemma.Modules.Property.Persistence;
 using Hemma.Shared.Contracts;
 using Hemma.Shared.Infrastructure.Blobs;
 using Hemma.Shared.Kernel.Domain;
+using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Property.Features.Shared;
@@ -66,6 +67,7 @@ public sealed class LogbookOperations(
     PropertyDbContext db,
     IBlobStore blobStore,
     PropertyAuditPublisher audit,
+    IClock clock,
     ActivityOperations activity)
 {
     public async Task<ErrorOr<HistoryEntryResponse>> CreateHistoryEntryAsync(CreateHistoryEntryCommand cmd, CancellationToken ct)
@@ -215,8 +217,8 @@ public sealed class LogbookOperations(
             .ToArray();
 
         db.HistoryEntries.Remove(entry);
+        QueueBlobDeletions(cmd.HouseholdId, blobs);
         await db.SaveChangesAsync(ct);
-        await DeleteBlobsAsync(blobs, ct);
         await audit.PublishAsync(cmd.HouseholdId, "property.history.deleted", "HistoryEntry", cmd.HistoryEntryId, null, ct);
         return Result.Deleted;
     }
@@ -379,6 +381,18 @@ public sealed class LogbookOperations(
         foreach (var blob in blobs)
         {
             await blobStore.DeleteAsync(blob, ct);
+        }
+    }
+
+    // Enqueue blob deletions in the same transaction as the owning-row removal so the
+    // external delete is retried by the recurring drain job if storage is transiently
+    // unavailable. Deleting the blob inline post-commit would orphan it on failure.
+    private void QueueBlobDeletions(Guid householdId, IEnumerable<BlobRef> blobs)
+    {
+        foreach (var blob in blobs)
+        {
+            db.PendingBlobDeletions.Add(
+                PropertyBlobDeletion.Create(householdId, blob.Container, blob.Key, clock.UtcNow));
         }
     }
 
