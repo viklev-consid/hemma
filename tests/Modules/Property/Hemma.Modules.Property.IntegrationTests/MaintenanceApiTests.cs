@@ -334,6 +334,16 @@ public sealed class MaintenanceApiTests(PropertyApiFixture fixture) : IAsyncLife
         Assert.Contains("property.project_task.due", types);
         Assert.Contains("property.issue.overdue", types);
 
+        // Deep links must arrive already scoped under the household shell ("/app/h/{slug}/...") with
+        // the reshaped query-param route, since the frontend's link sanitiser drops anything else.
+        var maintenanceHref = await fixture.QueryDbAsync<NotificationsDbContext, string?>((db, ct) =>
+            db.UserNotifications
+                .Where(n => n.RecipientUserId == ownerId && n.Type == "property.maintenance.due")
+                .Select(n => n.LinkHref)
+                .FirstAsync(ct));
+        Assert.NotNull(maintenanceHref);
+        Assert.StartsWith($"/app/h/{household.Slug}/property/maintenance?occurrence=", maintenanceHref, StringComparison.Ordinal);
+
         var idempotencyKeys = await fixture.QueryDbAsync<NotificationsDbContext, Guid[]>((db, ct) =>
             db.UserNotifications
                 .Where(n => n.RecipientUserId == ownerId)

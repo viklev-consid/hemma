@@ -14,6 +14,7 @@ public sealed partial class PropertyNotificationDispatcher(
     ILogger<PropertyNotificationDispatcher> logger)
 {
     private readonly Dictionary<Guid, IReadOnlyList<HouseholdMemberInfo>> membersByHousehold = [];
+    private readonly Dictionary<Guid, string?> slugByHousehold = [];
 
     public async Task NotifyHouseholdAsync(PropertyNotification notification, CancellationToken ct)
     {
@@ -25,10 +26,41 @@ public sealed partial class PropertyNotificationDispatcher(
             membersByHousehold[notification.HouseholdId] = members;
         }
 
+        // Property notifications carry a route-relative href (e.g. "/property/issues/{id}"). Every
+        // property route lives under the household shell, so the href must arrive already scoped as
+        // "/app/h/{slug}/property/...". The slug is owned by Households; resolve it once per household.
+        var scoped = notification with { Link = await ScopeLinkAsync(notification, ct) };
+
         foreach (var member in members)
         {
-            await NotifyMemberAsync(notification, member.UserId, ct);
+            await NotifyMemberAsync(scoped, member.UserId, ct);
         }
+    }
+
+    private async Task<NotificationLinkDto?> ScopeLinkAsync(PropertyNotification notification, CancellationToken ct)
+    {
+        if (notification.Link is not { } link)
+        {
+            return null;
+        }
+
+        if (!slugByHousehold.TryGetValue(notification.HouseholdId, out var slug))
+        {
+            var result = await bus.InvokeAsync<GetHouseholdSlugResult?>(
+                new GetHouseholdSlugQuery(notification.HouseholdId), ct);
+            slug = result?.Slug;
+            slugByHousehold[notification.HouseholdId] = slug;
+        }
+
+        if (slug is null)
+        {
+            // The household could not be resolved (deleted, or a race). Emitting a household-less
+            // link would 404 and be dropped by the client sanitiser, so send without a deep link.
+            LogSlugUnresolved(logger, notification.HouseholdId, notification.Source, notification.SourceId);
+            return null;
+        }
+
+        return link with { Href = $"/app/h/{slug}{link.Href}" };
     }
 
     private async Task NotifyMemberAsync(PropertyNotification notification, Guid userId, CancellationToken ct)
@@ -64,4 +96,7 @@ public sealed partial class PropertyNotificationDispatcher(
 
     [LoggerMessage(EventId = 1, Level = LogLevel.Warning, Message = "Failed to send property notification {Kind} for {Source} {SourceId} to user {UserId}.")]
     private static partial void LogNotificationFailed(ILogger logger, string source, Guid sourceId, string kind, Guid userId, Exception exception);
+
+    [LoggerMessage(EventId = 2, Level = LogLevel.Warning, Message = "Could not resolve slug for household {HouseholdId}; sending property notification for {Source} {SourceId} without a deep link.")]
+    private static partial void LogSlugUnresolved(ILogger logger, Guid householdId, string source, Guid sourceId);
 }

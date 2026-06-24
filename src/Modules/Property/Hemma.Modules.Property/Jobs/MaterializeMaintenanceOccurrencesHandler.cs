@@ -143,7 +143,7 @@ public sealed partial class MaterializeMaintenanceOccurrencesHandler(
                     NotificationSeverity.Info,
                     $"Maintenance due: {reminder.PlanTitle}",
                     $"\"{reminder.PlanTitle}\" is due on {reminder.DueDate:yyyy-MM-dd}.",
-                    new NotificationLinkDto($"/property/maintenance/occurrences/{reminder.OccurrenceId}", "View maintenance")));
+                    new NotificationLinkDto($"/property/maintenance?occurrence={reminder.OccurrenceId}", "View maintenance")));
             }
 
             if (reminder.SnoozedUntil == today)
@@ -158,7 +158,7 @@ public sealed partial class MaterializeMaintenanceOccurrencesHandler(
                     NotificationSeverity.Warning,
                     $"Snoozed maintenance is ready: {reminder.PlanTitle}",
                     $"\"{reminder.PlanTitle}\" was snoozed until today.",
-                    new NotificationLinkDto($"/property/maintenance/occurrences/{reminder.OccurrenceId}", "View maintenance")));
+                    new NotificationLinkDto($"/property/maintenance?occurrence={reminder.OccurrenceId}", "View maintenance")));
             }
 
             if (reminder.DueDate < today && (reminder.SnoozedUntil is null || reminder.SnoozedUntil.Value <= today))
@@ -173,7 +173,7 @@ public sealed partial class MaterializeMaintenanceOccurrencesHandler(
                     NotificationSeverity.Warning,
                     $"Maintenance overdue: {reminder.PlanTitle}",
                     $"\"{reminder.PlanTitle}\" was due on {reminder.DueDate:yyyy-MM-dd}.",
-                    new NotificationLinkDto($"/property/maintenance/occurrences/{reminder.OccurrenceId}", "View maintenance")));
+                    new NotificationLinkDto($"/property/maintenance?occurrence={reminder.OccurrenceId}", "View maintenance")));
             }
         }
 
@@ -245,7 +245,7 @@ public sealed partial class MaterializeMaintenanceOccurrencesHandler(
                     overdue
                         ? $"\"{task.Title}\" was due on {task.RelevantDate:yyyy-MM-dd}."
                         : $"\"{task.Title}\" is due on {task.RelevantDate:yyyy-MM-dd}.",
-                    new NotificationLinkDto($"/property/projects/{task.ProjectId}/tasks/{task.SourceId}", "View task"));
+                    new NotificationLinkDto($"/property/projects/{task.ProjectId}?task={task.SourceId}", "View task"));
             })
             .ToArray();
     }

@@ -105,6 +105,7 @@ public static class HouseholdsModule
         opts.Discovery.IncludeType<ValidateHouseholdInvitationForRegistrationHandler>();
         opts.Discovery.IncludeType<OnUserErasureRequestedHandler>();
         opts.Discovery.IncludeType<ListHouseholdMembersQueryHandler>();
+        opts.Discovery.IncludeType<GetHouseholdSlugQueryHandler>();
         return opts;
     }
 
