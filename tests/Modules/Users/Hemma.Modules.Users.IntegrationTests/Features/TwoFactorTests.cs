@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.EntityFrameworkCore;
+using Hemma.Modules.Users.Domain;
 using Hemma.Modules.Users.Features.Login;
 using Hemma.Modules.Users.Features.LoginTwoFactor;
 using Hemma.Modules.Users.Features.Register;
@@ -8,9 +8,9 @@ using Hemma.Modules.Users.Features.TwoFactor.ConfirmTotp;
 using Hemma.Modules.Users.Features.TwoFactor.DisableTwoFactor;
 using Hemma.Modules.Users.Features.TwoFactor.RegenerateRecoveryCodes;
 using Hemma.Modules.Users.Features.TwoFactor.SetupTotp;
-using Hemma.Modules.Users.Domain;
 using Hemma.Modules.Users.IntegrationTests.Support;
 using Hemma.Modules.Users.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Users.IntegrationTests.Features;
 

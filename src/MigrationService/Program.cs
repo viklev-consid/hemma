@@ -5,9 +5,10 @@ using Hemma.Modules.Audit.Persistence;
 using Hemma.Modules.Economy.Persistence;
 using Hemma.Modules.Households.Persistence;
 using Hemma.Modules.Notifications.Persistence;
+using Hemma.Modules.Property.Persistence;
 using Hemma.Modules.Users.Persistence;
-using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -44,6 +45,11 @@ builder.Services.AddDbContext<HouseholdsDbContext>(opts =>
         connectionString,
         npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", "households")));
 
+builder.Services.AddDbContext<PropertyDbContext>(opts =>
+    opts.UseNpgsql(
+        connectionString,
+        npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", "property")));
+
 builder.Services.AddDbContext<TickerQOperationalDbContext>(opts =>
     opts.UseNpgsql(
         connectionString,
@@ -65,6 +71,7 @@ await MigrateAsync<NotificationsDbContext>(scope.ServiceProvider, logger);
 await MigrateAsync<EconomyDbContext>(scope.ServiceProvider, logger);
 await BootstrapHouseholdsAsync(scope.ServiceProvider);
 await MigrateAsync<HouseholdsDbContext>(scope.ServiceProvider, logger);
+await MigrateAsync<PropertyDbContext>(scope.ServiceProvider, logger);
 await MigrateAsync<TickerQOperationalDbContext>(scope.ServiceProvider, logger);
 
 MigrationLog.Completed(logger);

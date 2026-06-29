@@ -27,19 +27,25 @@ The architecture is designed to be easy to split into separate services later, b
 │                    TickerQ recurring jobs + admin dashboard           │
 │                                  │                                    │
 │  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐          │
-│  │  Users   │   │  Orgs    │   │  Audit   │   │  Notifi- │   ...    │
-│  │ Module   │   │  Module  │   │  Module  │   │ cations  │          │
-│  │          │   │          │   │          │   │  Module  │          │
+│  │  Users   │   │Households│   │ Economy  │   │ Property │   ...    │
+│  │ Module   │   │ Module   │   │ Module   │   │ Module   │          │
+│  │          │   │          │   │          │   │          │          │
 │  │  own DB  │   │  own DB  │   │  own DB  │   │  own DB  │          │
 │  │  schema  │   │  schema  │   │  schema  │   │  schema  │          │
 │  └──────────┘   └──────────┘   └──────────┘   └──────────┘          │
+│  ┌──────────┐   ┌──────────┐                                        │
+│  │  Audit   │   │ Notifi-  │                                        │
+│  │ Module   │   │ cations  │                                        │
+│  │  own DB  │   │ Module   │                                        │
+│  │  schema  │   │ own DB   │                                        │
+│  └──────────┘   └──────────┘                                        │
 │       ▲              ▲              ▲              ▲                 │
 │       └──────────────┴──────────────┴──────────────┘                 │
 │              via public .Contracts projects only                      │
 │                                                                       │
 │  ┌────────────────────────────────────────────────────────────────┐  │
-│  │  Shared.Kernel (primitives)  +  Shared.Infrastructure         │  │
-│  │  (IBlobStore, IEmailSender, ICurrentUser, cache helpers)      │  │
+│  │  Shared.Kernel + Shared.Contracts + Shared.Infrastructure     │  │
+│  │  (Money, MoneyDto, IBlobStore, ICurrentUser, cache helpers)   │  │
 │  └────────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -71,9 +77,15 @@ Hemma.sln
 │       ├── Notifications/
 │       │   ├── Hemma.Modules.Notifications/
 │       │   └── Hemma.Modules.Notifications.Contracts/
-│       └── Audit/
-│           ├── Hemma.Modules.Audit/
-│           └── Hemma.Modules.Audit.Contracts/
+│       ├── Audit/
+│       │   ├── Hemma.Modules.Audit/
+│       │   └── Hemma.Modules.Audit.Contracts/
+│       ├── Economy/
+│       │   ├── Hemma.Modules.Economy/
+│       │   └── Hemma.Modules.Economy.Contracts/
+│       └── Property/
+│           ├── Hemma.Modules.Property/
+│           └── Hemma.Modules.Property.Contracts/
 └── tests/
     ├── Hemma.Architecture.Tests/
     ├── Hemma.SmokeTests/
@@ -88,7 +100,7 @@ Hemma.sln
 ### The reference rules
 
 - `Api` references all modules' internal projects (to compose the application) and `ServiceDefaults`.
-- A module's internal project references `Shared.Kernel`, `Shared.Infrastructure`, its own `.Contracts`, and other modules' `.Contracts` (only when it subscribes to their events).
+- A module's internal project references `Shared.Kernel`, `Shared.Infrastructure`, its own `.Contracts`, and other modules' `.Contracts` (only when it subscribes to their events or invokes their commands/queries — e.g. Property references `Economy.Contracts` to invoke the project-spend query, and Economy references `Property.Contracts` to subscribe to `ProjectDeletedV1`).
 - A module's `.Contracts` project references only `Shared.Kernel` and `Shared.Contracts`.
 - `Shared.Kernel` references nothing.
 - Tests reference the module they test, `TestSupport`, and test libraries.

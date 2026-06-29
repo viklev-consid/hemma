@@ -1,20 +1,20 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Hemma.Modules.Audit.Persistence;
 using Hemma.Modules.Households.Domain;
 using Hemma.Modules.Households.Features.ChangeHouseholdMemberRole;
 using Hemma.Modules.Households.Features.CreateHousehold;
 using Hemma.Modules.Households.Features.CreateHouseholdInvitation;
 using Hemma.Modules.Households.Features.GetHousehold;
-using Hemma.Modules.Households.Features.ListMyHouseholds;
 using Hemma.Modules.Households.Features.ListHouseholdMembers;
+using Hemma.Modules.Households.Features.ListMyHouseholds;
 using Hemma.Modules.Households.Gdpr;
 using Hemma.Modules.Households.Persistence;
 using Hemma.Modules.Users.Features.Register;
 using Hemma.Shared.Kernel.Gdpr;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Wolverine;
 using Wolverine.Tracking;
 

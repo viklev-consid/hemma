@@ -1,7 +1,6 @@
 using ErrorOr;
-using Hemma.Modules.Economy.Errors;
 
-namespace Hemma.Modules.Economy.Domain;
+namespace Hemma.Shared.Kernel.Domain;
 
 public sealed record Money
 {
@@ -20,13 +19,13 @@ public sealed record Money
     {
         if (amount < 0)
         {
-            return EconomyErrors.AmountNegative;
+            return SharedKernelErrors.AmountNegative;
         }
 
         var normalizedCurrency = currency.Trim().ToUpperInvariant();
         if (!string.Equals(normalizedCurrency, SupportedCurrency, StringComparison.Ordinal))
         {
-            return EconomyErrors.CurrencyInvalid;
+            return SharedKernelErrors.CurrencyInvalid;
         }
 
         return new Money(decimal.Round(amount, 2, MidpointRounding.AwayFromZero), normalizedCurrency);
@@ -36,7 +35,7 @@ public sealed record Money
     {
         if (!string.Equals(Currency, other.Currency, StringComparison.Ordinal))
         {
-            return EconomyErrors.CurrencyMismatch;
+            return SharedKernelErrors.CurrencyMismatch;
         }
 
         return Create(Amount + other.Amount, Currency);

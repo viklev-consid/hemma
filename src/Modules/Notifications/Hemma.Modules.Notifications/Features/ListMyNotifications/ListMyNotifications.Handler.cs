@@ -1,9 +1,9 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Notifications.Contracts.Dtos;
 using Hemma.Modules.Notifications.Errors;
 using Hemma.Modules.Notifications.Mapping;
 using Hemma.Modules.Notifications.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Notifications.Features.ListMyNotifications;
 

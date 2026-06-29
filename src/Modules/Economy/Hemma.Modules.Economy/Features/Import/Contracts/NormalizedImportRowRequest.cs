@@ -1,4 +1,4 @@
-using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Shared.Contracts;
 
 namespace Hemma.Modules.Economy.Features.Import.Contracts;
 
@@ -10,6 +10,6 @@ public sealed record NormalizedImportRowRequest(
     string? Currency,
     string? Counterparty,
     string? Reference,
-    MoneyRequest? BalanceAfter,
+    MoneyDto? BalanceAfter,
     string? RawDescription,
     Guid? CategoryId);

@@ -469,6 +469,10 @@ namespace Hemma.Modules.Economy.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("payer_id");
 
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
                     b.Property<string>("ReceiptBlobContainer")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
@@ -512,6 +516,9 @@ namespace Hemma.Modules.Economy.Persistence.Migrations
 
                     b.HasIndex("HouseholdId", "OccurredOn")
                         .HasDatabaseName("ix_transactions_household_id_occurred_on");
+
+                    b.HasIndex("HouseholdId", "ProjectId")
+                        .HasDatabaseName("ix_transactions_household_id_project_id");
 
                     b.HasIndex("HouseholdId", "OccurredOn", "CategoryId", "Kind")
                         .HasDatabaseName("ix_transactions_household_id_occurred_on_category_id_kind");
@@ -565,7 +572,7 @@ namespace Hemma.Modules.Economy.Persistence.Migrations
 
             modelBuilder.Entity("Hemma.Modules.Economy.Domain.Account", b =>
                 {
-                    b.OwnsOne("Hemma.Modules.Economy.Domain.Money", "OpeningBalance", b1 =>
+                    b.OwnsOne("Hemma.Shared.Kernel.Domain.Money", "OpeningBalance", b1 =>
                         {
                             b1.Property<Guid>("AccountId")
                                 .HasColumnType("uuid")
@@ -603,7 +610,7 @@ namespace Hemma.Modules.Economy.Persistence.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_budget_lines_budgets_budget_id");
 
-                    b.OwnsOne("Hemma.Modules.Economy.Domain.Money", "Amount", b1 =>
+                    b.OwnsOne("Hemma.Shared.Kernel.Domain.Money", "Amount", b1 =>
                         {
                             b1.Property<Guid>("BudgetLineId")
                                 .HasColumnType("uuid")
@@ -657,7 +664,7 @@ namespace Hemma.Modules.Economy.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_recurring_bills_categories_category_id");
 
-                    b.OwnsOne("Hemma.Modules.Economy.Domain.Money", "Amount", b1 =>
+                    b.OwnsOne("Hemma.Shared.Kernel.Domain.Money", "Amount", b1 =>
                         {
                             b1.Property<Guid>("RecurringBillId")
                                 .HasColumnType("uuid")
@@ -742,7 +749,7 @@ namespace Hemma.Modules.Economy.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_subscriptions_accounts_account_id");
 
-                    b.OwnsOne("Hemma.Modules.Economy.Domain.Money", "ExpectedAmount", b1 =>
+                    b.OwnsOne("Hemma.Shared.Kernel.Domain.Money", "ExpectedAmount", b1 =>
                         {
                             b1.Property<Guid>("SubscriptionId")
                                 .HasColumnType("uuid")
@@ -818,7 +825,7 @@ namespace Hemma.Modules.Economy.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_transactions_categories_category_id");
 
-                    b.OwnsOne("Hemma.Modules.Economy.Domain.Money", "Amount", b1 =>
+                    b.OwnsOne("Hemma.Shared.Kernel.Domain.Money", "Amount", b1 =>
                         {
                             b1.Property<Guid>("TransactionId")
                                 .HasColumnType("uuid")

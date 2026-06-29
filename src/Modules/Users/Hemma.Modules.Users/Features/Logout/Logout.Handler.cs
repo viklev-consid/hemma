@@ -1,9 +1,9 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Users.Contracts.Events;
 using Hemma.Modules.Users.Domain;
 using Hemma.Modules.Users.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 
 namespace Hemma.Modules.Users.Features.Logout;

@@ -1,6 +1,6 @@
-using Hemma.Modules.Economy.Features.Contracts;
 using Hemma.Modules.Economy.Gdpr;
 using Hemma.Modules.Households.Contracts.Authorization;
+using Hemma.Shared.Contracts;
 using Hemma.Shared.Infrastructure.Authorization;
 using Hemma.Shared.Kernel.Gdpr;
 using Hemma.Shared.Kernel.Interfaces;

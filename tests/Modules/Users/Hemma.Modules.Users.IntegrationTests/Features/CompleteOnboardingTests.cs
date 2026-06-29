@@ -2,13 +2,13 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Hemma.Modules.Users.Domain;
-using Hemma.Modules.Users.Features.GetOnboardingLegalRequirements;
 using Hemma.Modules.Users.Features.GetCurrentUser;
+using Hemma.Modules.Users.Features.GetOnboardingLegalRequirements;
 using Hemma.Modules.Users.Features.Register;
 using Hemma.Modules.Users.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Hemma.Modules.Users.IntegrationTests.Features;
 

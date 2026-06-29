@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Notifications.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Notifications.Jobs;
 

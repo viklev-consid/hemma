@@ -2,7 +2,7 @@ using Hemma.Modules.Economy.Domain;
 
 namespace Hemma.Modules.Economy.Features.Contracts;
 
-public sealed record BudgetLineResponse(Guid BudgetLineId, Guid CategoryId, MoneyResponse Amount);
+public sealed record BudgetLineResponse(Guid BudgetLineId, Guid CategoryId, MoneyDto Amount);
 
 public sealed record BudgetResponse(
     Guid BudgetId,
@@ -21,6 +21,6 @@ public sealed record BudgetResponse(
             paceStartsOn,
             budget.Lines
                 .OrderBy(line => line.CategoryId.Value)
-                .Select(line => new BudgetLineResponse(line.Id.Value, line.CategoryId.Value, MoneyResponse.From(line.Amount)))
+                .Select(line => new BudgetLineResponse(line.Id.Value, line.CategoryId.Value, MoneyContract.From(line.Amount)))
                 .ToArray());
 }

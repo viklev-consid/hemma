@@ -63,6 +63,12 @@ dotnet new hemma-integration-pair --module Orders --name OrderPlaced
 
 These generate the exact file set with correct namespaces, permission-aware endpoint stubs, telemetry hooks, health checks, GDPR stubs, dev seeding, and placeholder registrations where applicable. Agents should prefer these to manual scaffolding — manual scaffolding is how small inconsistencies creep in.
 
+Feature slice names are operation intents, not resource buckets. A module should
+have folders like `CreateTransfer`, `ListTransfers`, `ChangeUserRole`, `ListAreas`,
+and `AssignTags`; it should not have a single `Transfers`, `Users`, or `AreasTags`
+folder containing many commands and endpoints. Support folders such as
+`Features/Shared` or `Features/Contracts` are for shared DTOs/helpers only.
+
 ### Fast, specific feedback loops
 
 - **Warnings are errors.** No warnings, so agents don't waste cycles deciding what to fix.
@@ -121,6 +127,10 @@ After each `.cs` edit in `src/`, runs a scoped format check, build, and (for Dom
 **`slice-completeness.sh` — PostToolUse**
 
 After each `.cs` edit inside a `Features/<Slice>/` folder, checks that all six slice files exist (Request, Response, Command, Handler, Validator, Endpoint). Reports any missing files so incomplete scaffolding is noticed immediately rather than silently left behind.
+
+Architecture tests also enforce intent-named slices: command/query, handler,
+validator, and endpoint type names must match their feature namespace, and one
+slice namespace may not contain multiple command/query messages.
 
 **`stop-format.sh` — Stop**
 

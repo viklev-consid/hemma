@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Routing;
 using Hemma.Modules.Users.Legal;
 using Hemma.Shared.Infrastructure.Modules;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using TickerQ.Utilities;
 using TickerQ.Utilities.Entities;
 using Wolverine;

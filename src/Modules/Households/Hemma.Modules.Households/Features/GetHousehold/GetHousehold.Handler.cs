@@ -1,7 +1,7 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Households.Errors;
 using Hemma.Modules.Households.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Households.Features.GetHousehold;
 

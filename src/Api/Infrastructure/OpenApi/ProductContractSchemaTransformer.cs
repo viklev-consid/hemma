@@ -10,7 +10,7 @@ namespace Hemma.Api.Infrastructure.OpenApi;
 /// </summary>
 internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransformer
 {
-    private static readonly IReadOnlyDictionary<string, string[]> EnumSchemas =
+    private static readonly IReadOnlyDictionary<string, string[]> enumSchemas =
         new Dictionary<string, string[]>(StringComparer.Ordinal)
         {
             ["HouseholdRole"] = ["owner", "member"],
@@ -28,9 +28,21 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
             ["SubscriptionMatchState"] = ["actual", "predicted", "suggested"],
             ["Currency"] = ["SEK"],
             ["HouseholdAccessMode"] = ["ScopedPermission", "PlatformOverride"],
+            ["ProjectStatus"] = ["Planning", "Active", "OnHold", "Done"],
+            ["ProjectTaskStatus"] = ["Todo", "Doing", "Done"],
+            ["ProjectPriority"] = ["Low", "Medium", "High", "Critical"],
+            ["MaintenanceRecurrenceUnit"] = ["Month", "Year"],
+            ["MaintenanceOccurrenceStatus"] = ["Upcoming", "Done", "Skipped"],
+            ["HistoryEntryType"] = ["Project", "Maintenance", "Manual"],
+            ["PropertyIssueStatus"] = ["Open", "InProgress", "Resolved", "Closed"],
+            ["PropertyIssueSeverity"] = ["Low", "Medium", "High", "Critical"],
+            ["PropertyTagTargetType"] = ["Project", "MaintenancePlan", "MaintenanceOccurrence", "Issue", "HistoryEntry"],
+            ["PropertyActivityTargetType"] = ["Project", "MaintenancePlan", "MaintenanceOccurrence", "PropertyIssue", "HistoryEntry"],
+            ["PropertyActivityVerb"] = ["ProjectCreated", "ProjectStatusChanged", "MaintenanceCompleted", "IssueReported", "IssueStatusChanged", "HistoryEntryCreated", "OccurrenceSnoozed"],
+            ["TimelineSourceType"] = ["HistoryEntry"],
         };
 
-    private static readonly (string SchemaName, string PropertyName, string EnumSchemaName)[] EnumProperties =
+    private static readonly (string SchemaName, string PropertyName, string EnumSchemaName)[] enumProperties =
     [
         ("AcceptHouseholdInvitationResponse", "role", "HouseholdRole"),
         ("ChangeHouseholdMemberRoleRequest", "role", "HouseholdRole"),
@@ -86,15 +98,66 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
         ("CreateEconomySettingsRequest", "defaultCurrency", "Currency"),
         ("CreateEconomySettingsResponse", "defaultCurrency", "Currency"),
         ("ImportRowResponse", "currency", "Currency"),
+        ("MoneyDto", "currency", "Currency"),
         ("MoneyRequest", "currency", "Currency"),
         ("MoneyResponse", "currency", "Currency"),
         ("NormalizedImportRowRequest", "currency", "Currency"),
 
         ("GetHouseholdAuditResponse", "accessMode", "HouseholdAccessMode"),
         ("GetHouseholdResponse", "accessMode", "HouseholdAccessMode"),
+
+        ("ProjectRequest", "status", "ProjectStatus"),
+        ("ChangeProjectStatusRequest", "status", "ProjectStatus"),
+        ("ProjectResponse", "status", "ProjectStatus"),
+        ("ProjectListItemResponse", "status", "ProjectStatus"),
+        ("PromoteOccurrenceRequest", "status", "ProjectStatus"),
+
+        ("ProjectTaskRequest", "status", "ProjectTaskStatus"),
+        ("ProjectTaskResponse", "status", "ProjectTaskStatus"),
+
+        ("MaintenancePlanRequest", "recurrenceUnit", "MaintenanceRecurrenceUnit"),
+        ("MaintenancePlanResponse", "recurrenceUnit", "MaintenanceRecurrenceUnit"),
+
+        ("MaintenanceOccurrenceResponse", "status", "MaintenanceOccurrenceStatus"),
+        ("UpcomingOccurrenceItem", "status", "MaintenanceOccurrenceStatus"),
+
+        ("HistoryEntryRequest", "type", "HistoryEntryType"),
+        ("HistoryEntryResponse", "type", "HistoryEntryType"),
+        ("SuggestedHistoryEntryResponse", "type", "HistoryEntryType"),
+
+        ("ProjectRequest", "priority", "ProjectPriority"),
+        ("PromoteOccurrenceRequest", "priority", "ProjectPriority"),
+        ("PromoteIssueToProjectRequest", "status", "ProjectStatus"),
+        ("PromoteIssueToProjectRequest", "priority", "ProjectPriority"),
+        ("ProjectResponse", "priority", "ProjectPriority"),
+        ("ProjectListItemResponse", "priority", "ProjectPriority"),
+
+        ("IssueRequest", "severity", "PropertyIssueSeverity"),
+        ("IssueResponse", "severity", "PropertyIssueSeverity"),
+        ("IssueResponse", "status", "PropertyIssueStatus"),
+        ("ChangeIssueStatusRequest", "status", "PropertyIssueStatus"),
+
+        ("AssignTagsRequest", "targetType", "PropertyTagTargetType"),
+        ("AssignTagsResponse", "targetType", "PropertyTagTargetType"),
+
+        ("PropertyActivityItemResponse", "targetType", "PropertyActivityTargetType"),
+        ("PropertyActivityItemResponse", "verb", "PropertyActivityVerb"),
+
+        ("TimelineItemResponse", "sourceType", "TimelineSourceType"),
+        ("TimelineItemResponse", "type", "HistoryEntryType"),
     ];
 
-    private static readonly (string SchemaName, string PropertyName)[] IntegerProperties =
+    private static readonly (string Path, string Method, string ParameterName, string EnumSchemaName)[] enumParameters =
+    [
+        ("/v1/property/projects", "get", "status", "ProjectStatus"),
+        ("/v1/property/projects", "get", "priority", "ProjectPriority"),
+        ("/v1/property/history", "get", "type", "HistoryEntryType"),
+        ("/v1/property/issues", "get", "status", "PropertyIssueStatus"),
+        ("/v1/property/issues", "get", "severity", "PropertyIssueSeverity"),
+        ("/v1/property/timeline", "get", "type", "HistoryEntryType"),
+    ];
+
+    private static readonly (string SchemaName, string PropertyName)[] integerProperties =
     [
         ("CreateRecurringBillRequest", "cadenceInterval"),
         ("CreateRecurringBillRequest", "cadenceDayOfMonth"),
@@ -102,6 +165,27 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
         ("RecurringBillResponse", "cadenceDayOfMonth"),
         ("CreateSubscriptionRequest", "cadenceInterval"),
         ("SubscriptionResponse", "cadenceInterval"),
+
+        ("ProjectResponse", "daysOverdue"),
+        ("ProjectListItemResponse", "daysOverdue"),
+        ("ProjectTaskResponse", "daysOverdue"),
+        ("ProjectTaskResponse", "sortOrder"),
+        ("IssueResponse", "daysOverdue"),
+        ("MaintenanceOccurrenceResponse", "daysOverdue"),
+        ("UpcomingOccurrenceItem", "daysOverdue"),
+        ("PropertyAreaResponse", "sortOrder"),
+        ("MaintenancePlanResponse", "recurrenceInterval"),
+        ("MaintenancePlanResponse", "leadTimeDays"),
+        ("MaintenancePlanRequest", "recurrenceInterval"),
+        ("MaintenancePlanRequest", "leadTimeDays"),
+        ("TimelineItemResponse", "photoCount"),
+        ("PropertyActivityCountResponse", "count"),
+        ("ListAreasResponse", "totalCount"),
+        ("ListTagsResponse", "totalCount"),
+        ("ListIssuesResponse", "totalCount"),
+        ("ListProjectsResponse", "totalCount"),
+        ("GetProjectTasksResponse", "totalCount"),
+        ("ListTimelineResponse", "totalCount"),
     ];
 
     public Task TransformAsync(
@@ -112,17 +196,22 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
         document.Components ??= new OpenApiComponents();
         document.Components.Schemas ??= new Dictionary<string, IOpenApiSchema>(StringComparer.Ordinal);
 
-        foreach (var (name, values) in EnumSchemas)
+        foreach (var (name, values) in enumSchemas)
         {
             document.Components.Schemas[name] = CreateStringEnumSchema(values);
         }
 
-        foreach (var (schemaName, propertyName, enumSchemaName) in EnumProperties)
+        foreach (var (schemaName, propertyName, enumSchemaName) in enumProperties)
         {
             ReplaceProperty(document, schemaName, propertyName, new OpenApiSchemaReference(enumSchemaName, document));
         }
 
-        foreach (var (schemaName, propertyName) in IntegerProperties)
+        foreach (var (path, method, parameterName, enumSchemaName) in enumParameters)
+        {
+            ReplaceParameter(document, path, method, parameterName, new OpenApiSchemaReference(enumSchemaName, document));
+        }
+
+        foreach (var (schemaName, propertyName) in integerProperties)
         {
             ReplaceProperty(document, schemaName, propertyName, new OpenApiSchema
             {
@@ -133,6 +222,7 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
 
         ReplaceProperty(document, "MoneyRequest", "amount", CreateDecimalStringSchema());
         ReplaceProperty(document, "MoneyResponse", "amount", CreateDecimalStringSchema());
+        ReplaceProperty(document, "MoneyDto", "amount", CreateDecimalStringSchema());
 
         return Task.CompletedTask;
     }
@@ -166,5 +256,47 @@ internal sealed class ProductContractSchemaTransformer : IOpenApiDocumentTransfo
         }
 
         schema.Properties[propertyName] = propertySchema;
+    }
+
+    private static void ReplaceParameter(
+        OpenApiDocument document,
+        string path,
+        string method,
+        string parameterName,
+        IOpenApiSchema parameterSchema)
+    {
+        if (document.Paths is null ||
+            !document.Paths.TryGetValue(path, out var pathItem) ||
+            pathItem.Operations is null)
+        {
+            return;
+        }
+
+        var operationType = method.ToLowerInvariant() switch
+        {
+            "get" => HttpMethod.Get,
+            "post" => HttpMethod.Post,
+            "put" => HttpMethod.Put,
+            "patch" => HttpMethod.Patch,
+            "delete" => HttpMethod.Delete,
+            _ => (HttpMethod?)null
+        };
+
+        if (operationType is null ||
+            !pathItem.Operations.TryGetValue(operationType, out var operation) ||
+            operation.Parameters is null)
+        {
+            return;
+        }
+
+        var parameter = operation.Parameters
+            .OfType<OpenApiParameter>()
+            .FirstOrDefault(p => string.Equals(p.Name, parameterName, StringComparison.Ordinal));
+        if (parameter is null)
+        {
+            return;
+        }
+
+        parameter.Schema = parameterSchema;
     }
 }

@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Users.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Users.Jobs;
 

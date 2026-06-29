@@ -1,8 +1,8 @@
 using System.Security.Claims;
+using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Hemma.Shared.Kernel.Interfaces;
 
 namespace Hemma.Shared.Infrastructure.Persistence;
 

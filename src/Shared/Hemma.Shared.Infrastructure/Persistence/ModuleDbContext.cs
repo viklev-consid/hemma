@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using Hemma.Shared.Kernel.Domain;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Shared.Infrastructure.Persistence;
 

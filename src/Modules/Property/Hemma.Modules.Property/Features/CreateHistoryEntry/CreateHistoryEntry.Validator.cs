@@ -1,0 +1,23 @@
+using FluentValidation;
+using Hemma.Modules.Property.Domain;
+
+namespace Hemma.Modules.Property.Features.CreateHistoryEntry;
+
+internal sealed class CreateHistoryEntryValidator : AbstractValidator<HistoryEntryRequest>
+{
+    public const int MaxPhotoRefs = 50;
+
+    public CreateHistoryEntryValidator()
+    {
+        RuleFor(x => x.HouseholdId).NotEmpty();
+        RuleFor(x => x.Date).NotEmpty();
+        RuleFor(x => x.Title).NotEmpty().MaximumLength(160);
+        RuleFor(x => x.Type).NotEmpty().Must(type => Enum.TryParse<Domain.HistoryEntryType>(type, ignoreCase: true, out _));
+        RuleFor(x => x.PhotoRefs).NotNull().Must(refs => refs.Count <= MaxPhotoRefs);
+        RuleForEach(x => x.PhotoRefs).ChildRules(photo =>
+        {
+            photo.RuleFor(x => x.Container).NotEmpty().MaximumLength(ProjectAttachmentRules.MaxBlobContainerLength);
+            photo.RuleFor(x => x.Key).NotEmpty().MaximumLength(ProjectAttachmentRules.MaxBlobKeyLength);
+        });
+    }
+}

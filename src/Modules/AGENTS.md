@@ -133,6 +133,13 @@ After scaffolding:
 
 For full details, see [`docs/how-to/add-a-slice.md`](../../docs/how-to/add-a-slice.md).
 
+Slice folders are named for one intent, not a resource category. Prefer
+`CreateTransfer`, `ChangeUserRole`, `ListAreas`, and `AssignTags`. Do not create
+bundled folders like `Transfers`, `Users`, `AreasTags`, or `Projects` that hold
+many commands, queries, endpoints, validators, and handlers. Shared response DTOs
+or mapping helpers can live under `Features/Shared` or `Features/Contracts`, but
+those support folders must not contain slice messages or endpoints.
+
 ---
 
 ## Cross-module communication

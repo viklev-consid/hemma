@@ -1,10 +1,10 @@
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Audit.Domain;
 using Hemma.Modules.Audit.Persistence;
 using Hemma.Modules.Users.Contracts.Events;
 using Hemma.Shared.Infrastructure.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Wolverine.Attributes;
 
 namespace Hemma.Modules.Audit.Integration.Subscribers;

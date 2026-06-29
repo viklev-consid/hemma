@@ -1,7 +1,7 @@
 using ErrorOr;
 using Hemma.Modules.Economy.Domain;
-using Hemma.Modules.Economy.Features.Contracts;
 using Hemma.Modules.Economy.Persistence;
+using Hemma.Shared.Contracts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.GetAccountBalances;
@@ -28,7 +28,7 @@ public sealed class GetAccountBalancesHandler(EconomyDbContext db)
                 .Where(transaction => transaction.AccountId == account.Id)
                 .Sum(GetSignedAmount);
             var balance = Money.Create(account.OpeningBalance.Amount + delta, account.OpeningBalance.Currency).Value;
-            return new AccountBalanceResponse(account.Id.Value, account.Name, account.Type.Name, MoneyResponse.From(balance));
+            return new AccountBalanceResponse(account.Id.Value, account.Name, account.Type.Name, MoneyContract.From(balance));
         }).ToArray();
 
         return new GetAccountBalancesResponse(balances);

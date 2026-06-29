@@ -1,10 +1,10 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Hemma.Modules.Notifications.Domain;
 using Hemma.Modules.Notifications.Persistence;
 using Hemma.Modules.Notifications.Streaming;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Hemma.Modules.Notifications.Features.MarkAllNotificationsAsRead;
 

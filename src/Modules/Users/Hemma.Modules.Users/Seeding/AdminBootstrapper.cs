@@ -1,10 +1,10 @@
+using Hemma.Modules.Users.Domain;
+using Hemma.Modules.Users.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Hemma.Modules.Users.Domain;
-using Hemma.Modules.Users.Persistence;
 
 namespace Hemma.Modules.Users.Seeding;
 

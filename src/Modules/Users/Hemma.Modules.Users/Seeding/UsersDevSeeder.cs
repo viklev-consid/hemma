@@ -1,10 +1,10 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Hemma.Modules.Users.Domain;
 using Hemma.Modules.Users.Persistence;
 using Hemma.Modules.Users.Security;
 using Hemma.Shared.Infrastructure.Seeding;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Hemma.Modules.Users.Seeding;
 

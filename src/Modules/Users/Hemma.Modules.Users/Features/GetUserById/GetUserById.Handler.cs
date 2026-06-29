@@ -1,7 +1,7 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Users.Errors;
 using Hemma.Modules.Users.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Users.Features.GetUserById;
 

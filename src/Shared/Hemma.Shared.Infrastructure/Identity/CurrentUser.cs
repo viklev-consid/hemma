@@ -1,6 +1,6 @@
 using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.AspNetCore.Http;
 
 namespace Hemma.Shared.Infrastructure.Identity;
 

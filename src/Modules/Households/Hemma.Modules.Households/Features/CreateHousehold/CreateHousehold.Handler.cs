@@ -1,11 +1,11 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Households.Contracts.Events;
 using Hemma.Modules.Households.Domain;
 using Hemma.Modules.Households.Errors;
 using Hemma.Modules.Households.Persistence;
 using Hemma.Shared.Infrastructure.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 
 namespace Hemma.Modules.Households.Features.CreateHousehold;

@@ -55,6 +55,15 @@ This produces `OrderPlacedV1` in the module's `.Contracts/Events` project and `O
 
 Create the folder `Features/<FeatureName>/` in the module.
 
+`<FeatureName>` is the intent, not the resource family. Use names such as
+`CreateTransfer`, `ChangeUserRole`, `ListAreas`, or `AssignTags`. Do not group
+multiple operations under broad folders such as `Transfers`, `Users`, `AreasTags`,
+or `Projects`. If an area has five operations, it has five slice folders.
+
+Shared DTOs and small helper types may live under `Features/Shared` or
+`Features/Contracts`, but those folders must not contain commands, queries,
+handlers, validators, or endpoints.
+
 ### 1. Request (HTTP input)
 
 ```csharp

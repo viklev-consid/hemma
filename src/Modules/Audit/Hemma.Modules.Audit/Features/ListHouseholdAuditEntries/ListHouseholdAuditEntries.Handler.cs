@@ -1,9 +1,9 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Audit.Contracts.Queries;
 using Hemma.Modules.Audit.Errors;
 using Hemma.Modules.Audit.Persistence;
 using Hemma.Shared.Kernel.Pagination;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Audit.Features.ListHouseholdAuditEntries;
 

@@ -1,9 +1,9 @@
 using ErrorOr;
 using Hemma.Modules.Economy.Domain;
 using Hemma.Modules.Economy.Errors;
-using Hemma.Modules.Economy.Features.Contracts;
 using Hemma.Modules.Economy.Integration;
 using Hemma.Modules.Economy.Persistence;
+using Hemma.Shared.Contracts;
 using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -213,7 +213,7 @@ public sealed class SubscriptionHandler(EconomyDbContext db, EconomyAuditPublish
             .Select(x => new LinkCandidateResponse(
                 x.Transaction.Id.Value,
                 x.Transaction.OccurredOn,
-                new MoneyResponse(x.Transaction.Amount, x.Transaction.Currency),
+                new MoneyDto(x.Transaction.Amount, x.Transaction.Currency),
                 x.Transaction.Note))
             .ToList();
 
@@ -248,7 +248,7 @@ public sealed class SubscriptionHandler(EconomyDbContext db, EconomyAuditPublish
             .Select(x => new ChargeHistoryItemResponse(
                 x.Id.Value,
                 x.OccurredOn,
-                new MoneyResponse(x.Amount.Amount, x.Amount.Currency),
+                new MoneyDto(x.Amount.Amount, x.Amount.Currency),
                 x.Note,
                 "actual"))
             .ToListAsync(ct);
@@ -331,12 +331,12 @@ public sealed class SubscriptionHandler(EconomyDbContext db, EconomyAuditPublish
                     .Select(x => new MonthChargeResponse(
                         x.SubscriptionId!.Value,
                         subscriptionsById[x.SubscriptionId!.Value].Name,
-                        new MoneyResponse(x.Amount, x.Currency),
+                        new MoneyDto(x.Amount, x.Currency),
                         "actual",
                         x.Id.Value));
                 var predictedCharges = predictedSubscriptions
                     .Where(x => x.Cadence.ChargeDay == day)
-                    .Select(x => new MonthChargeResponse(x.Id.Value, x.Name, MoneyResponse.From(x.ExpectedAmount), "predicted", null));
+                    .Select(x => new MonthChargeResponse(x.Id.Value, x.Name, MoneyContract.From(x.ExpectedAmount), "predicted", null));
 
                 return new MonthChargeDayResponse(date, actualCharges.Concat(predictedCharges).ToList());
             })
@@ -361,7 +361,7 @@ public sealed class SubscriptionHandler(EconomyDbContext db, EconomyAuditPublish
         return new MonthChargeCalendarResponse(
             month,
             days,
-            new MoneyResponse(actualTotal, currency),
-            new MoneyResponse(predictedTotal, currency));
+            new MoneyDto(actualTotal, currency),
+            new MoneyDto(predictedTotal, currency));
     }
 }

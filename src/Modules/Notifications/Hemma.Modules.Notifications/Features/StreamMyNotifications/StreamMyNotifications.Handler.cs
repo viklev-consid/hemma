@@ -1,7 +1,7 @@
 using System.Threading.Channels;
 using ErrorOr;
-using Microsoft.Extensions.Options;
 using Hemma.Modules.Notifications.Streaming;
+using Microsoft.Extensions.Options;
 
 namespace Hemma.Modules.Notifications.Features.StreamMyNotifications;
 

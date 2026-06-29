@@ -1,6 +1,6 @@
+using Hemma.Modules.Households.Persistence;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Hemma.Modules.Households.Persistence;
 
 #nullable disable
 

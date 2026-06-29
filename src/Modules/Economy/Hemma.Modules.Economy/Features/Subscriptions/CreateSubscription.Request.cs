@@ -1,4 +1,4 @@
-using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Shared.Contracts;
 
 namespace Hemma.Modules.Economy.Features.Subscriptions;
 
@@ -8,7 +8,7 @@ public sealed record CreateSubscriptionRequest(
     string CadenceFrequency,
     int CadenceInterval,
     int ChargeDay,
-    MoneyRequest ExpectedAmount,
+    MoneyDto ExpectedAmount,
     string LifecycleState,
     DateOnly? TrialEndsOn,
     Guid? AccountId,

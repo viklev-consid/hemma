@@ -1,6 +1,6 @@
-using Microsoft.Extensions.Options;
 using Hemma.Modules.Users.Domain;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.Extensions.Options;
 
 namespace Hemma.Modules.Users.Security;
 

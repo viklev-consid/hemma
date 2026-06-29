@@ -562,6 +562,14 @@
           "Hemma.Shared.Kernel": "[1.0.0, )"
         }
       },
+      "hemma.modules.property.contracts": {
+        "type": "Project",
+        "dependencies": {
+          "ErrorOr": "[2.1.0, )",
+          "Hemma.Shared.Contracts": "[1.0.0, )",
+          "Hemma.Shared.Kernel": "[1.0.0, )"
+        }
+      },
       "hemma.modules.users.contracts": {
         "type": "Project",
         "dependencies": {

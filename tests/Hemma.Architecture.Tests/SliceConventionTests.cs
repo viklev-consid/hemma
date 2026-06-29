@@ -130,6 +130,61 @@ public sealed class SliceConventionTests
     }
 
     [Fact]
+    public void FeatureSliceTypes_MustUseIntentNamedNamespaces()
+    {
+        var sliceTypeSuffixes = new[]
+        {
+            "Command",
+            "Query",
+            "Handler",
+            "Endpoint",
+            "Validator"
+        };
+
+        var violations = allModuleAssemblies
+            .SelectMany(a => a.GetTypes())
+            .Where(t => t.Namespace?.Contains(".Features.") == true)
+            .Where(t => !IsSharedFeatureNamespace(t.Namespace!))
+            .Where(t => !IsLegacyBundledFeatureNamespace(t.Namespace!))
+            .Where(t => sliceTypeSuffixes.Any(suffix => t.Name.EndsWith(suffix, StringComparison.Ordinal)))
+            .Where(t =>
+            {
+                var namespaceParts = t.Namespace!.Split('.');
+                var sliceName = namespaceParts[^1];
+                return !t.Name.StartsWith(sliceName, StringComparison.Ordinal);
+            })
+            .Select(t => $"{t.FullName} should be in a namespace matching its intent name")
+            .ToList();
+
+        Assert.True(violations.Count == 0,
+            "FAIL: Feature slice command/query/handler/endpoint/validator types must be named for their intent folder. " +
+            "Use one folder per intent, e.g. Features/CreateTransfer/CreateTransfer.Command.cs, not broad resource folders " +
+            "such as Features/Transfers/TransferMessages.cs. Shared DTO/helper namespaces are exempt. " +
+            $"Offending types: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void FeatureSliceNamespaces_MustNotContainMultipleMessages()
+    {
+        var violations = allModuleAssemblies
+            .SelectMany(a => a.GetTypes())
+            .Where(t => t.Namespace?.Contains(".Features.") == true)
+            .Where(t => !IsSharedFeatureNamespace(t.Namespace!))
+            .Where(t => !IsLegacyBundledFeatureNamespace(t.Namespace!))
+            .Where(t => t.Name.EndsWith("Command", StringComparison.Ordinal)
+                     || t.Name.EndsWith("Query", StringComparison.Ordinal))
+            .GroupBy(t => t.Namespace!, StringComparer.Ordinal)
+            .Where(g => g.Count() > 1)
+            .Select(g => $"{g.Key}: {string.Join(", ", g.Select(t => t.Name).OrderBy(name => name, StringComparer.Ordinal))}")
+            .ToList();
+
+        Assert.True(violations.Count == 0,
+            "FAIL: A feature slice namespace must contain at most one command or query message. " +
+            "Split bundled resource folders into one intent folder per operation. " +
+            $"Offending namespaces: {string.Join("; ", violations)}");
+    }
+
+    [Fact]
     public void AggregatesAndEntities_MustHaveNoPublicConstructors()
     {
         // Aggregates and entities must only be constructed via static factory methods (e.g. Create(...)).
@@ -158,6 +213,19 @@ public sealed class SliceConventionTests
     // A record class has a compiler-generated '<Clone>$' method. Checking for its presence
     // is the reliable way to detect records via reflection without source-level attributes.
     private static bool IsRecord(Type t) => t.GetMethod("<Clone>$") is not null;
+
+    private static bool IsSharedFeatureNamespace(string @namespace) =>
+        @namespace.Split('.').Any(part =>
+            string.Equals(part, "Shared", StringComparison.Ordinal)
+            || string.Equals(part, "Contracts", StringComparison.Ordinal));
+
+    private static bool IsLegacyBundledFeatureNamespace(string @namespace) =>
+        @namespace is "Hemma.Modules.Economy.Features.Analytics"
+            or "Hemma.Modules.Economy.Features.CategorizationRules"
+            or "Hemma.Modules.Economy.Features.NotificationPreferences"
+            or "Hemma.Modules.Economy.Features.Subscriptions"
+            or "Hemma.Modules.Users.Features.AcceptLegalDocuments"
+            or "Hemma.Modules.Users.Features.CompleteOnboarding";
 
     private static bool InheritsFromGenericBase(Type type, Type genericBase)
     {

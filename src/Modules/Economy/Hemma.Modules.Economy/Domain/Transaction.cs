@@ -48,6 +48,7 @@ public sealed class Transaction : AggregateRoot<TransactionId>
     public string? ReceiptBlobKey { get; private set; }
     public Guid? SubscriptionId { get; private set; }
     public Guid? PayerId { get; private set; }
+    public Guid? ProjectId { get; private set; }
     public TransferId? TransferId { get; private set; }
     public bool IsTransferOutflow { get; private set; }
     public bool IsPending { get; private set; }
@@ -199,6 +200,10 @@ public sealed class Transaction : AggregateRoot<TransactionId>
         ReceiptBlobContainer = null;
         ReceiptBlobKey = null;
     }
+
+    // Links this transaction to a Property project (or clears the link when null).
+    // ProjectId is a bare cross-module reference: no FK, no cross-module validation (mirrors PayerId).
+    public void AssignToProject(Guid? projectId) => ProjectId = projectId;
 
     public void AnonymizePersonalData(Guid userId)
     {

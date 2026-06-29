@@ -1,7 +1,7 @@
+using Hemma.Shared.Infrastructure.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Hemma.Shared.Infrastructure.Http;
 using Wolverine;
 
 namespace Hemma.Modules.Users.Features.GetOnboardingLegalRequirements;

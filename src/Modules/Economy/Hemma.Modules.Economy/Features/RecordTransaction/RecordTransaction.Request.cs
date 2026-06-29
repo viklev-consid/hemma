@@ -1,4 +1,4 @@
-using Hemma.Modules.Economy.Features.Contracts;
+using Hemma.Shared.Contracts;
 
 namespace Hemma.Modules.Economy.Features.RecordTransaction;
 
@@ -6,7 +6,7 @@ public sealed record RecordTransactionRequest(
     Guid HouseholdId,
     Guid AccountId,
     Guid? CategoryId,
-    MoneyRequest Amount,
+    MoneyDto Amount,
     DateOnly OccurredOn,
     string? Note,
     string Kind,

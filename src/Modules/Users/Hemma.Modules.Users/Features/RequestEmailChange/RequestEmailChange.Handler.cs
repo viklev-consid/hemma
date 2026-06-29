@@ -1,11 +1,11 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Hemma.Modules.Users.Contracts.Events;
 using Hemma.Modules.Users.Domain;
 using Hemma.Modules.Users.Persistence;
 using Hemma.Modules.Users.Security;
 using Hemma.Shared.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Wolverine;
 
 namespace Hemma.Modules.Users.Features.RequestEmailChange;

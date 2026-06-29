@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
+using Hemma.Modules.Users.Features.Login;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
-using Hemma.Modules.Users.Features.Login;
 
 namespace Hemma.Api.Infrastructure.OpenApi;
 

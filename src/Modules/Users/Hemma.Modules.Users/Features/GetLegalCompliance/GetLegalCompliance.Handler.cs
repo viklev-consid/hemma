@@ -1,8 +1,8 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Users.Domain;
 using Hemma.Modules.Users.Legal;
 using Hemma.Modules.Users.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Users.Features.GetLegalCompliance;
 

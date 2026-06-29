@@ -1,6 +1,6 @@
 using ErrorOr;
-using ImageMagick;
 using Hemma.Modules.Users.Errors;
+using ImageMagick;
 
 namespace Hemma.Modules.Users.Avatars;
 

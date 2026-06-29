@@ -1,12 +1,12 @@
-using Microsoft.EntityFrameworkCore;
+using Hemma.Modules.Households.Contracts.Events;
 using Hemma.Modules.Notifications.Domain;
 using Hemma.Modules.Notifications.Persistence;
 using Hemma.Modules.Notifications.Templates;
-using Hemma.Modules.Households.Contracts.Events;
 using Hemma.Shared.Infrastructure.Frontend;
 using Hemma.Shared.Infrastructure.Notifications;
 using Hemma.Shared.Infrastructure.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Wolverine.Attributes;
 
 namespace Hemma.Modules.Notifications.Integration.Subscribers;

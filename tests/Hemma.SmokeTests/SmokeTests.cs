@@ -5,6 +5,7 @@ using Hemma.Modules.Users.Domain;
 using Hemma.Modules.Users.Features.Login;
 using Hemma.Modules.Users.Features.Register;
 using Hemma.Modules.Users.Persistence;
+using Hemma.Shared.Contracts;
 using Hemma.Shared.Kernel.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -152,6 +153,18 @@ public sealed class SmokeTests(SmokeTestFixture fixture) : IAsyncLifetime
         AssertEnumSchema(schemas, "PlatformRole", ["admin", "user"]);
         AssertEnumSchema(schemas, "SubscriptionMatchState", ["actual", "predicted", "suggested"]);
         AssertEnumSchema(schemas, "Currency", ["SEK"]);
+        AssertEnumSchema(schemas, "ProjectStatus", ["Planning", "Active", "OnHold", "Done"]);
+        AssertEnumSchema(schemas, "ProjectTaskStatus", ["Todo", "Doing", "Done"]);
+        AssertEnumSchema(schemas, "MaintenanceRecurrenceUnit", ["Month", "Year"]);
+        AssertEnumSchema(schemas, "MaintenanceOccurrenceStatus", ["Upcoming", "Done", "Skipped"]);
+        AssertEnumSchema(schemas, "HistoryEntryType", ["Project", "Maintenance", "Manual"]);
+        AssertEnumSchema(schemas, "ProjectPriority", ["Low", "Medium", "High", "Critical"]);
+        AssertEnumSchema(schemas, "PropertyIssueStatus", ["Open", "InProgress", "Resolved", "Closed"]);
+        AssertEnumSchema(schemas, "PropertyIssueSeverity", ["Low", "Medium", "High", "Critical"]);
+        AssertEnumSchema(schemas, "PropertyTagTargetType", ["Project", "MaintenancePlan", "MaintenanceOccurrence", "Issue", "HistoryEntry"]);
+        AssertEnumSchema(schemas, "PropertyActivityTargetType", ["Project", "MaintenancePlan", "MaintenanceOccurrence", "PropertyIssue", "HistoryEntry"]);
+        AssertEnumSchema(schemas, "PropertyActivityVerb", ["ProjectCreated", "ProjectStatusChanged", "MaintenanceCompleted", "IssueReported", "IssueStatusChanged", "HistoryEntryCreated", "OccurrenceSnoozed"]);
+        AssertEnumSchema(schemas, "TimelineSourceType", ["HistoryEntry"]);
         Assert.Equal(
             "#/components/schemas/HouseholdRole",
             schemas.GetProperty("MyHouseholdItem").GetProperty("properties").GetProperty("role").GetProperty("$ref").GetString());
@@ -161,9 +174,69 @@ public sealed class SmokeTests(SmokeTestFixture fixture) : IAsyncLifetime
         Assert.Equal(
             "#/components/schemas/SubscriptionMatchState",
             schemas.GetProperty("MonthChargeResponse").GetProperty("properties").GetProperty("matchState").GetProperty("$ref").GetString());
+        AssertSchemaType(
+            schemas.GetProperty(nameof(MoneyDto)).GetProperty("properties").GetProperty("amount"),
+            "string");
         Assert.Equal(
-            "string",
-            schemas.GetProperty("MoneyResponse").GetProperty("properties").GetProperty("amount").GetProperty("type").GetString());
+            "#/components/schemas/Currency",
+            schemas.GetProperty(nameof(MoneyDto)).GetProperty("properties").GetProperty("currency").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/ProjectStatus",
+            schemas.GetProperty("ProjectRequest").GetProperty("properties").GetProperty("status").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/ProjectTaskStatus",
+            schemas.GetProperty("ProjectTaskRequest").GetProperty("properties").GetProperty("status").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/MaintenanceRecurrenceUnit",
+            schemas.GetProperty("MaintenancePlanRequest").GetProperty("properties").GetProperty("recurrenceUnit").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/MaintenanceOccurrenceStatus",
+            schemas.GetProperty("MaintenanceOccurrenceResponse").GetProperty("properties").GetProperty("status").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/HistoryEntryType",
+            schemas.GetProperty("HistoryEntryRequest").GetProperty("properties").GetProperty("type").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/ProjectPriority",
+            schemas.GetProperty("ProjectResponse").GetProperty("properties").GetProperty("priority").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/PropertyIssueSeverity",
+            schemas.GetProperty("IssueRequest").GetProperty("properties").GetProperty("severity").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/PropertyIssueStatus",
+            schemas.GetProperty("IssueResponse").GetProperty("properties").GetProperty("status").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/PropertyTagTargetType",
+            schemas.GetProperty("AssignTagsRequest").GetProperty("properties").GetProperty("targetType").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/TimelineSourceType",
+            schemas.GetProperty("TimelineItemResponse").GetProperty("properties").GetProperty("sourceType").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/PropertyActivityVerb",
+            schemas.GetProperty("PropertyActivityItemResponse").GetProperty("properties").GetProperty("verb").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/PropertyActivityTargetType",
+            schemas.GetProperty("PropertyActivityItemResponse").GetProperty("properties").GetProperty("targetType").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/ProjectStatus",
+            schemas.GetProperty("PromoteIssueToProjectRequest").GetProperty("properties").GetProperty("status").GetProperty("$ref").GetString());
+        AssertSchemaType(
+            schemas.GetProperty("IssueResponse").GetProperty("properties").GetProperty("daysOverdue"),
+            "integer");
+        Assert.Equal(
+            "#/components/schemas/ProjectStatus",
+            paths.GetProperty("/v1/property/projects").GetProperty("get").GetProperty("parameters")
+                .EnumerateArray().Single(parameter => string.Equals(parameter.GetProperty("name").GetString(), "status", StringComparison.Ordinal))
+                .GetProperty("schema").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/HistoryEntryType",
+            paths.GetProperty("/v1/property/history").GetProperty("get").GetProperty("parameters")
+                .EnumerateArray().Single(parameter => string.Equals(parameter.GetProperty("name").GetString(), "type", StringComparison.Ordinal))
+                .GetProperty("schema").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/HistoryEntryType",
+            paths.GetProperty("/v1/property/timeline").GetProperty("get").GetProperty("parameters")
+                .EnumerateArray().Single(parameter => string.Equals(parameter.GetProperty("name").GetString(), "type", StringComparison.Ordinal))
+                .GetProperty("schema").GetProperty("$ref").GetString());
 
         var loginStatusEnum = loginResponseSchema
             .GetProperty("properties")
@@ -190,6 +263,18 @@ public sealed class SmokeTests(SmokeTestFixture fixture) : IAsyncLifetime
             .ToArray();
 
         Assert.Equal(expected, values);
+    }
+
+    private static void AssertSchemaType(JsonElement schema, string expected)
+    {
+        var type = schema.GetProperty("type");
+        if (type.ValueKind == JsonValueKind.Array)
+        {
+            Assert.Contains(expected, type.EnumerateArray().Select(value => value.GetString()));
+            return;
+        }
+
+        Assert.Equal(expected, type.GetString());
     }
 
     private sealed record MailpitMessagesResponse(MailpitMessage[]? Messages, int Total);

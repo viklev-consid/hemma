@@ -1,7 +1,7 @@
 using ErrorOr;
 using Hemma.Modules.Economy.Domain;
-using Hemma.Modules.Economy.Features.Contracts;
 using Hemma.Modules.Economy.Persistence;
+using Hemma.Shared.Contracts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Economy.Features.ListTransactions;

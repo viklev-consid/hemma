@@ -12,6 +12,8 @@
     <ProjectReference Include="..\Hemma.Modules.Economy.Contracts\Hemma.Modules.Economy.Contracts.csproj" />
     <ProjectReference Include="..\..\Households\Hemma.Modules.Households.Contracts\Hemma.Modules.Households.Contracts.csproj" />
     <ProjectReference Include="..\..\Users\Hemma.Modules.Users.Contracts\Hemma.Modules.Users.Contracts.csproj" />
+    <ProjectReference Include="..\..\Property\Hemma.Modules.Property.Contracts\Hemma.Modules.Property.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Hemma.Shared.Contracts\Hemma.Shared.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Shared\Hemma.Shared.Infrastructure\Hemma.Shared.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\Shared\Hemma.Shared.Kernel\Hemma.Shared.Kernel.csproj" />
   </ItemGroup>

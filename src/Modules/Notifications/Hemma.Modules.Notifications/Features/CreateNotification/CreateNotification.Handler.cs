@@ -1,5 +1,4 @@
 using ErrorOr;
-using Microsoft.EntityFrameworkCore;
 using Hemma.Modules.Notifications.Contracts.Commands;
 using Hemma.Modules.Notifications.Contracts.Dtos;
 using Hemma.Modules.Notifications.Domain;
@@ -10,6 +9,7 @@ using Hemma.Modules.Notifications.Policies;
 using Hemma.Modules.Notifications.Streaming;
 using Hemma.Shared.Infrastructure.Persistence;
 using Hemma.Shared.Kernel.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hemma.Modules.Notifications.Features.CreateNotification;
 
