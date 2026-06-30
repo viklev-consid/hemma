@@ -31,6 +31,7 @@ using Hemma.Modules.Economy.Features.NotificationPreferences;
 using Hemma.Modules.Economy.Features.RecordTransaction;
 using Hemma.Modules.Economy.Features.SearchTransactionNote;
 using Hemma.Modules.Economy.Features.Subscriptions;
+using Hemma.Modules.Economy.Features.UpdateTransaction;
 using Hemma.Modules.Economy.Features.UpsertBudgetLine;
 using Hemma.Modules.Economy.Jobs;
 using Hemma.Modules.Economy.Persistence;
@@ -317,6 +318,129 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
             $"/v1/economy/transactions/search?householdId={household.Id.Value}&search=receipt");
         Assert.NotNull(search);
         Assert.Single(search.Transactions);
+    }
+
+    [Fact]
+    public async Task Transactions_CanUpdateDetails()
+    {
+        var ownerId = Guid.NewGuid();
+        var payerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "update-transaction");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var checking = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var savings = await CreateAccountAsync(client, household.Id.Value, "Savings", "Savings", 0);
+        var groceries = await AddBudgetCategoryAsync(client, household.Id.Value, "Groceries");
+        var salary = await AddBudgetCategoryAsync(client, household.Id.Value, "Salary");
+        var transaction = await RecordTransactionAsync(
+            client,
+            household.Id.Value,
+            checking.AccountId,
+            groceries.CategoryId,
+            125,
+            new DateOnly(2026, 6, 5),
+            "ICA receipt",
+            "Expense");
+
+        var updated = await client.PutAsJsonAsync(
+            $"/v1/economy/transactions/{transaction.TransactionId}",
+            new UpdateTransactionRequest(
+                household.Id.Value,
+                savings.AccountId,
+                salary.CategoryId,
+                new MoneyDto(2500, "SEK"),
+                new DateOnly(2026, 6, 25),
+                "Paycheck",
+                "Income",
+                payerId));
+
+        Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
+        var body = await updated.Content.ReadFromJsonAsync<TransactionResponse>();
+        Assert.NotNull(body);
+        Assert.Equal(savings.AccountId, body.AccountId);
+        Assert.Equal(salary.CategoryId, body.CategoryId);
+        Assert.Equal(2500, body.Amount.Amount);
+        Assert.Equal(new DateOnly(2026, 6, 25), body.OccurredOn);
+        Assert.Equal("Paycheck", body.Note);
+        Assert.Equal("Income", body.Kind);
+        Assert.Equal(payerId, body.PayerId);
+
+        var listed = await client.GetFromJsonAsync<ListTransactionsResponse>(
+            $"/v1/economy/transactions?householdId={household.Id.Value}");
+        Assert.NotNull(listed);
+        Assert.Equal("Paycheck", Assert.Single(listed.Transactions).Note);
+    }
+
+    [Fact]
+    public async Task Transactions_CanDelete()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "delete-transaction");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var transaction = await RecordTransactionAsync(
+            client,
+            household.Id.Value,
+            account.AccountId,
+            125,
+            new DateOnly(2026, 6, 5),
+            "Remove me");
+
+        var deleted = await client.DeleteAsync(
+            $"/v1/economy/transactions/{transaction.TransactionId}?householdId={household.Id.Value}");
+
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+        var listed = await client.GetFromJsonAsync<ListTransactionsResponse>(
+            $"/v1/economy/transactions?householdId={household.Id.Value}");
+        Assert.NotNull(listed);
+        Assert.Empty(listed.Transactions);
+    }
+
+    [Fact]
+    public async Task Transactions_RejectTransferLegUpdateAndDelete()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "transfer-crud-rejected");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var checking = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var savings = await CreateAccountAsync(client, household.Id.Value, "Savings", "Savings", 0);
+
+        var created = await client.PostAsJsonAsync(
+            "/v1/economy/transfers",
+            new CreateTransferRequest(
+                household.Id.Value,
+                checking.AccountId,
+                savings.AccountId,
+                new MoneyDto(250, "SEK"),
+                new DateOnly(2026, 6, 5),
+                "Move money",
+                "Neutral",
+                null,
+                ownerId));
+        created.EnsureSuccessStatusCode();
+        var transfer = await created.Content.ReadFromJsonAsync<CreateTransferResponse>();
+        Assert.NotNull(transfer);
+
+        var update = await client.PutAsJsonAsync(
+            $"/v1/economy/transactions/{transfer.Outflow.TransactionId}",
+            new UpdateTransactionRequest(
+                household.Id.Value,
+                checking.AccountId,
+                null,
+                new MoneyDto(300, "SEK"),
+                new DateOnly(2026, 6, 6),
+                "Changed transfer leg",
+                "Expense",
+                ownerId));
+
+        Assert.Equal(HttpStatusCode.Conflict, update.StatusCode);
+
+        var delete = await client.DeleteAsync(
+            $"/v1/economy/transactions/{transfer.Outflow.TransactionId}?householdId={household.Id.Value}");
+
+        Assert.Equal(HttpStatusCode.Conflict, delete.StatusCode);
     }
 
     [Fact]

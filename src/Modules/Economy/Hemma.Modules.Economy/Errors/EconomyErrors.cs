@@ -56,6 +56,9 @@ internal static class EconomyErrors
     public static readonly ErrorOr.Error TransactionKindInvalid =
         ErrorOr.Error.Validation("Economy.Transaction.KindInvalid", "Transaction kind must be Expense or Income.");
 
+    public static readonly ErrorOr.Error TransactionTransferMutationNotAllowed =
+        ErrorOr.Error.Conflict("Economy.Transaction.TransferMutationNotAllowed", "Transfer transactions cannot be edited or deleted through transaction endpoints.");
+
     public static readonly ErrorOr.Error TransactionNotPending =
         ErrorOr.Error.Conflict("Economy.Transaction.NotPending", "Transaction is not pending confirmation.");
 

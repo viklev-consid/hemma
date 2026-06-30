@@ -205,6 +205,50 @@ public sealed class Transaction : AggregateRoot<TransactionId>
     // ProjectId is a bare cross-module reference: no FK, no cross-module validation (mirrors PayerId).
     public void AssignToProject(Guid? projectId) => ProjectId = projectId;
 
+    public ErrorOr<Success> UpdateDetails(
+        Account account,
+        Category? category,
+        Money amount,
+        DateOnly occurredOn,
+        string? note,
+        TransactionKind kind,
+        Guid? payerId)
+    {
+        if (TransferId is not null || kind == TransactionKind.Transfer)
+        {
+            return EconomyErrors.TransactionTransferMutationNotAllowed;
+        }
+
+        if (account.HouseholdId != HouseholdId)
+        {
+            return EconomyErrors.AccountNotFound;
+        }
+
+        if (category is not null && category.HouseholdId != HouseholdId)
+        {
+            return EconomyErrors.CategoryNotFound;
+        }
+
+        AccountId = account.Id;
+        CategoryId = category?.Id;
+        Amount = amount;
+        OccurredOn = occurredOn;
+        Note = NormalizeNote(note);
+        Kind = kind;
+        PayerId = payerId;
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> EnsureCanDelete()
+    {
+        if (TransferId is not null)
+        {
+            return EconomyErrors.TransactionTransferMutationNotAllowed;
+        }
+
+        return Result.Success;
+    }
+
     public void AnonymizePersonalData(Guid userId)
     {
         if (!IsPersonalDataFor(userId))
