@@ -157,44 +157,52 @@ public sealed class RecurringBill : AggregateRoot<RecurringBillId>
         return transaction.Value;
     }
 
-    public ErrorOr<Transaction> CreatePending(Account account, Category? category, DateOnly dueOn)
+    public ErrorOr<RecurringBillOccurrence> CreatePending(DateOnly dueOn)
     {
         if (!CanRun(dueOn) || Type != RecurringBillType.Estimated)
         {
             return EconomyErrors.RecurringBillOccurrenceInvalid;
         }
 
-        var transaction = Transaction.RecordPending(
-            HouseholdId,
-            account,
-            category,
-            Amount,
-            dueOn,
-            Note ?? Name,
-            Direction.ToTransactionKind(),
-            payerId: null);
-        if (transaction.IsError)
-        {
-            return transaction.Errors;
-        }
-
-        occurrences.Add(RecurringBillOccurrence.Pending(Id, dueOn, transaction.Value.Id));
+        var occurrence = RecurringBillOccurrence.Pending(Id, dueOn);
+        occurrences.Add(occurrence);
         AdvanceNextDueOn(dueOn);
-        return transaction.Value;
+        return occurrence;
     }
 
-    public ErrorOr<Success> ConfirmPending(Transaction transaction)
+    public ErrorOr<Success> ConfirmPending(DateOnly dueOn, Transaction transaction)
     {
         var occurrence = occurrences.SingleOrDefault(x =>
-            x.TransactionId == transaction.Id &&
+            x.DueOn == dueOn &&
             x.State == RecurringBillOccurrenceState.Pending);
         if (occurrence is null)
         {
             return EconomyErrors.TransactionNotPending;
         }
 
+        if (transaction.HouseholdId != HouseholdId ||
+            transaction.AccountId != AccountId ||
+            !string.Equals(transaction.Amount.Currency, Amount.Currency, StringComparison.OrdinalIgnoreCase) ||
+            transaction.Kind != Direction.ToTransactionKind())
+        {
+            return EconomyErrors.RecurringBillOccurrenceInvalid;
+        }
+
         occurrence.Confirm(transaction.Id);
         return Result.Success;
+    }
+
+    public ErrorOr<Success> ConfirmPending(Guid occurrenceId, Transaction transaction)
+    {
+        var occurrence = occurrences.SingleOrDefault(x =>
+            x.Id == occurrenceId &&
+            x.State == RecurringBillOccurrenceState.Pending);
+        if (occurrence is null)
+        {
+            return EconomyErrors.TransactionNotPending;
+        }
+
+        return ConfirmPending(occurrence.DueOn, transaction);
     }
 
     public bool IsDue(DateOnly date) => NextDueOn <= date;

@@ -45,7 +45,7 @@ internal static class ConfirmEstimatedBillEndpoint
                     new ConfirmEstimatedBillCommand(
                         request.HouseholdId,
                         recurringBillId,
-                        request.TransactionId,
+                        request.OccurrenceId,
                         request.Amount.Amount,
                         request.Amount.Currency,
                         request.OccurredOn),
@@ -53,7 +53,7 @@ internal static class ConfirmEstimatedBillEndpoint
                 return result.ToProblemDetailsOr(Results.Ok);
             })
         .WithName("ConfirmEconomyEstimatedBill")
-        .WithSummary("Confirm a pending estimated recurring bill with the actual amount.")
+        .WithSummary("Settle a pending estimated recurring bill occurrence with the actual amount.")
         .Produces<TransactionResponse>(StatusCodes.Status200OK)
         .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
         .RequireAuthorization();

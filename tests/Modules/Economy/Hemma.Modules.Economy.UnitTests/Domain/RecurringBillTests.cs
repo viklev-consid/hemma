@@ -53,7 +53,7 @@ public sealed class RecurringBillTests
     }
 
     [Fact]
-    public void EstimatedDue_CreatesPendingTransaction()
+    public void EstimatedDue_CreatesPendingOccurrence()
     {
         var householdId = Guid.NewGuid();
         var account = Account.Create(householdId, "Checking", AccountType.Spending, Money.Create(0, "SEK").Value).Value;
@@ -69,10 +69,11 @@ public sealed class RecurringBillTests
             new DateOnly(2026, 6, 1),
             null).Value;
 
-        var pending = bill.CreatePending(account, null, new DateOnly(2026, 6, 15));
+        var pending = bill.CreatePending(new DateOnly(2026, 6, 15));
 
         Assert.False(pending.IsError);
-        Assert.True(pending.Value.IsPending);
+        Assert.Equal(RecurringBillOccurrenceState.Pending, pending.Value.State);
+        Assert.Null(pending.Value.TransactionId);
         Assert.Equal(new DateOnly(2026, 7, 15), bill.NextDueOn);
     }
 

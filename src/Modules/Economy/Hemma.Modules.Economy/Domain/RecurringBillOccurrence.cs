@@ -24,6 +24,9 @@ public sealed class RecurringBillOccurrence
     public RecurringBillOccurrenceState State { get; private set; } = null!;
     public TransactionId? TransactionId { get; private set; }
 
+    public static RecurringBillOccurrence Pending(RecurringBillId recurringBillId, DateOnly dueOn) =>
+        new(Guid.NewGuid(), recurringBillId, dueOn, RecurringBillOccurrenceState.Pending, null);
+
     public static RecurringBillOccurrence Pending(RecurringBillId recurringBillId, DateOnly dueOn, TransactionId transactionId) =>
         new(Guid.NewGuid(), recurringBillId, dueOn, RecurringBillOccurrenceState.Pending, transactionId);
 

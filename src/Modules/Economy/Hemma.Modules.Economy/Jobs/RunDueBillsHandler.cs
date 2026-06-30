@@ -85,23 +85,22 @@ public sealed partial class RunDueBillsHandler(EconomyDbContext db, IClock clock
             }
             else
             {
-                var pending = bill.CreatePending(account, category, bill.NextDueOn);
+                var pending = bill.CreatePending(bill.NextDueOn);
                 if (pending.IsError)
                 {
                     break;
                 }
 
-                db.Transactions.Add(pending.Value);
-                db.Entry(bill.Occurrences.Single(x => x.TransactionId == pending.Value.Id)).State = EntityState.Added;
+                db.Entry(pending.Value).State = EntityState.Added;
                 pendingEvents.Add(new EstimatedBillPendingV1(
                     bill.Id.Value,
-                    pending.Value.Id.Value,
+                    TransactionId: null,
                     bill.HouseholdId,
                     bill.AccountId.Value,
                     bill.CategoryId?.Value,
-                    pending.Value.Amount.Amount,
-                    pending.Value.Amount.Currency,
-                    pending.Value.OccurredOn,
+                    bill.Amount.Amount,
+                    bill.Amount.Currency,
+                    pending.Value.DueOn,
                     Guid.NewGuid()));
             }
         }
