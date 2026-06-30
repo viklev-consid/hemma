@@ -43,7 +43,9 @@ public sealed class CommitImportHandler(EconomyDbContext db, EconomyAuditPublish
             ? []
             : await db.RecurringBills
                 .Include(x => x.Occurrences.Where(occurrence => recurringBillOccurrenceIds.Contains(occurrence.Id)))
-                .Where(x => x.HouseholdId == cmd.HouseholdId && x.AccountId == account.Id)
+                .Where(x => x.HouseholdId == cmd.HouseholdId &&
+                            x.AccountId == account.Id &&
+                            x.Occurrences.Any(occurrence => recurringBillOccurrenceIds.Contains(occurrence.Id)))
                 .ToListAsync(ct);
         var recurringBillByOccurrenceId = recurringBills
             .SelectMany(bill => bill.Occurrences.Select(occurrence => new { occurrence.Id, Bill = bill }))
@@ -67,6 +69,7 @@ public sealed class CommitImportHandler(EconomyDbContext db, EconomyAuditPublish
         var transactions = new List<Transaction>();
         var suggestions = new List<ImportRuleSuggestionResponse>();
         var duplicateCount = 0;
+        var skippedRecurringBillLinkCount = 0;
 
         foreach (var row in cmd.Rows)
         {
@@ -125,17 +128,31 @@ public sealed class CommitImportHandler(EconomyDbContext db, EconomyAuditPublish
                 return transaction.Errors;
             }
 
+            var shouldLinkRecurringBill = false;
             if (row.RecurringBillOccurrenceId is not null)
             {
-                var confirmed = selectedRecurringBill!.ConfirmPending(row.RecurringBillOccurrenceId.Value, transaction.Value);
-                if (confirmed.IsError)
+                var selectedOccurrence = selectedRecurringBill!.Occurrences.Single(x => x.Id == row.RecurringBillOccurrenceId.Value);
+                if (selectedOccurrence.State == RecurringBillOccurrenceState.Pending)
                 {
-                    return confirmed.Errors;
+                    shouldLinkRecurringBill = true;
+                }
+                else
+                {
+                    skippedRecurringBillLinkCount++;
                 }
             }
 
             transactions.Add(transaction.Value);
             existingFingerprintSet.Add(rowFingerprint);
+
+            if (shouldLinkRecurringBill)
+            {
+                var confirmed = selectedRecurringBill!.ConfirmPending(row.RecurringBillOccurrenceId!.Value, transaction.Value);
+                if (confirmed.IsError)
+                {
+                    return confirmed.Errors;
+                }
+            }
 
             if (row.CategoryId is not null && ruleCategory is null)
             {
@@ -152,6 +169,10 @@ public sealed class CommitImportHandler(EconomyDbContext db, EconomyAuditPublish
         {
             await db.SaveChangesAsync(ct);
         }
+        catch (DbUpdateConcurrencyException)
+        {
+            return EconomyErrors.ConcurrencyConflict;
+        }
         catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
         {
             db.ChangeTracker.Clear();
@@ -165,7 +186,8 @@ public sealed class CommitImportHandler(EconomyDbContext db, EconomyAuditPublish
             transactions.Count,
             duplicateCount,
             transactions.Select(TransactionResponse.From).ToList(),
-            suggestions);
+            suggestions,
+            skippedRecurringBillLinkCount);
     }
 
     private static string? FirstSuggestionToken(string description)

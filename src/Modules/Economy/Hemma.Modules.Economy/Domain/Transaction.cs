@@ -127,26 +127,6 @@ public sealed class Transaction : AggregateRoot<TransactionId>
             importFingerprint.Trim());
     }
 
-    public static ErrorOr<Transaction> RecordPending(
-        Guid householdId,
-        Account account,
-        Category? category,
-        Money amount,
-        DateOnly occurredOn,
-        string? note,
-        TransactionKind kind,
-        Guid? payerId)
-    {
-        var transaction = Record(householdId, account, category, amount, occurredOn, note, kind, payerId);
-        if (transaction.IsError)
-        {
-            return transaction.Errors;
-        }
-
-        transaction.Value.IsPending = true;
-        return transaction;
-    }
-
     public static ErrorOr<Transaction> CreateTransferLeg(
         Guid householdId,
         Account account,
@@ -262,24 +242,6 @@ public sealed class Transaction : AggregateRoot<TransactionId>
     }
 
     public bool IsPersonalDataFor(Guid userId) => PayerId == userId;
-
-    public ErrorOr<Success> ConfirmPending(Money amount, DateOnly occurredOn)
-    {
-        if (!IsPending)
-        {
-            return EconomyErrors.TransactionNotPending;
-        }
-
-        if (!string.Equals(Amount.Currency, amount.Currency, StringComparison.OrdinalIgnoreCase))
-        {
-            return EconomyErrors.CurrencyMismatch;
-        }
-
-        Amount = amount;
-        OccurredOn = occurredOn;
-        IsPending = false;
-        return Result.Success;
-    }
 
     public ErrorOr<Success> LinkToSubscription(Guid subscriptionId)
     {

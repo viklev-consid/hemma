@@ -94,7 +94,7 @@ public sealed partial class RunDueBillsHandler(EconomyDbContext db, IClock clock
                 db.Entry(pending.Value).State = EntityState.Added;
                 pendingEvents.Add(new EstimatedBillPendingV1(
                     bill.Id.Value,
-                    TransactionId: null,
+                    pending.Value.Id,
                     bill.HouseholdId,
                     bill.AccountId.Value,
                     bill.CategoryId?.Value,

@@ -64,7 +64,15 @@ public sealed class ConfirmEstimatedBillHandler(EconomyDbContext db, EconomyAudi
         }
 
         db.Transactions.Add(transaction.Value);
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return EconomyErrors.ConcurrencyConflict;
+        }
+
         await audit.PublishAsync(transaction.Value.HouseholdId, "economy.recurring_bill.estimated_confirmed", "Transaction", transaction.Value.Id.Value, null, ct);
         return TransactionResponse.From(transaction.Value);
     }

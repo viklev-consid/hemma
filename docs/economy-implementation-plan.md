@@ -197,7 +197,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 - Estimated creates a pending occurrence without a transaction; manual confirm creates the real transaction at the entered amount and links it to the occurrence.
 - Income recurrence posts `Kind = Income`.
 
-**Events published:** `EstimatedBillPendingV1` (→ Notifications).
+**Events published:** `EstimatedBillPendingV1` (→ Notifications), carrying the pending occurrence id.
 
 **Acceptance:**
 - Fixed monthly 119 → exactly one transaction per cycle on the configured day.
@@ -246,6 +246,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 - Re-importing the same file flags every row as duplicate; none double-committed.
 - `Contains "ICA"` rule auto-assigns Mat on import.
 - Linking an imported row to a pending recurring-bill occurrence settles the occurrence without creating a duplicate budget actual.
+- If a selected recurring-bill occurrence is already settled by commit time, the row still imports and the stale link is reported as skipped.
 - Hand-categorizing during preview offers a persistable rule on commit.
 - Rule count and normalized row field lengths are bounded so a 1000-row import cannot trigger unbounded CPU or memory work.
 - Import scoped to exactly one account.

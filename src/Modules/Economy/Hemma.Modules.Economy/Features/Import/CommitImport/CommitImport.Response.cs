@@ -7,4 +7,5 @@ public sealed record CommitImportResponse(
     int ImportedCount,
     int DuplicateCount,
     IReadOnlyList<TransactionResponse> Transactions,
-    IReadOnlyList<ImportRuleSuggestionResponse> SuggestedRules);
+    IReadOnlyList<ImportRuleSuggestionResponse> SuggestedRules,
+    int SkippedRecurringBillLinkCount = 0);

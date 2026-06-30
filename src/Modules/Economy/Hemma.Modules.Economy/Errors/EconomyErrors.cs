@@ -130,4 +130,7 @@ internal static class EconomyErrors
 
     public static readonly ErrorOr.Error TransactionAlreadyLinked =
         ErrorOr.Error.Conflict("Economy.Transaction.AlreadyLinked", "Transaction is already linked to another subscription. Unlink it first.");
+
+    public static readonly ErrorOr.Error ConcurrencyConflict =
+        ErrorOr.Error.Conflict("Economy.ConcurrencyConflict", "The economy record was modified concurrently. Retry the operation.");
 }

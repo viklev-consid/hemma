@@ -198,13 +198,17 @@ public sealed class PreviewImportHandler(EconomyDbContext db)
             return false;
         }
 
-        return Contains(description, bill.Name) ||
-               (!string.IsNullOrWhiteSpace(bill.Note) && Contains(description, bill.Note));
+        return ContainsNormalized(description, bill.Name) ||
+               (!string.IsNullOrWhiteSpace(bill.Note) && ContainsNormalized(description, bill.Note));
     }
 
-    private static bool Contains(string value, string pattern) =>
-        value.Contains(pattern, StringComparison.OrdinalIgnoreCase) ||
-        pattern.Contains(value, StringComparison.OrdinalIgnoreCase);
+    private static bool ContainsNormalized(string value, string pattern)
+    {
+        var normalizedValue = ImportFingerprint.NormalizeDescription(value);
+        var normalizedPattern = ImportFingerprint.NormalizeDescription(pattern);
+        return normalizedPattern.Length >= 3 &&
+               normalizedValue.Contains(normalizedPattern, StringComparison.OrdinalIgnoreCase);
+    }
 
     private static List<ImportRowValidationErrorResponse> ValidateRow(NormalizedImportRowRequest row)
     {
