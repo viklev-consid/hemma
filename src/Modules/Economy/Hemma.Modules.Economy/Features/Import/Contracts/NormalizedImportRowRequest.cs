@@ -12,4 +12,5 @@ public sealed record NormalizedImportRowRequest(
     string? Reference,
     MoneyDto? BalanceAfter,
     string? RawDescription,
-    Guid? CategoryId);
+    Guid? CategoryId,
+    Guid? RecurringBillOccurrenceId = null);

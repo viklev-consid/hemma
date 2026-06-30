@@ -175,7 +175,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 
 ## Phase 3 — Recurring bills
 
-**Goal:** fixed (auto-record) + estimated (pending → confirm) recurring charges; recurring income. Scheduling via TickerQ.
+**Goal:** fixed (auto-record) + estimated (pending occurrence → settle) recurring charges; recurring income. Scheduling via TickerQ.
 
 **Prerequisites:** Phase 2 green.
 
@@ -186,7 +186,7 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 | Slice | Type | Notes |
 |---|---|---|
 | `CreateRecurringBill` | Command | Fixed/Estimated; Expense/Income |
-| `ConfirmEstimatedBill` | Command | real amount → posts actual transaction; clears pending |
+| `ConfirmEstimatedBill` | Command | real amount → posts actual transaction; settles pending occurrence |
 | `SkipOccurrence` | Command | single instance |
 | `PauseOccurrence` / `Resume` | Command | single instance |
 | `ListRecurringBills` | Query | next due + pending-confirm inbox; must not eager-load historical occurrences |
@@ -194,14 +194,14 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 
 ### Invariant enforcement
 - Fixed auto-posts a real transaction on due date.
-- Estimated creates a *pending* transaction (not in actuals) until confirm; confirm replaces with real transaction at entered amount.
+- Estimated creates a pending occurrence without a transaction; manual confirm creates the real transaction at the entered amount and links it to the occurrence.
 - Income recurrence posts `Kind = Income`.
 
 **Events published:** `EstimatedBillPendingV1` (→ Notifications).
 
 **Acceptance:**
 - Fixed monthly 119 → exactly one transaction per cycle on the configured day.
-- Estimated shows pending, doesn't affect actuals until confirmed.
+- Estimated shows pending, doesn't affect actuals until settled.
 - Skipping one occurrence doesn't affect later ones.
 - Due-bill processing is per bill and idempotent on `(RecurringBillId, DueOn)` overlap; a bad bill does not abort the batch.
 
@@ -223,17 +223,17 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 ### Contract
 - Backend accepts normalized import rows, not bank-specific CSV files.
 - Required mapped fields: `OccurredOn`, `Amount`, `Description`.
-- Optional mapped fields: `Currency`, `Counterparty`, `Reference`, `BalanceAfter`, `RawDescription`.
+- Optional mapped fields: `Currency`, `Counterparty`, `Reference`, `BalanceAfter`, `RawDescription`, `CategoryId`, `RecurringBillOccurrenceId`.
 - Frontend is responsible for CSV parsing, date/decimal format handling, and mapping source columns to these fields before calling the backend.
-- Backend returns row-level validation errors so the frontend can let users fix mapped rows before commit.
+- Backend returns row-level validation errors and recurring bill match suggestions so the frontend can let users fix mapped rows and choose whether an imported row settles a pending bill occurrence before commit.
 - `PreviewImport` is stateless: it returns enriched rows plus a deterministic `previewFingerprint` derived from the normalized accepted rows and target account.
 - `CommitImport` resubmits the accepted normalized rows plus the `previewFingerprint`; the backend recomputes and rejects if the payload changed unexpectedly. Do not persist server-side preview sessions unless a later requirement forces it.
 
 ### Slices
 | Slice | Type | Notes |
 |---|---|---|
-| `PreviewImport` | Query | normalized rows + running balance + duplicate flags + row validation + auto-applied categories + `previewFingerprint` |
-| `CommitImport` | Command | accepted normalized rows + `previewFingerprint`; create transactions; apply rules; suggest new rules |
+| `PreviewImport` | Query | normalized rows + running balance + duplicate flags + row validation + auto-applied categories + pending recurring-bill suggestions + `previewFingerprint` |
+| `CommitImport` | Command | accepted normalized rows + `previewFingerprint`; create transactions; apply rules; settle selected recurring-bill occurrences; suggest new rules |
 | `ManageCategorizationRules` | Command(s) | CRUD + enable/disable |
 | `ListCategorizationRules` | Query | |
 
@@ -245,13 +245,14 @@ Queries are read-only and must not mutate. Commands mutate through domain aggreg
 - Commit rejects when the submitted rows do not match the preview fingerprint.
 - Re-importing the same file flags every row as duplicate; none double-committed.
 - `Contains "ICA"` rule auto-assigns Mat on import.
+- Linking an imported row to a pending recurring-bill occurrence settles the occurrence without creating a duplicate budget actual.
 - Hand-categorizing during preview offers a persistable rule on commit.
 - Rule count and normalized row field lengths are bounded so a 1000-row import cannot trigger unbounded CPU or memory work.
 - Import scoped to exactly one account.
 
 **Decisions:** CSV parsing and field mapping are frontend responsibilities; categorization rules are household-wide; each import is scoped to exactly one account.
 
-**API surface published this phase:** `/v1/economy/import/preview`, `/v1/economy/import/commit`, `/v1/economy/categorization-rules` (CRUD/list). Update OpenAPI. **Flag to frontend agent:** import is a multi-step flow over normalized mapped rows — preview returns rows with `duplicateState`, `suggestedCategoryId`, row-level validation errors, and `previewFingerprint`; commit resubmits accepted rows plus that fingerprint.
+**API surface published this phase:** `/v1/economy/import/preview`, `/v1/economy/import/commit`, `/v1/economy/categorization-rules` (CRUD/list). Update OpenAPI. **Flag to frontend agent:** import is a multi-step flow over normalized mapped rows — preview returns rows with `duplicateState`, `suggestedCategoryId`, `suggestedRecurringBillMatches`, row-level validation errors, and `previewFingerprint`; commit resubmits accepted rows plus that fingerprint and may include `recurringBillOccurrenceId` selections.
 
 ---
 

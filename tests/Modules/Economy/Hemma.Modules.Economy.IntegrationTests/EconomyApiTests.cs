@@ -593,7 +593,8 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
             $"/v1/economy/recurring-bills?householdId={household.Id.Value}");
         Assert.NotNull(pendingList);
         var pending = Assert.Single(pendingList.RecurringBills.Single(x => x.RecurringBillId == bill.RecurringBillId).PendingOccurrences);
-        Assert.NotNull(pending.TransactionId);
+        Assert.NotEqual(Guid.Empty, pending.OccurrenceId);
+        Assert.Null(pending.TransactionId);
 
         var balancesBefore = await client.GetFromJsonAsync<GetAccountBalancesResponse>(
             $"/v1/economy/accounts/balances?householdId={household.Id.Value}");
@@ -604,7 +605,7 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
             $"/v1/economy/recurring-bills/{bill.RecurringBillId}/confirm",
             new ConfirmEstimatedBillRequest(
                 household.Id.Value,
-                pending.TransactionId.Value,
+                pending.OccurrenceId,
                 new MoneyDto(650, "SEK"),
                 new DateOnly(2026, 6, 6)));
         confirmed.EnsureSuccessStatusCode();
@@ -745,6 +746,83 @@ public sealed class EconomyApiTests(EconomyApiFixture fixture) : IAsyncLifetime
         Assert.NotNull(reimportBody);
         Assert.Equal(0, reimportBody.ImportedCount);
         Assert.Equal(2, reimportBody.DuplicateCount);
+    }
+
+    [Fact]
+    public async Task ImportCommit_WhenRowLinksPendingRecurringBill_SettlesOccurrenceWithoutDuplicateBudgetActual()
+    {
+        var ownerId = Guid.NewGuid();
+        var household = await CreateHouseholdAsync(ownerId, "Acme", "acme");
+        using var client = fixture.CreateAuthenticatedClient(ownerId, "owner@example.com", "Owner");
+        await CreateSettingsAsync(client, household.Id.Value);
+        var account = await CreateAccountAsync(client, household.Id.Value, "Checking", "Spending", 1000);
+        var category = await AddBudgetCategoryAsync(client, household.Id.Value, "Utilities");
+        var budget = await CreateBudgetAsync(client, household.Id.Value, new DateOnly(2026, 6, 5));
+        var budgetLine = await client.PutAsJsonAsync(
+            "/v1/economy/budgets/lines",
+            new UpsertBudgetLineRequest(household.Id.Value, budget.BudgetId, category.CategoryId, new MoneyDto(1000, "SEK")));
+        budgetLine.EnsureSuccessStatusCode();
+        var bill = await CreateRecurringBillAsync(
+            client,
+            household.Id.Value,
+            account.AccountId,
+            category.CategoryId,
+            "Electricity",
+            "Estimated",
+            "Expense",
+            500,
+            new DateOnly(2026, 6, 1),
+            5);
+
+        var bus = fixture.Services.GetRequiredService<IMessageBus>();
+        await bus.InvokeAsync(new RunDueBills(new DateOnly(2026, 6, 5)), CancellationToken.None);
+
+        var importRows = new[]
+        {
+            new NormalizedImportRowRequest(1, new DateOnly(2026, 6, 6), -650m, "Electricity actual", "SEK", null, "EL-1", null, null, null)
+        };
+        var previewResponse = await client.PostAsJsonAsync(
+            "/v1/economy/import/preview",
+            new PreviewImportRequest(household.Id.Value, account.AccountId, importRows));
+        previewResponse.EnsureSuccessStatusCode();
+        var preview = await previewResponse.Content.ReadFromJsonAsync<PreviewImportResponse>();
+        Assert.NotNull(preview);
+        var match = Assert.Single(Assert.Single(preview.Rows).SuggestedRecurringBillMatches);
+        Assert.Equal(bill.RecurringBillId, match.RecurringBillId);
+
+        var commitRows = importRows
+            .Select(row => row with { RecurringBillOccurrenceId = match.OccurrenceId })
+            .ToArray();
+        var committed = await client.PostAsJsonAsync(
+            "/v1/economy/import/commit",
+            new CommitImportRequest(household.Id.Value, account.AccountId, preview.PreviewFingerprint, commitRows));
+        committed.EnsureSuccessStatusCode();
+        var commitBody = await committed.Content.ReadFromJsonAsync<CommitImportResponse>();
+        Assert.NotNull(commitBody);
+        Assert.Equal(1, commitBody.ImportedCount);
+        var transaction = Assert.Single(commitBody.Transactions);
+        Assert.False(transaction.IsPending);
+        Assert.Equal(650, transaction.Amount.Amount);
+
+        var listedTransactions = await client.GetFromJsonAsync<ListTransactionsResponse>(
+            $"/v1/economy/transactions?householdId={household.Id.Value}");
+        Assert.NotNull(listedTransactions);
+        Assert.Single(listedTransactions.Transactions);
+
+        var listedBills = await client.GetFromJsonAsync<ListRecurringBillsResponse>(
+            $"/v1/economy/recurring-bills?householdId={household.Id.Value}");
+        Assert.NotNull(listedBills);
+        Assert.Empty(listedBills.RecurringBills.Single(x => x.RecurringBillId == bill.RecurringBillId).PendingOccurrences);
+
+        var summary = await client.GetFromJsonAsync<GetBudgetSummaryResponse>(
+            $"/v1/economy/budget-summary?householdId={household.Id.Value}&anchorDate=2026-06-06");
+        Assert.NotNull(summary);
+        Assert.Equal(650, summary.Lines.Single(x => x.CategoryId == category.CategoryId).Actual.Amount);
+
+        var balances = await client.GetFromJsonAsync<GetAccountBalancesResponse>(
+            $"/v1/economy/accounts/balances?householdId={household.Id.Value}");
+        Assert.NotNull(balances);
+        Assert.Equal(350, balances.Accounts.Single(x => x.AccountId == account.AccountId).Balance.Amount);
     }
 
     [Fact]

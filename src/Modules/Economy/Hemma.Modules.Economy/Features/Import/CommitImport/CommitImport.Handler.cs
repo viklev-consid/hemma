@@ -34,9 +34,25 @@ public sealed class CommitImportHandler(EconomyDbContext db, EconomyAuditPublish
             .ToListAsync(ct);
         var existingFingerprintSet = existingFingerprints.ToHashSet(StringComparer.Ordinal);
 
+        var recurringBillOccurrenceIds = cmd.Rows
+            .Where(x => x.RecurringBillOccurrenceId is not null)
+            .Select(x => x.RecurringBillOccurrenceId!.Value)
+            .Distinct()
+            .ToList();
+        var recurringBills = recurringBillOccurrenceIds.Count == 0
+            ? []
+            : await db.RecurringBills
+                .Include(x => x.Occurrences.Where(occurrence => recurringBillOccurrenceIds.Contains(occurrence.Id)))
+                .Where(x => x.HouseholdId == cmd.HouseholdId && x.AccountId == account.Id)
+                .ToListAsync(ct);
+        var recurringBillByOccurrenceId = recurringBills
+            .SelectMany(bill => bill.Occurrences.Select(occurrence => new { occurrence.Id, Bill = bill }))
+            .ToDictionary(x => x.Id, x => x.Bill);
+
         var categoryIds = cmd.Rows
             .Where(x => x.CategoryId is not null)
             .Select(x => new CategoryId(x.CategoryId!.Value))
+            .Concat(recurringBills.Where(x => x.CategoryId is not null).Select(x => x.CategoryId!))
             .Distinct()
             .ToList();
         var categories = await db.Categories
@@ -75,7 +91,16 @@ public sealed class CommitImportHandler(EconomyDbContext db, EconomyAuditPublish
 
             Category? category = null;
             var ruleCategory = rules.FirstOrDefault(rule => rule.Matches(row.Description))?.TargetCategoryId;
-            var selectedCategoryId = row.CategoryId is not null ? new CategoryId(row.CategoryId.Value) : ruleCategory;
+            RecurringBill? selectedRecurringBill = null;
+            if (row.RecurringBillOccurrenceId is not null &&
+                !recurringBillByOccurrenceId.TryGetValue(row.RecurringBillOccurrenceId.Value, out selectedRecurringBill))
+            {
+                return EconomyErrors.RecurringBillOccurrenceInvalid;
+            }
+
+            var selectedCategoryId = row.CategoryId is not null
+                ? new CategoryId(row.CategoryId.Value)
+                : selectedRecurringBill?.CategoryId ?? ruleCategory;
             if (selectedCategoryId is not null && !categories.TryGetValue(selectedCategoryId, out category))
             {
                 category = await db.Categories.SingleOrDefaultAsync(x => x.HouseholdId == cmd.HouseholdId && x.Id.Equals(selectedCategoryId), ct);
@@ -98,6 +123,15 @@ public sealed class CommitImportHandler(EconomyDbContext db, EconomyAuditPublish
             if (transaction.IsError)
             {
                 return transaction.Errors;
+            }
+
+            if (row.RecurringBillOccurrenceId is not null)
+            {
+                var confirmed = selectedRecurringBill!.ConfirmPending(row.RecurringBillOccurrenceId.Value, transaction.Value);
+                if (confirmed.IsError)
+                {
+                    return confirmed.Errors;
+                }
             }
 
             transactions.Add(transaction.Value);

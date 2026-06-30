@@ -43,8 +43,18 @@ public sealed class PreviewImportHandler(EconomyDbContext db)
             .OrderBy(x => x.Name)
             .ToListAsync(ct);
 
+        var pendingRecurringBills = await db.RecurringBills
+            .AsNoTracking()
+            .Include(x => x.Occurrences.Where(occurrence => occurrence.State == RecurringBillOccurrenceState.Pending))
+            .Where(x => x.HouseholdId == query.HouseholdId && x.AccountId == accountId)
+            .OrderBy(x => x.Name)
+            .ToListAsync(ct);
+        var pendingOccurrences = pendingRecurringBills
+            .SelectMany(bill => bill.Occurrences.Select(occurrence => new PendingRecurringBillOccurrence(bill, occurrence)))
+            .ToList();
+
         var rows = query.Rows
-            .Select(row => EnrichRow(query.AccountId, row, existingFingerprintSet, possibleDuplicates, rules, subscriptions))
+            .Select(row => EnrichRow(query.AccountId, row, existingFingerprintSet, possibleDuplicates, rules, subscriptions, pendingOccurrences))
             .ToList();
 
         return new PreviewImportResponse(
@@ -60,7 +70,8 @@ public sealed class PreviewImportHandler(EconomyDbContext db)
         HashSet<string> existingFingerprintSet,
         IReadOnlyList<PossibleDuplicate> possibleDuplicates,
         IReadOnlyList<CategorizationRule> rules,
-        IReadOnlyList<Subscription> subscriptions)
+        IReadOnlyList<Subscription> subscriptions,
+        IReadOnlyList<PendingRecurringBillOccurrence> pendingOccurrences)
     {
         var errors = ValidateRow(row);
         var description = row.Description?.Trim();
@@ -98,6 +109,9 @@ public sealed class PreviewImportHandler(EconomyDbContext db)
         var suggestedSubscriptionMatches = row.OccurredOn is not null && row.Amount is not null && !string.IsNullOrWhiteSpace(description)
             ? SuggestSubscriptionMatches(subscriptions, row.OccurredOn.Value, Math.Abs(row.Amount.Value), description)
             : [];
+        var suggestedRecurringBillMatches = row.OccurredOn is not null && row.Amount is not null
+            ? SuggestRecurringBillMatches(pendingOccurrences, row.OccurredOn.Value, row.Amount.Value, description)
+            : [];
 
         return new ImportRowResponse(
             row.RowNumber,
@@ -114,6 +128,7 @@ public sealed class PreviewImportHandler(EconomyDbContext db)
             duplicateState,
             rowFingerprint,
             suggestedSubscriptionMatches,
+            suggestedRecurringBillMatches,
             errors);
     }
 
@@ -140,6 +155,56 @@ public sealed class PreviewImportHandler(EconomyDbContext db)
                 MoneyContract.From(candidate.Subscription.ExpectedAmount)))
             .ToList();
     }
+
+    private static List<RecurringBillMatchSuggestionResponse> SuggestRecurringBillMatches(
+        IReadOnlyList<PendingRecurringBillOccurrence> pendingOccurrences,
+        DateOnly occurredOn,
+        decimal signedAmount,
+        string? description)
+    {
+        var kind = signedAmount < 0 ? TransactionKind.Expense : TransactionKind.Income;
+        var amount = Math.Abs(signedAmount);
+        return pendingOccurrences
+            .Where(candidate => candidate.Bill.Direction.ToTransactionKind() == kind)
+            .Select(candidate => new
+            {
+                Candidate = candidate,
+                DayDelta = Math.Abs(candidate.Occurrence.DueOn.DayNumber - occurredOn.DayNumber),
+                AmountDelta = Math.Abs(candidate.Bill.Amount.Amount - amount),
+                TextMatch = TextMatches(candidate.Bill, description)
+            })
+            .Where(candidate => candidate.DayDelta <= 7)
+            .Where(candidate => candidate.AmountDelta <= Math.Max(100m, candidate.Candidate.Bill.Amount.Amount * 0.5m) ||
+                                candidate.TextMatch)
+            .OrderByDescending(candidate => candidate.TextMatch)
+            .ThenBy(candidate => candidate.DayDelta)
+            .ThenBy(candidate => candidate.AmountDelta)
+            .Take(3)
+            .Select(candidate => new RecurringBillMatchSuggestionResponse(
+                candidate.Candidate.Bill.Id.Value,
+                candidate.Candidate.Occurrence.Id,
+                candidate.Candidate.Bill.Name,
+                candidate.Candidate.Occurrence.DueOn,
+                MoneyContract.From(candidate.Candidate.Bill.Amount),
+                candidate.DayDelta,
+                decimal.Round(candidate.AmountDelta, 2, MidpointRounding.AwayFromZero)))
+            .ToList();
+    }
+
+    private static bool TextMatches(RecurringBill bill, string? description)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            return false;
+        }
+
+        return Contains(description, bill.Name) ||
+               (!string.IsNullOrWhiteSpace(bill.Note) && Contains(description, bill.Note));
+    }
+
+    private static bool Contains(string value, string pattern) =>
+        value.Contains(pattern, StringComparison.OrdinalIgnoreCase) ||
+        pattern.Contains(value, StringComparison.OrdinalIgnoreCase);
 
     private static List<ImportRowValidationErrorResponse> ValidateRow(NormalizedImportRowRequest row)
     {
@@ -172,4 +237,6 @@ public sealed class PreviewImportHandler(EconomyDbContext db)
         string.IsNullOrWhiteSpace(currency) ? "SEK" : currency.Trim().ToUpperInvariant();
 
     private sealed record PossibleDuplicate(DateOnly OccurredOn, decimal Amount);
+
+    private sealed record PendingRecurringBillOccurrence(RecurringBill Bill, RecurringBillOccurrence Occurrence);
 }
