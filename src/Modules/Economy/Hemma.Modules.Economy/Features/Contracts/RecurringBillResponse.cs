@@ -3,6 +3,7 @@ using Hemma.Modules.Economy.Domain;
 namespace Hemma.Modules.Economy.Features.Contracts;
 
 public sealed record RecurringBillOccurrenceResponse(
+    Guid OccurrenceId,
     DateOnly DueOn,
     string State,
     Guid? TransactionId);
@@ -43,6 +44,6 @@ public sealed record RecurringBillResponse(
             bill.Occurrences
                 .Where(x => x.State == RecurringBillOccurrenceState.Pending)
                 .OrderBy(x => x.DueOn)
-                .Select(x => new RecurringBillOccurrenceResponse(x.DueOn, x.State.Name, x.TransactionId?.Value))
+                .Select(x => new RecurringBillOccurrenceResponse(x.Id, x.DueOn, x.State.Name, x.TransactionId?.Value))
                 .ToArray());
 }

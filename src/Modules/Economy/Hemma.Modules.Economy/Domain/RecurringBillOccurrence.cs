@@ -23,9 +23,10 @@ public sealed class RecurringBillOccurrence
     public DateOnly DueOn { get; private set; }
     public RecurringBillOccurrenceState State { get; private set; } = null!;
     public TransactionId? TransactionId { get; private set; }
+    public int SettlementVersion { get; private set; }
 
-    public static RecurringBillOccurrence Pending(RecurringBillId recurringBillId, DateOnly dueOn, TransactionId transactionId) =>
-        new(Guid.NewGuid(), recurringBillId, dueOn, RecurringBillOccurrenceState.Pending, transactionId);
+    public static RecurringBillOccurrence Pending(RecurringBillId recurringBillId, DateOnly dueOn) =>
+        new(Guid.NewGuid(), recurringBillId, dueOn, RecurringBillOccurrenceState.Pending, null);
 
     public static RecurringBillOccurrence Posted(RecurringBillId recurringBillId, DateOnly dueOn, TransactionId transactionId) =>
         new(Guid.NewGuid(), recurringBillId, dueOn, RecurringBillOccurrenceState.Posted, transactionId);
@@ -40,6 +41,7 @@ public sealed class RecurringBillOccurrence
     {
         State = RecurringBillOccurrenceState.Confirmed;
         TransactionId = transactionId;
+        SettlementVersion++;
     }
 
     public void Resume()

@@ -2,7 +2,7 @@ namespace Hemma.Modules.Economy.Contracts.Events;
 
 public sealed record EstimatedBillPendingV1(
     Guid RecurringBillId,
-    Guid TransactionId,
+    Guid OccurrenceId,
     Guid HouseholdId,
     Guid AccountId,
     Guid? CategoryId,

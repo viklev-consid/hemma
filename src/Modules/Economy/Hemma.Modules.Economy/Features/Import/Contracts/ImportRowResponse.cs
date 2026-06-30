@@ -17,4 +17,5 @@ public sealed record ImportRowResponse(
     string DuplicateState,
     string RowFingerprint,
     IReadOnlyList<SubscriptionMatchSuggestionResponse> SuggestedSubscriptionMatches,
+    IReadOnlyList<RecurringBillMatchSuggestionResponse> SuggestedRecurringBillMatches,
     IReadOnlyList<ImportRowValidationErrorResponse> Errors);

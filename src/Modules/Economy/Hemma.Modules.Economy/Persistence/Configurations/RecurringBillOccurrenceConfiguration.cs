@@ -29,6 +29,10 @@ internal sealed class RecurringBillOccurrenceConfiguration : IEntityTypeConfigur
                 id => id == null ? (Guid?)null : id.Value,
                 value => value.HasValue ? new TransactionId(value.Value) : null);
 
+        builder.Property(occurrence => occurrence.SettlementVersion)
+            .IsConcurrencyToken()
+            .IsRequired();
+
         builder.HasOne<Transaction>()
             .WithMany()
             .HasForeignKey(occurrence => occurrence.TransactionId)

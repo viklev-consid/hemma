@@ -21,13 +21,20 @@ public sealed class ConfirmEstimatedBillHandler(EconomyDbContext db, EconomyAudi
             return EconomyErrors.RecurringBillNotFound;
         }
 
-        var transactionId = new TransactionId(cmd.TransactionId);
-        var transaction = await db.Transactions.SingleOrDefaultAsync(x =>
-            x.HouseholdId == cmd.HouseholdId &&
-            x.Id == transactionId, ct);
-        if (transaction is null)
+        var account = await db.Accounts.SingleOrDefaultAsync(x => x.HouseholdId == cmd.HouseholdId && x.Id == bill.AccountId, ct);
+        if (account is null)
         {
-            return EconomyErrors.TransactionNotFound;
+            return EconomyErrors.AccountNotFound;
+        }
+
+        Category? category = null;
+        if (bill.CategoryId is not null)
+        {
+            category = await db.Categories.SingleOrDefaultAsync(x => x.HouseholdId == cmd.HouseholdId && x.Id == bill.CategoryId, ct);
+            if (category is null)
+            {
+                return EconomyErrors.CategoryNotFound;
+            }
         }
 
         var amount = Money.Create(cmd.Amount, cmd.Currency);
@@ -36,20 +43,37 @@ public sealed class ConfirmEstimatedBillHandler(EconomyDbContext db, EconomyAudi
             return amount.Errors;
         }
 
-        var confirmation = transaction.ConfirmPending(amount.Value, cmd.OccurredOn);
-        if (confirmation.IsError)
+        var transaction = Transaction.Record(
+            cmd.HouseholdId,
+            account,
+            category,
+            amount.Value,
+            cmd.OccurredOn,
+            bill.Note ?? bill.Name,
+            bill.Direction.ToTransactionKind(),
+            payerId: null);
+        if (transaction.IsError)
         {
-            return confirmation.Errors;
+            return transaction.Errors;
         }
 
-        var billConfirmation = bill.ConfirmPending(transaction);
+        var billConfirmation = bill.ConfirmPending(cmd.OccurrenceId, transaction.Value);
         if (billConfirmation.IsError)
         {
             return billConfirmation.Errors;
         }
 
-        await db.SaveChangesAsync(ct);
-        await audit.PublishAsync(transaction.HouseholdId, "economy.recurring_bill.estimated_confirmed", "Transaction", transaction.Id.Value, null, ct);
-        return TransactionResponse.From(transaction);
+        db.Transactions.Add(transaction.Value);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return EconomyErrors.ConcurrencyConflict;
+        }
+
+        await audit.PublishAsync(transaction.Value.HouseholdId, "economy.recurring_bill.estimated_confirmed", "Transaction", transaction.Value.Id.Value, null, ct);
+        return TransactionResponse.From(transaction.Value);
     }
 }
